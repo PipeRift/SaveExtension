@@ -1,0 +1,50 @@
+{
+    "title": "Save Extension Documentation",
+    "author": "Piperift",
+    "languaje": "es",
+    "ignores": ["node_modules", "_book", "downloads", "lib"],
+    "logo": {
+        "white": "/assets/logo.dark.png",
+        "sepia": "/assets/logo.png",
+        "night": "/assets/logo.png"
+    },
+
+    "url": {
+        "relativePath": "/SaveExtension"
+    },
+
+    "plugins": [
+        "custom-favicon",
+        "copy-code-button",
+        "styles-less",
+        "links",
+        "prism",
+        "-highlight",
+        "collapsible-chapters",
+        "hide-published-with",
+        "hints"
+    ],
+    "pluginsConfig": {
+        "favicon": "./assets/favicon.ico",
+        "links": {
+            "links": [{
+                "label": "PDF",
+                "icon": "fa fa-file-pdf-o",
+                "url": "downloads/book.pdf"
+            }, {
+                "label": "EPUB",
+                "icon": "fa fa-leanpub",
+                "url": "downloads/book.epub"
+            }, {
+                "label": "MOBI",
+                "icon": "fa fa-book",
+                "url": "downloads/book.mobi"
+            }]
+        }
+    },
+    "styles": {
+        "website": "./styles/style.less",
+        "ebook": "./styles/style.less",
+        "pdf": "./styles/style.less"
+    }
+}

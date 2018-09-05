@@ -1,0 +1,7 @@
+/_book/
+/node_modules/
+/public/
+/book.pdf
+/book.mobi
+/book.epub
+/package-lock.json
