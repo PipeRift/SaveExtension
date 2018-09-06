@@ -27,18 +27,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoaded, USlotInfo*, SlotInfo)
 
 
 /**
-* Specifies the behavior while saving or loading
-*/
-UENUM()
-enum class ESaveASyncMode : uint8 {
-	OnlySync,
-	LoadAsync,
-	SaveASync,
-	SaveAndLoadAsync
-};
-
-
-/**
  *
  */
 UCLASS(ClassGroup = SaveExtension, Config = Game)
@@ -58,11 +46,6 @@ public:
 	/** Settings Preset to be used while loading and saving. None is Default (Check Save Extension in Settings) */
 	UPROPERTY(EditAnywhere, Category = "Save Extension", Config, meta = (DisplayName = "Preset"))
 	TAssetPtr<USavePreset> PresetAsset;
-
-protected:
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous")
-	ESaveASyncMode AsyncMode;
 
 private:
 
@@ -278,10 +261,6 @@ private:
 	virtual UWorld* GetWorld() const override;
 	virtual void BeginDestroy() override;
 	//~ End UObject Interface
-
-public:
-
-	FORCEINLINE ESaveASyncMode GetAsyncMode() { return AsyncMode; }
 
 
 	/**

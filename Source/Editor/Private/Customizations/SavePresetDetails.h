@@ -13,10 +13,10 @@
 
 class IDetailsView;
 class IDetailLayoutBuilder;
-class USaveManager;
+class USavePreset;
 
 
-class FSaveSettingsDetails : public IDetailCustomization
+class FSavePresetDetails : public IDetailCustomization
 {
 public:
 
@@ -30,7 +30,8 @@ private:
 
 	FSlateColor GetWarningColor() const;
 	EVisibility GetWarningVisibility() const;
+	bool CanEditAsynchronous() const;
 
 
-	TWeakObjectPtr<USaveManager> Settings;
+	TWeakObjectPtr<USavePreset> Settings;
 };

@@ -21,7 +21,6 @@
 
 USaveManager::USaveManager()
 	: Super()
-	, AsyncMode(ESaveASyncMode::OnlySync)
 {}
 
 void USaveManager::Init()

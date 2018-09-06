@@ -83,15 +83,13 @@ bool USlotDataTask::ShouldSaveAsWorld(const AActor* Actor)
 		}
 
 		// Is a child class of our non serialized classes?
-		bool bChildClass = false;
-		for (const auto& Class : Preset->NonSerializedActors)
+		for (const auto& Class : Preset->IgnoredActors)
 		{
-			bChildClass = ActorClass->IsChildOf(Class);
-			if (bChildClass)
-				break;
+			if (ActorClass->IsChildOf(Class))
+				return false;
 		}
 
-		return !bChildClass;
+		return true;
 	}
 	return false;
 }

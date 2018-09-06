@@ -8,9 +8,20 @@
 #include "Engine/DataAsset.h"
 #include "SavePreset.generated.h"
 
+
+/**
+* Specifies the behavior while saving or loading
+*/
+UENUM()
+enum class ESaveASyncMode : uint8 {
+	OnlySync,
+	LoadAsync,
+	SaveASync,
+	SaveAndLoadAsync
+};
+
 class USlotInfo;
 class USlotData;
-
 
 /**
  * What to save, how to save it, when, every x minutes, what info file, what data file, save by chunks?
@@ -24,8 +35,6 @@ public:
 
 	USavePreset();
 
-
-public:
 
 	/**
 	* Specify the SaveInfo object to be used with this preset
@@ -61,50 +70,71 @@ public:
 
 	/**
 	 * If checked, will print messages to Log, and Viewport if DebugInScreen is enabled.
-	 * Ignored in package on Shipping mode.
+	 * Ignored in package or Shipping mode.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config, AdvancedDisplay)
 	bool bDebug;
 
 	/**
 	 * If checked and Debug is enabled, will print messages to Viewport.
-	 * Ignored in package on Shipping mode.
+	 * Ignored in package or Shipping mode.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config, AdvancedDisplay, meta = (EditCondition = "bDebug"))
 	bool bDebugInScreen;
 
 
-	/* Actors referenced in this list will be explicitly ignored by the Save/Load system. */
+	/* This Actor classes and their childs will be ignored while saving or loading */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, AdvancedDisplay)
-	TArray<TSubclassOf<AActor>> NonSerializedActors;
+	TArray<TSubclassOf<AActor>> IgnoredActors;
 
-	/** True if Gamemode should be saved  */
+	/** If true will store the current gamemode  */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
 	bool bStoreGameMode;
 
-	/** Should save and load GameInstance */
+	/** If true will store the game instance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
 	bool bStoreGameInstance;
 
-	/** Should save and load all the Level Blueprints on the world */
+	/** If true will store all Level Blueprints */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
 	bool bStoreLevelBlueprints;
 
-	/** Should save and load 'SaveGame' variables for AI Controllers. */
+	/** If true will store AI Controllers */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
 	bool bStoreAIControllers;
 
-	/** Should save and load all Blueprint's Actor Components.
-	Note: Static Mesh Components and Skeletal Components are not serialized. */
+	/** If true will store Actor Components
+	 * NOTE: StaticMeshComponents and SkeletalMeshComponents are not serialized
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
 	bool bStoreComponents;
 
-	/** Should save and load all Blueprint's Actor Components.
-	Note: Static Mesh Components and Skeletal Components are not serialized. */
+	/** If true will store player's control rotation */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Controllers", Config)
 	bool bStoreControlRotation;
+
+
+protected:
+
+	/** Defines what will be asynchronous. Nothing, Saving, Loading or Both */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous")
+	ESaveASyncMode AsyncMode;
+
+	/** Max milliseconds to use every frame in an asynchronous operation.
+	 * If running at 60Fps (16.6ms), loading or saving asynchronously will add MaxFrameMS:
+	 * 16.6ms + 5MS = 21.6ms -> 46Fps
+	 * This means gameplay will not be stopped nor have frame drops while saving or loading
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous", meta = (UIMin="3", UIMax="10"))
+	float MaxFrameMs;
+
+
+public:
 
 	FORCEINLINE int32 GetMaxSlots() const {
 		return MaxSlots <= 0 ? 16384 : MaxSlots;
 	}
+
+	FORCEINLINE ESaveASyncMode GetAsyncMode() const { return AsyncMode; }
+	FORCEINLINE float GetMaxFrameMs() const { return MaxFrameMs; }
 };

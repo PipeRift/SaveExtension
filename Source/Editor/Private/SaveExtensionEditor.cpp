@@ -8,7 +8,7 @@
 #include "Asset/AssetTypeAction_SlotData.h"
 #include "Asset/AssetTypeAction_SavePreset.h"
 //#include "Customizations/SavePresetCustomization.h"
-#include "Customizations/SaveSettingsDetails.h"
+#include "Customizations/SavePresetDetails.h"
 
 #define LOCTEXT_NAMESPACE "SaveExtensionEditor"
 
@@ -35,7 +35,7 @@ void FSaveExtensionEditor::StartupModule()
 
 void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 {
-	RegisterCustomClassLayout("SaveManager", FOnGetDetailCustomizationInstance::CreateStatic(&FSaveSettingsDetails::MakeInstance));
+	RegisterCustomClassLayout("SavePreset", FOnGetDetailCustomizationInstance::CreateStatic(&FSavePresetDetails::MakeInstance));
 
 	//RegisterCustomPropertyTypeLayout("SavePreset", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSavePresetCustomization::MakeInstance));
 }

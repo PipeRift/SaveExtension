@@ -70,7 +70,12 @@ void USlotDataTask_Loader::AfterMapValidation()
 	Manager->CurrentInfo = NewSlotInfo;
 
 	BeforeDeserialize();
-	DeserializeASync();
+
+	if (Preset->GetAsyncMode() == ESaveASyncMode::LoadAsync ||
+		Preset->GetAsyncMode() == ESaveASyncMode::SaveAndLoadAsync)
+		DeserializeASync();
+	else
+		DeserializeSync();
 }
 
 void USlotDataTask_Loader::BeforeDeserialize()
