@@ -23,6 +23,8 @@ USavePreset::USavePreset()
 	, bStoreAIControllers(false)
 	, bStoreComponents(true)
 	, bStoreControlRotation(true)
+	, bUseCompression(true)
+
 	, AsyncMode(ESaveASyncMode::OnlySync)
 	, MaxFrameMs(5.f)
 	, bSaveAndLoadSublevels(true)

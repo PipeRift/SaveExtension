@@ -399,8 +399,8 @@ bool USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataN
 	USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 	USlotData* CurrentData = Manager->GetCurrentData();
 
-	if (FFileAdapter::SaveFile(CurrentInfo, InfoName) &&
-		FFileAdapter::SaveFile(CurrentData, DataName))
+	if (FFileAdapter::SaveFile(CurrentInfo, InfoName, Preset) &&
+		FFileAdapter::SaveFile(CurrentData, DataName, Preset))
 	{
 		return true;
 	}

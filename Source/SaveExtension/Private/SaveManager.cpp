@@ -281,12 +281,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 
 	const FString Card = GenerateSaveDataSlotName(InSaveInfo->Id);
 
-	USlotData* LoadedData = Cast<USlotData>(FFileAdapter::LoadFile(Card));
-
-	/**
-
-	*/
-	return LoadedData;
+	return Cast<USlotData>(FFileAdapter::LoadFile(Card, GetPreset()));
 }
 
 bool USaveManager::SaveThumbnail(const int32 Slot, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
@@ -339,7 +334,7 @@ bool USaveManager::SaveThumbnail(const int32 Slot, const int32 Width /*= 640*/, 
 
 USlotInfo* USaveManager::LoadInfoFromFile(const FString Name) const
 {
-	return Cast<USlotInfo>(FFileAdapter::LoadFile(Name));
+	return Cast<USlotInfo>(FFileAdapter::LoadFile(Name, GetPreset()));
 }
 
 void USaveManager::GetSlotFileNames(TArray<FString>& FoundFiles) const

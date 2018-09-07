@@ -13,6 +13,8 @@
 #include "CustomSaveGameSystem.h"
 #include "ISaveExtension.h"
 
+class USavePreset;
+
 
 /** Based on GameplayStatics to add multi-threading */
 struct FSaveFileHeader
@@ -40,9 +42,9 @@ class FFileAdapter
 {
 public:
 
-	static bool SaveFile(USaveGame* SaveGameObject, const FString& SlotName);
+	static bool SaveFile(USaveGame* SaveGameObject, const FString& SlotName, const USavePreset* Preset);
 
-	static USaveGame* LoadFile(const FString& SlotName);
+	static USaveGame* LoadFile(const FString& SlotName, const USavePreset* Preset);
 
 	static bool DeleteFile(const FString& SlotName);
 

@@ -256,7 +256,7 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, co
 	{
 		SpawnInfo.Name = Record.Name;
 
-		AActor* Actor = World->SpawnActor(Record.Class, &Record.Transform, SpawnInfo);
+		AActor* Actor = World->SpawnActor(Record.Class.Get(), &Record.Transform, SpawnInfo);
 		if (Actor)
 		{
 			if (SavesPhysics(Actor))
@@ -333,7 +333,6 @@ void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* Actor, const FLevelRec
 		}
 		else
 		{
-			QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor_AfterIf);
 			// Find the record
 			const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
 			if (Record)

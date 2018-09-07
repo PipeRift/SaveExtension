@@ -20,17 +20,24 @@ USTRUCT()
 struct FBaseRecord {
 	GENERATED_USTRUCT_BODY()
 
-	FBaseRecord()
-		: Name{}
-		, Class(nullptr)
-	{}
-
-	UPROPERTY(SaveGame)
 	FName Name;
+	TWeakObjectPtr<UClass> Class;
 
-	UPROPERTY(SaveGame)
-	UClass* Class;
+
+	FBaseRecord() : Name(), Class(nullptr) {}
+
+	virtual bool Serialize(FArchive& Ar);
+	friend FArchive& operator<<(FArchive& Ar, FBaseRecord& Record)
+	{
+		Record.Serialize(Ar);
+		return Ar;
+	}
+	virtual ~FBaseRecord() {}
 };
+
+template<>
+struct TStructOpsTypeTraits<FBaseRecord> : public TStructOpsTypeTraitsBase2<FBaseRecord>
+{ enum { WithSerializer = true }; };
 
 FORCEINLINE bool operator==(FBaseRecord&&      A, FBaseRecord&&      B) { return A.Name == B.Name; }
 FORCEINLINE bool operator==(const FBaseRecord& A, const FBaseRecord& B) { return A.Name == B.Name; }
@@ -43,26 +50,17 @@ USTRUCT()
 struct FObjectRecord : public FBaseRecord {
 	GENERATED_USTRUCT_BODY()
 
-	FObjectRecord() : Super() {}
-	FObjectRecord(const UObject* Object)
-		: Super()
-	{
-		if (Object)
-		{
-			Name = Object->GetFName();
-			Class = Object->GetClass();
-		}
-	}
-
-	UPROPERTY(SaveGame)
 	TArray<uint8> Data;
-
-	UPROPERTY(SaveGame)
 	TArray<FName> Tags;
 
 
+	FObjectRecord() : Super() {}
+	FObjectRecord(const UObject* Object);
+
+	virtual bool Serialize(FArchive& Ar) override;
+
 	bool IsValid() const {
-		return !Name.IsNone() && Class && Data.Num() > 0;
+		return !Name.IsNone() && Class.IsValid() && Data.Num() > 0;
 	}
 
 	FORCEINLINE bool operator== (const UObject* Other) const { return Name == Other->GetFName() && Class == Other->GetClass(); }
@@ -75,8 +73,9 @@ USTRUCT()
 struct FComponentRecord : public FObjectRecord {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY(SaveGame)
 	FTransform Transform;
+
+	virtual bool Serialize(FArchive& Ar) override;
 };
 
 /**
@@ -86,29 +85,20 @@ USTRUCT()
 struct FActorRecord : public FObjectRecord {
 	GENERATED_USTRUCT_BODY()
 
-	FActorRecord() : Super() {}
-	FActorRecord(const AActor* Actor)
-		: Super(Actor)
-	{}
 
-	UPROPERTY(SaveGame)
 	bool bHiddenInGame;
-
 	/** Whether or not this actor was spawned in runtime */
-	UPROPERTY(SaveGame)
 	bool bIsProcedural;
-
-	UPROPERTY(SaveGame)
 	FTransform Transform;
-
-	UPROPERTY(SaveGame)
 	FVector LinearVelocity;
-
-	UPROPERTY(SaveGame)
 	FVector AngularVelocity;
-
-	UPROPERTY(SaveGame)
 	TArray<FComponentRecord> ComponentRecords;
+
+
+	FActorRecord() : Super() {}
+	FActorRecord(const AActor* Actor) : Super(Actor) {}
+
+	virtual bool Serialize(FArchive& Ar) override;
 };
 
 /**
@@ -118,27 +108,12 @@ USTRUCT()
 struct FControllerRecord : public FActorRecord {
 	GENERATED_USTRUCT_BODY()
 
-	FControllerRecord() = default;
-
-	UPROPERTY(SaveGame)
 	FRotator ControlRotation;
-};
 
-/**
-* Represents a destroyed object
-*/
-USTRUCT()
-struct FDestroyedActorRecord : public FBaseRecord {
-	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY(SaveGame)
-	FString Level;
+	FControllerRecord() : Super() {}
 
-	bool IsValid() const {
-		return !Name.IsNone() && Class && !Level.IsEmpty();
-	}
-
-	FORCEINLINE bool operator== (const AActor* Other) const { return Name == Other->GetFName() && Class == Other->GetClass(); }
+	virtual bool Serialize(FArchive& Ar) override;
 };
 
 /**
@@ -148,19 +123,19 @@ USTRUCT()
 struct FLevelRecord : public FBaseRecord {
 	GENERATED_USTRUCT_BODY()
 
-	FLevelRecord() : Super() {}
-
 	/** Record of the Level Script Actor */
-	UPROPERTY()
 	FActorRecord LevelScript;
 
 	/** Records of the World Actors */
-	UPROPERTY()
 	TArray<FActorRecord> Actors;
 
 	/** Records of the AI Controller Actors */
-	UPROPERTY()
 	TArray<FControllerRecord> AIControllers;
+
+
+	FLevelRecord() : Super() {}
+
+	virtual bool Serialize(FArchive& Ar) override;
 
 	bool IsValid() const {
 		return !Name.IsNone();
@@ -187,8 +162,7 @@ struct FStreamingLevelRecord : public FLevelRecord {
 	GENERATED_USTRUCT_BODY()
 
 	FStreamingLevelRecord() : Super() {}
-	FStreamingLevelRecord(const ULevelStreaming* Level)
-		: Super()
+	FStreamingLevelRecord(const ULevelStreaming* Level) : Super()
 	{
 		Class = ULevelStreaming::StaticClass();
 		if (Level)
@@ -245,30 +219,24 @@ public:
 
 	/** Records
 	 * All serialized information to be saved or loaded
+	 * Serialized manually for performance
 	 */
 
-	UPROPERTY()
 	FObjectRecord GameInstance;
-	UPROPERTY()
 	FActorRecord GameMode;
-	UPROPERTY()
 	FActorRecord GameState;
 
-	UPROPERTY()
 	FActorRecord PlayerPawn;
-	UPROPERTY()
 	FControllerRecord PlayerController;
-	UPROPERTY()
 	FActorRecord PlayerState;
-	UPROPERTY()
 	FActorRecord PlayerHUD;
 
-	UPROPERTY(SaveGame)
 	FPersistentLevelRecord MainLevel;
-	UPROPERTY(SaveGame)
 	TArray<FStreamingLevelRecord> SubLevels;
 
 
 	void Clean(bool bKeepLevels);
 	FName GetFMap() const { return { *Map }; }
+
+	virtual void Serialize(FArchive& Ar) override;
 };

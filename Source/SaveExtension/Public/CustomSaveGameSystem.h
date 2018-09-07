@@ -36,11 +36,13 @@ public:
 
 	virtual bool SaveGame(bool bAttemptToUseUI, const TCHAR* Name, const TArray<uint8>& Data)
 	{
+		QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveGameSystem_SaveGame);
 		return FFileHelper::SaveArrayToFile(Data, *GetSaveGamePath(Name));
 	}
 
 	virtual bool LoadGame(bool bAttemptToUseUI, const TCHAR* Name, TArray<uint8>& Data)
 	{
+		QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveGameSystem_LoadGame);
 		return FFileHelper::LoadFileToArray(Data, *GetSaveGamePath(Name));
 	}
 

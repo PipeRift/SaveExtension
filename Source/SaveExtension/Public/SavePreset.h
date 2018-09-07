@@ -113,6 +113,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Controllers", Config)
 	bool bStoreControlRotation;
 
+	/** If true save files will be compressed
+	 * Performance: Can add from 10ms to 20ms to loading and saving (estimate) but reduce file sizes making them up to 30x smaller
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
+	bool bUseCompression;
 
 protected:
 

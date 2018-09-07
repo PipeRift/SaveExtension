@@ -16,6 +16,78 @@
 #define GET_PRIVATE(InClass, InObj, MemberName) (*InObj).*GetPrivate(InClass##MemberName##Accessor())
 
 
+FName FPersistentLevelRecord::PersistentName{ "Persistent" };
+
+
+/////////////////////////////////////////////////////
+// Records
+
+bool FBaseRecord::Serialize(FArchive& Ar)
+{
+	Ar << Name;
+	Ar << Class;
+	return true;
+}
+
+FObjectRecord::FObjectRecord(const UObject* Object) : Super()
+{
+	if (Object)
+	{
+		Name = Object->GetFName();
+		Class = Object->GetClass();
+	}
+}
+
+bool FObjectRecord::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+	Ar << Data;
+	Ar << Tags;
+	return true;
+}
+
+bool FComponentRecord::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+	Ar << Transform;
+	return true;
+}
+
+bool FActorRecord::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+	Ar.SerializeBits(&bHiddenInGame, 1);
+	Ar.SerializeBits(&bIsProcedural, 1);
+
+	Ar << Transform;
+	Ar << LinearVelocity;
+	Ar << AngularVelocity;
+	Ar << ComponentRecords;
+	return true;
+}
+
+bool FControllerRecord::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+	Ar << ControlRotation;
+
+	return true;
+}
+
+
+bool FLevelRecord::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+	Ar << LevelScript;
+	Ar << Actors;
+	Ar << AIControllers;
+
+	return true;
+}
+
 void FLevelRecord::Clean()
 {
 	LevelScript = {};
@@ -24,12 +96,8 @@ void FLevelRecord::Clean()
 }
 
 
-FName FPersistentLevelRecord::PersistentName{ "Persistent" };
-
-
 /////////////////////////////////////////////////////
 // FSaveExtensionArchive
-
 
 FArchive& FSaveExtensionArchive::operator<<(FSoftObjectPtr& Value)
 {
@@ -53,42 +121,29 @@ FArchive& FSaveExtensionArchive::operator<<(FSoftObjectPath& Value)
 }
 
 
-/*FArchive& FSaveExtensionArchive::operator<<(FSaveTimerHandle& Value)
-{
-	*this << Value.bLooping << Value.Time << Value.Delegate;
-
-	SE_LOG(true, "Serializing Timer");
-	float Remaining = -1.f;
-
-	const UObject* Obj = Value.Delegate.GetUObject();
-
-	//Find World from the UObject
-	const UWorld* World = Obj ? Obj->GetWorld() : nullptr;
-	if (World)
-	{
-		Remaining = World->GetTimerManager().GetTimerRemaining(Value.Handle);
-		SE_LOG(true, FString::Printf(TEXT("Saving Remaining Time: %f"), Remaining));
-	}
-
-	*this << Remaining;
-
-	if (IsLoading() && World && Remaining > 0.f)
-	{
-		SE_LOG(true, "Restoring Timer", FColor::White, true);
-		//Stop current timer if exists and start a new one
-		World->GetTimerManager().SetTimer(Value.Handle, Value.Delegate, Value.bLooping ? Value.Time : Remaining, Value.bLooping, Value.bLooping ? Remaining : -1.f);
-	}
-
-	return *this;
-}*/
-
-
 /////////////////////////////////////////////////////
-// USaveData
+// USlotData
 
 USlotData::USlotData(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PlayerId = 0;
+}
+
+void USlotData::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+	Ar << GameInstance;
+	Ar << GameMode;
+	Ar << GameState;
+
+	Ar << PlayerPawn;
+	Ar << PlayerController;
+	Ar << PlayerState;
+	Ar << PlayerHUD;
+
+	MainLevel.Serialize(Ar);
+	Ar << SubLevels;
 }
 
 void USlotData::Clean(bool bKeepLevels)
