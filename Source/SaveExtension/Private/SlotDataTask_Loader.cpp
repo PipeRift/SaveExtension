@@ -106,6 +106,8 @@ void USlotDataTask_Loader::BeforeDeserialize()
 
 void USlotDataTask_Loader::DeserializeSync()
 {
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeSync);
+
 	// Deserialize world
 	{
 		check(World);
@@ -130,6 +132,8 @@ void USlotDataTask_Loader::DeserializeLevelSync(const ULevel* Level, const ULeve
 {
 	if (!IsValid(Level))
 		return;
+
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelSync);
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SE_LOG(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
@@ -170,13 +174,13 @@ void USlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStreaming*
 		return;
 	}
 
+	const float StartMS = GetTimeMilliseconds();
+
 	DeserializeLevelPrepare(Level, *LevelRecord);
 
 	CurrentLevel = Level;
 	CurrentSLevel = StreamingLevel;
 	CurrentActorIndex = 0;
-
-	float StartMS = FPlatformTime::ToMilliseconds(FPlatformTime::Cycles());
 
 	// Copy actors array. New actors won't be considered for deserialization
 	CurrentLevelActors.Empty(Level->Actors.Num());
@@ -186,7 +190,7 @@ void USlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStreaming*
 			CurrentLevelActors.Add(Actor);
 	}
 
-	DeserializeASyncLoop();
+	DeserializeASyncLoop(StartMS);
 }
 
 void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
@@ -196,7 +200,7 @@ void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 		return;
 
 	if(StartMS <= 0)
-		StartMS = FPlatformTime::ToMilliseconds(FPlatformTime::Cycles());
+		StartMS = GetTimeMilliseconds();
 
 	// Continue Iterating actors every tick
 	for (; CurrentActorIndex < CurrentLevelActors.Num(); ++CurrentActorIndex)
@@ -206,13 +210,10 @@ void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 		{
 			DeserializeLevel_Actor(Actor, *LevelRecord);
 
-			const float CurrentMS = FPlatformTime::ToMilliseconds(FPlatformTime::Cycles());
-			// If 5MS did pass
-			if (CurrentMS - StartMS >= 5)
-			{
-				// Wait for next frame
+			const float CurrentMS = GetTimeMilliseconds();
+			// If x milliseconds passed, continue on next frame
+			if (CurrentMS - StartMS >= MaxFrameMs)
 				return;
-			}
 		}
 	}
 
@@ -243,30 +244,17 @@ void USlotDataTask_Loader::FinishedDeserializing()
 	SE_LOG(Preset, "Finished Loading", FColor::Green, false, 2);
 }
 
-void USlotDataTask_Loader::CleanActors(const TArray<AActor*>& ActorsToDestroy)
+void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, const ULevel* Level)
 {
-	for (AActor* Actor : ActorsToDestroy)
-	{
-		Actor->Destroy();
-	}
-}
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_RespawnActors);
 
-void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records)
-{
-	SE_LOG(Preset, "Actors Respawning", FColor::Green, false, 1);
+	FActorSpawnParameters SpawnInfo{};
+	SpawnInfo.OverrideLevel = const_cast<ULevel*>(Level);
 
 	// Respawn all procedural actors
-	for (const auto &Record : Records)
+	for (const auto& Record : Records)
 	{
-		ULevelStreaming* LevelStreaming = World->GetLevelStreamingForPackageName(*Record.Level);
-		ULevel* Level = LevelStreaming ? LevelStreaming->GetLoadedLevel() : nullptr;
-
-		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Name = Record.Name;
-		if (Level)
-		{
-			SpawnInfo.OverrideLevel = Level;
-		}
 
 		AActor* Actor = World->SpawnActor(Record.Class, &Record.Transform, SpawnInfo);
 		if (Actor)
@@ -291,35 +279,46 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records)
 
 void USlotDataTask_Loader::DeserializeLevelPrepare(const ULevel* Level, const FLevelRecord& LevelRecord)
 {
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelPrepare);
+
 	// Records not contained in Scene Actors		 => Actors to be Respawned
 	// Scene Actors not contained in loaded records  => Actors to be Destroyed
 	// The rest									     => Just deserialize
+
 	TArray<FActorRecord> RecordsToSpawn = LevelRecord.Actors;
-	TArray<AActor*> ActorsToDestroy;
 
-	// O(M*Log(N))
-	for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
+	TArray<AActor*> ActorsToDestroy {};
+
 	{
-		AActor* Actor{ *ActorItr };
+		QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelPrepare_Loop);
 
-		// Remove records which actors do exist
-		const bool bFoundRecord = RecordsToSpawn.RemoveSwap(Actor) > 0;
-
-		// If the actor wasn't found, mark it for destruction
-		if (!bFoundRecord && ShouldSaveAsWorld(Actor))
+		// O(M*Log(N))
+		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 		{
-			ActorsToDestroy.Add(Actor);
+			AActor* Actor{ *ActorItr };
+			if (Actor)
+			{
+				// Remove records which actors do exist
+				const bool bFoundRecord = RecordsToSpawn.RemoveSingleSwap(Actor, false);
+
+				if (!bFoundRecord && ShouldSaveAsWorld(Actor))
+				{
+					// If the actor wasn't found, mark it for destruction
+					Actor->Destroy();
+				}
+			}
 		}
+
+		RecordsToSpawn.Shrink();
 	}
 
-	// Destroy actors that didn't exist during the Save
-	CleanActors(ActorsToDestroy);
 	// Create Actors that doesn't exist now but were saved
-	RespawnActors(RecordsToSpawn);
+	RespawnActors(RecordsToSpawn, Level);
 }
 
 void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* Actor, const FLevelRecord& LevelRecord)
 {
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor);
 	if (ShouldSaveAsWorld(Actor))
 	{
 		const UClass* ActorClass = Actor->GetClass();
@@ -334,17 +333,12 @@ void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* Actor, const FLevelRec
 		}
 		else
 		{
+			QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor_AfterIf);
 			// Find the record
-			const FActorRecord* Record = LevelRecord.Actors.FindByPredicate([Actor](const auto& Item) {
-				return Actor->GetFName() == Item.Name && Actor->GetClass() == Item.Class;
-			});
-
-			if (Record && Record->IsValid())
+			const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
+			if (Record)
 			{
-				if (Actor->GetLevel()->GetPathName() == Record->Level)
-				{
-					DeserializeActor(Actor, *Record);
-				}
+				DeserializeActor(Actor, *Record);
 			}
 		}
 	}
@@ -379,7 +373,7 @@ void USlotDataTask_Loader::DeserializeAI(AAIController* AIController, const FLev
 			return AIController->GetFName() == Item.Name && AIController->GetClass() == Item.Class;
 		});
 
-		if (Record && Record->IsValid())
+		if (Record)
 		{
 			const bool bSuccess = DeserializeActor(AIController, *Record);
 
@@ -462,8 +456,10 @@ void USlotDataTask_Loader::DeserializeGameInstance()
 
 bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& Record)
 {
-	if (!IsValid(Actor) || !Record.IsValid() ||
-		!ShouldSave(Actor) || Actor->GetClass() != Record.Class)
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeActor);
+
+	if (!IsValid(Actor) || !Record.IsValid() || !ShouldSave(Actor) ||
+		Actor->GetClass() != Record.Class)
 	{
 		return false;
 	}
@@ -506,10 +502,13 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 
 	DeserializeActorComponents(Actor, Record, 2);
 
-	//Serialize from Record Data
-	FMemoryReader MemoryReader(Record.Data, true);
-	FSaveExtensionArchive Archive(MemoryReader, false);
-	Actor->Serialize(Archive);
+	{
+		QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DataReader);
+		//Serialize from Record Data
+		FMemoryReader MemoryReader(Record.Data, true);
+		FSaveExtensionArchive Archive(MemoryReader, false);
+		Actor->Serialize(Archive);
+	}
 
 	return true;
 }
@@ -528,6 +527,8 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 {
 	if (SavesComponents(Actor))
 	{
+		QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeActorComponents);
+
 		const TSet<UActorComponent*>& Components = Actor->GetComponents();
 
 		for (auto* Component : Components)
@@ -535,12 +536,9 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 			if (ShouldSave(Component))
 			{
 				// Find the record
-				const FComponentRecord* Record = ActorRecord.ComponentRecords.FindByPredicate([Component](const auto& Item) {
-					return Component->GetFName() == Item.Name;
-				});
+				const FComponentRecord* Record = ActorRecord.ComponentRecords.FindByKey(Component);
 
-				if (!Record || Component->GetClass() != Record->Class)
-				{
+				if (!Record) {
 					SE_LOG(Preset, "Component '" + Component->GetFName().ToString() + "' - Record not found", FColor::Red, false, Indent + 1);
 					continue;
 				}
@@ -569,7 +567,6 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 		}
 	}
 }
-
 
 FLevelRecord* USlotDataTask_Loader::FindLevelRecord(const ULevelStreaming* Level) const
 {

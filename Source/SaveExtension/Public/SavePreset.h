@@ -24,7 +24,7 @@ class USlotInfo;
 class USlotData;
 
 /**
- * What to save, how to save it, when, every x minutes, what info file, what data file, save by chunks?
+ * What to save, how to save it, when, every x minutes, what info file, what data file, save by level streaming?
  */
 UCLASS(ClassGroup = SaveExtension, BlueprintType, Config = Game)
 class SAVEEXTENSION_API USavePreset : public UDataAsset
@@ -127,6 +127,14 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous", meta = (UIMin="3", UIMax="10"))
 	float MaxFrameMs;
+
+protected:
+
+	/** If true, will Save and Load levels when they are shown or hidden.
+	 * This includes level streaming and world composition.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Streaming")
+	bool bSaveAndLoadSublevels;
 
 
 public:

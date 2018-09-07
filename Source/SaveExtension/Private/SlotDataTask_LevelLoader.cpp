@@ -35,7 +35,7 @@ void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 	}
 
 	if (StartMS <= 0)
-		StartMS = FPlatformTime::ToMilliseconds(FPlatformTime::Cycles());
+		StartMS = GetTimeMilliseconds();
 
 	// Continue Iterating actors every tick
 	for (; CurrentActorIndex < CurrentLevelActors.Num(); ++CurrentActorIndex)
@@ -45,13 +45,10 @@ void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 		{
 			DeserializeLevel_Actor(Actor, *LevelRecord);
 
-			const float CurrentMS = FPlatformTime::ToMilliseconds(FPlatformTime::Cycles());
-			// If 5MS did pass
-			if (CurrentMS - StartMS >= 5)
-			{
-				// Wait for next frame
+			const float CurrentMS = GetTimeMilliseconds();
+			// If x milliseconds passed, continue on next frame
+			if (CurrentMS - StartMS >= MaxFrameMs)
 				return;
-			}
 		}
 	}
 

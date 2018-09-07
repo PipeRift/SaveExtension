@@ -49,6 +49,9 @@ protected:
 	UPROPERTY()
 	const USavePreset* Preset;
 
+	// Cached value from preset to avoid cache misses
+	float MaxFrameMs;
+
 
 public:
 
@@ -59,6 +62,7 @@ public:
 		SlotData = InSaveData;
 		World = InWorld;
 		Preset = InPreset;
+		MaxFrameMs = Preset? Preset->GetMaxFrameMs() : 5.f;
 	}
 
 	void Start();
@@ -87,25 +91,34 @@ protected:
 
 
 	//Actor Tags
-	FORCEINLINE bool ShouldSave(const AActor* Actor)	 { return IsValid(Actor) && !HasTag(Actor, TagNoSave);	   }
-	FORCEINLINE bool SavesTransform(const AActor* Actor) { return Actor && Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform);  }
-	FORCEINLINE bool SavesPhysics(const AActor* Actor)	 { return Actor && !HasTag(Actor, TagNoPhysics);	}
-	FORCEINLINE bool SavesComponents(const AActor* Actor) { return Preset->bStoreComponents && Actor && !HasTag(Actor, TagNoComponents); }
-	FORCEINLINE bool CanBeKilled(const AActor* Actor)	 { return Actor && !HasTag(Actor, TEXT("!Kill"));	   }
-	FORCEINLINE bool SavesTags(const AActor* Actor)	     { return Actor && !HasTag(Actor, TagNoTags);	   }
-	FORCEINLINE bool IsProcedural(const AActor* Actor)   { return Actor &&  Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
+	FORCEINLINE bool ShouldSave(const AActor* Actor) const     { return IsValid(Actor) && !HasTag(Actor, TagNoSave);	   }
+	FORCEINLINE bool SavesTransform(const AActor* Actor) const { return Actor && Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform);  }
+	FORCEINLINE bool SavesPhysics(const AActor* Actor) const   { return Actor && !HasTag(Actor, TagNoPhysics);	}
+	FORCEINLINE bool SavesComponents(const AActor* Actor) const { return Preset->bStoreComponents && Actor && !HasTag(Actor, TagNoComponents); }
+	FORCEINLINE bool SavesTags(const AActor* Actor) const      { return Actor && !HasTag(Actor, TagNoTags);	   }
+	FORCEINLINE bool IsProcedural(const AActor* Actor) const   { return Actor &&  Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
 
 
-	bool ShouldSaveAsWorld(const AActor* Actor);
+	bool ShouldSaveAsWorld(const AActor* Actor) const;
 
 	//Component Tags
-	FORCEINLINE bool ShouldSave(const UActorComponent* Component) { return IsValid(Component) && !HasTag(Component, TagNoSave) && Component->GetClass()->IsChildOf<UStaticMeshComponent>(); }
-	bool SavesTransform(const UActorComponent* Component) {
+	FORCEINLINE bool ShouldSave(const UActorComponent* Component) const {
+		if (IsValid(Component) &&
+		   !HasTag(Component, TagNoSave))
+		{
+			const UClass* const Class = Component->GetClass();
+			return !Class->IsChildOf<UStaticMeshComponent>() &&
+				   !Class->IsChildOf<USkeletalMeshComponent>();
+		}
+		return false;
+	}
+
+	bool SavesTransform(const UActorComponent* Component) const {
 		return Component &&
 			   Component->GetClass()->IsChildOf<USceneComponent>() &&
 			   HasTag(Component, TagTransform);
 	}
-	FORCEINLINE bool SavesTags(const UActorComponent* Component)  { return Component && !HasTag(Component, TagNoTags); }
+	FORCEINLINE bool SavesTags(const UActorComponent* Component) const { return Component && !HasTag(Component, TagNoTags); }
 
 private:
 
@@ -119,4 +132,10 @@ private:
 		return Component->ComponentHasTag(Tag);
 	}
 
+
+protected:
+
+	FORCEINLINE float GetTimeMilliseconds() const {
+		return FPlatformTime::ToMilliseconds(FPlatformTime::Cycles());
+	}
 };

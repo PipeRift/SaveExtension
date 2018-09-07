@@ -54,12 +54,11 @@ UWorld* USlotDataTask::GetWorld() const
 	return GetOuter()->GetWorld();
 }
 
-bool USlotDataTask::ShouldSaveAsWorld(const AActor* Actor)
+bool USlotDataTask::ShouldSaveAsWorld(const AActor* Actor) const
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveExtension_Serialization_ShouldSaveAsWorld);
 	if (ShouldSave(Actor))
 	{
-		const UClass* ActorClass = Actor->GetClass();
+		const UClass* const ActorClass = Actor->GetClass();
 		if (ActorClass == AStaticMeshActor::StaticClass() ||
 			ActorClass->IsChildOf<AInstancedFoliageActor>() ||
 			ActorClass->IsChildOf<AReflectionCapture>() ||

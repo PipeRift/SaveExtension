@@ -5,6 +5,7 @@
 #include "ModuleManager.h"
 #include "Engine/Engine.h"
 #include "SavePreset.h"
+#include "CustomSaveGameSystem.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSaveExtension, All, All);
 
@@ -18,6 +19,11 @@ public:
 		return FModuleManager::Get().IsModuleLoaded("SaveExtension");
 	}
 
+	FCustomSaveGameSystem* GetSaveSystem()
+	{
+		static FCustomSaveGameSystem System;
+		return &System;
+	}
 
 	static void Log(const USavePreset* Preset, const FString Message, int8 Indent)
 	{

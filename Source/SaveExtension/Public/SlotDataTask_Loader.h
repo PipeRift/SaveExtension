@@ -67,15 +67,8 @@ private:
 
 	void AfterMapValidation();
 
-	/** BEGIN Setup Scene */
-	/** Destroy an array of actors from the world.
-	* Used to clean-up actors that didn't exist during a Save game.
-	*/
-	void CleanActors(const TArray<AActor*>& ActorsToDestroy);
-
 	/** Spawns Actors hat were saved but which actors are not in the world. */
-	void RespawnActors(const TArray<FActorRecord>& Records);
-	/** END Setup Scene */
+	void RespawnActors(const TArray<FActorRecord>& Records, const ULevel* Level);
 
 protected:
 

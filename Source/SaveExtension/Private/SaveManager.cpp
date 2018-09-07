@@ -18,6 +18,8 @@
 #include <GameDelegates.h>
 #include <CoreDelegates.h>
 
+#include "FileAdapter.h"
+
 
 USaveManager::USaveManager()
 	: Super()
@@ -112,8 +114,8 @@ bool USaveManager::DeleteGame(int32 SlotId)
 
 	const FString InfoSlot = GenerateSaveSlotName(SlotId);
 	const FString DataSlot = GenerateSaveDataSlotName(SlotId);
-	return UGameplayStatics::DeleteGameInSlot(InfoSlot, 0) ||
-		   UGameplayStatics::DeleteGameInSlot(DataSlot, 0);
+	return FFileAdapter::DeleteFile(InfoSlot) ||
+		   FFileAdapter::DeleteFile(DataSlot);
 }
 
 UTexture2D* USaveManager::LoadThumbnail(int32 Slot)
@@ -160,8 +162,8 @@ bool USaveManager::IsSlotSaved(int32 SlotId) const
 
 	const FString InfoSlot = GenerateSaveSlotName(SlotId);
 	const FString DataSlot = GenerateSaveDataSlotName(SlotId);
-	return UGameplayStatics::DoesSaveGameExist(InfoSlot, 0) &&
-		   UGameplayStatics::DoesSaveGameExist(DataSlot, 0);
+	return FFileAdapter::DoesFileExist(InfoSlot) &&
+		   FFileAdapter::DoesFileExist(DataSlot);
 }
 
 void USaveManager::GetAllSlotInfos(TArray<USlotInfo*>& SaveInfos, const bool SortByRecent)
@@ -279,8 +281,11 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 
 	const FString Card = GenerateSaveDataSlotName(InSaveInfo->Id);
 
-	USlotData* LoadedData = Cast<USlotData>(UGameplayStatics::LoadGameFromSlot(Card, 0));
+	USlotData* LoadedData = Cast<USlotData>(FFileAdapter::LoadFile(Card));
 
+	/**
+
+	*/
 	return LoadedData;
 }
 
@@ -334,7 +339,7 @@ bool USaveManager::SaveThumbnail(const int32 Slot, const int32 Width /*= 640*/, 
 
 USlotInfo* USaveManager::LoadInfoFromFile(const FString Name) const
 {
-	return Cast<USlotInfo>(UGameplayStatics::LoadGameFromSlot(Name, 0));
+	return Cast<USlotInfo>(FFileAdapter::LoadFile(Name));
 }
 
 void USaveManager::GetSlotFileNames(TArray<FString>& FoundFiles) const
@@ -579,3 +584,5 @@ USaveManager* USaveManager::GetSaveManager(const UObject* ContextObject)
 	}
 	return nullptr;
 }
+
+

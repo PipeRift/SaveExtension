@@ -25,4 +25,5 @@ USavePreset::USavePreset()
 	, bStoreControlRotation(true)
 	, AsyncMode(ESaveASyncMode::OnlySync)
 	, MaxFrameMs(5.f)
+	, bSaveAndLoadSublevels(true)
 {}

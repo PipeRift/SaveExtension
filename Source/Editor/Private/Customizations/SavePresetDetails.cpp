@@ -37,6 +37,7 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		IDetailCategoryBuilder& Category = DetailBuilder.EditCategory(TEXT("Asynchronous"));
 		Category.AddProperty(TEXT("AsyncMode"));
 		Category.AddCustomRow(LOCTEXT("AsyncWarning", "Asynchronous Warning"))
+		.Visibility({ this, &FSavePresetDetails::GetWarningVisibility })
 		.ValueContent()
 		.MinDesiredWidth(300.f)
 		.MaxDesiredWidth(400.f)
@@ -45,7 +46,6 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 			.Padding(2.f)
 			.BorderImage(FEditorStyle::GetBrush("ErrorReporting.EmptyBox"))
 			.BorderBackgroundColor(this, &FSavePresetDetails::GetWarningColor)
-			.Visibility(this, &FSavePresetDetails::GetWarningVisibility)
 			[
 				SNew(STextBlock)
 				.Text(LOCTEXT("AsyncWarningText", "WARNING: Asynchronous loading or saving is not recommended while using Level Streaming or World Composition"))
@@ -54,6 +54,8 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		];
 
 		Category.AddProperty(TEXT("MaxFrameMs")).EditCondition({ this, &FSavePresetDetails::CanEditAsynchronous }, NULL);
+
+		DetailBuilder.EditCategory(TEXT("Level Streaming"));
 	}
 }
 

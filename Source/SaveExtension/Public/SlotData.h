@@ -91,10 +91,6 @@ struct FActorRecord : public FObjectRecord {
 		: Super(Actor)
 	{}
 
-
-	UPROPERTY(SaveGame)
-	FString Level;
-
 	UPROPERTY(SaveGame)
 	bool bHiddenInGame;
 

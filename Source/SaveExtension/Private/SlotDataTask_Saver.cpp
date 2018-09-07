@@ -15,6 +15,7 @@
 #include "SlotInfo.h"
 #include "SlotData.h"
 #include "SavePreset.h"
+#include "FileAdapter.h"
 
 
 /////////////////////////////////////////////////////
@@ -31,19 +32,19 @@ void USlotDataTask_Saver::OnStart()
 
 	//Overriding
 	{
-		const bool bInfoExists = UGameplayStatics::DoesSaveGameExist(InfoCard, 0);
-		const bool bDataExists = UGameplayStatics::DoesSaveGameExist(DataCard, 0);
+		const bool bInfoExists = FFileAdapter::DoesFileExist(InfoCard);
+		const bool bDataExists = FFileAdapter::DoesFileExist(DataCard);
 
 		if (bOverride)
 		{
 			// Delete previous save
 			if (bInfoExists)
 			{
-				UGameplayStatics::DeleteGameInSlot(InfoCard, 0);
+				FFileAdapter::DeleteFile(InfoCard);
 			}
 			if (bDataExists)
 			{
-				UGameplayStatics::DeleteGameInSlot(DataCard, 0);
+				FFileAdapter::DeleteFile(DataCard);
 			}
 		}
 		else
@@ -289,16 +290,6 @@ void USlotDataTask_Saver::SerializeGameInstance()
 	SE_LOG(Preset, "Game Instance '" + Record.Name.ToString() + "'", FColor::White, 1);
 }
 
-/*void FSaveDataSaver::SerializePlayerPawn(int32 PlayerId)
-{
-	auto* Pawn = UGameplayStatics::GetPlayerPawn(World, PlayerId);
-
-	FActorRecord& Record = SaveData->PlayerPawnRecord;
-	const bool bSuccess = SerializeActor(Pawn, Record);
-
-	SE_LOG(Preset, "Player Pawn '" + Record.Name.ToString() + "'", FColor::White, !bSuccess, 1);
-}*/
-
 bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Record)
 {
 	if (!ShouldSave(Actor))
@@ -306,7 +297,6 @@ bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Reco
 
 	//Clean the record
 	Record = { Actor };
-	Record.Level = Actor->GetLevel()->GetPathName();
 
 	if (SavesTags(Actor))
 	{
@@ -409,8 +399,8 @@ bool USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataN
 	USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 	USlotData* CurrentData = Manager->GetCurrentData();
 
-	if (UGameplayStatics::SaveGameToSlot(CurrentInfo, InfoName, 0) &&
-		UGameplayStatics::SaveGameToSlot(CurrentData, DataName, 0))
+	if (FFileAdapter::SaveFile(CurrentInfo, InfoName) &&
+		FFileAdapter::SaveFile(CurrentData, DataName))
 	{
 		return true;
 	}
