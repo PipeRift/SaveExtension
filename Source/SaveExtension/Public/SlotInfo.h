@@ -28,7 +28,7 @@ public:
 	UPROPERTY(Category = SaveExtension, BlueprintReadWrite)
 	FText Name;
 
-	/** 
+	/**
 	 * Subname of this slot
 	 * Could be used as the name of the place we are saving from. E.g Frozen Lands
 	 */
