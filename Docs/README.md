@@ -25,32 +25,30 @@ What I mean by this is that you usually wouldn't serialize a world for a mario g
 
 ## Supported Features
 
-##### Asynchronous Saving and Loading
-
-Loading and saving can run asynchronously, splitting the load between frames. <br>This states can be tracked and shown on UI.
-
-##### Level Streaming and World Composition
-
-Sublevels can be loaded and saved when they get streamed in or out. This allows games to keep the state of the levels even without saving the game.
-
-```
-If the player exists an area where 2 enemies were damaged, when he gets in again this enemies will keep their damaged state.
-```
-
-##### SaveGame tag saving
+#### SaveGame tag saving
 
 Any variable tagged as `SaveGame` will be saved.
 
-##### Full world serialization
+#### Full world serialization
 
 All actors in the world are susceptible to be saved.
 
 Only exceptions are for example StaticMeshActors
 
-##### Data Modularity
+#### Asynchronous Saving and Loading
+
+Loading and saving can run asynchronously, splitting the load between frames. <br>This states can be tracked and shown on UI.
+
+#### Level Streaming and World Composition
+
+Sublevels can be loaded and saved when they get streamed in or out. This allows games to keep the state of the levels even without saving the game.
+
+*If the player exists an area where 2 enemies were damaged, when he gets in again this enemies will keep their damaged state*
+
+#### Data Modularity
 
 All data is structured in the way that levels can be loaded at a minimum cost.
 
-##### Compression
+#### Compression
 
 Files can be compressed, getting up to 20 times smaller file sizes.
