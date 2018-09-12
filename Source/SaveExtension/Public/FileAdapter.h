@@ -10,7 +10,6 @@
 #include <PlatformFeatures.h>
 #include <ObjectAndNameAsStringProxyArchive.h>
 
-#include "CustomSaveGameSystem.h"
 #include "ISaveExtension.h"
 
 class USavePreset;

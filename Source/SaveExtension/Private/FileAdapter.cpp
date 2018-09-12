@@ -5,9 +5,10 @@
 #include <UObjectGlobals.h>
 #include <MemoryReader.h>
 #include <MemoryWriter.h>
+#include <SaveGameSystem.h>
 #include <ArchiveSaveCompressedProxy.h>
-#include "../Public/SavePreset.h"
 #include <ArchiveLoadCompressedProxy.h>
+#include "SavePreset.h"
 
 
 static const int UE4_SAVEGAME_FILE_TYPE_TAG = 0x53415647;		// "sAvG"
@@ -133,7 +134,7 @@ bool FFileAdapter::SaveFile(USaveGame* SaveGameObject, const FString& SlotName, 
 	check(Preset);
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_SaveFile);
 
-	FCustomSaveGameSystem* SaveSystem = ISaveExtension::Get().GetSaveSystem();
+	ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem();
 	// If we have a system and an object to save and a save name...
 	if (SaveSystem && SaveGameObject && !SlotName.IsEmpty())
 	{
@@ -166,7 +167,7 @@ bool FFileAdapter::SaveFile(USaveGame* SaveGameObject, const FString& SlotName, 
 		}
 
 		// Stuff that data into the save system with the desired file name
-		return SaveSystem->SaveGame(false, *SlotName, *ObjectBytesPtr);
+		return SaveSystem->SaveGame(false, *SlotName, 0, *ObjectBytesPtr);
 	}
 	return false;
 }
@@ -176,14 +177,14 @@ USaveGame* FFileAdapter::LoadFile(const FString& SlotName, const USavePreset* Pr
 	check(Preset);
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_LoadFile);
 
-	FCustomSaveGameSystem* SaveSystem = ISaveExtension::Get().GetSaveSystem();
+	ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem();
 	// If we have a save system and a valid name..
 	if (SaveSystem && !SlotName.IsEmpty())
 	{
 		// Load raw data from slot
 		TArray<uint8> ObjectBytes;
 
-		bool bSuccess = SaveSystem->LoadGame(false, *SlotName, ObjectBytes);
+		bool bSuccess = SaveSystem->LoadGame(false, *SlotName, 0, ObjectBytes);
 		if (bSuccess)
 		{
 			TArray<uint8> UncompressedBytes;
@@ -231,18 +232,18 @@ USaveGame* FFileAdapter::LoadFile(const FString& SlotName, const USavePreset* Pr
 
 bool FFileAdapter::DeleteFile(const FString& SlotName)
 {
-	if (FCustomSaveGameSystem* SaveSystem = ISaveExtension::Get().GetSaveSystem())
+	if (ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem())
 	{
-		return SaveSystem->DeleteGame(false, *SlotName);
+		return SaveSystem->DeleteGame(false, *SlotName, 0);
 	}
 	return false;
 }
 
 bool FFileAdapter::DoesFileExist(const FString& SlotName)
 {
-	if (FCustomSaveGameSystem* SaveSystem = ISaveExtension::Get().GetSaveSystem())
+	if (ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem())
 	{
-		return SaveSystem->DoesSaveGameExist(*SlotName);
+		return SaveSystem->DoesSaveGameExist(*SlotName, 0);
 	}
 	return false;
 }

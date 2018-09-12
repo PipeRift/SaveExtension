@@ -108,7 +108,7 @@ public:
 	bool ReloadCurrentSlot() { return CurrentInfo ? LoadSlot(CurrentInfo->Id) : false; }
 
 	/** Delete a saved game on an specified slot */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
 	bool DeleteSlot(int32 Slot);
 
 
