@@ -22,7 +22,7 @@ Slot Infos are also used directly to load or save games. You can load all availa
 
 
 
- ![Get All Slot Infos](D:/Piperift/Marketplace/SaveExtensionDemo/Plugins/SaveExtension/Docs/documentation/img/get_all_slot_infos.png)
+ ![Get All Slot Infos](img/get_all_slot_infos.png)
 
 ### Custom Slot Infos
 

@@ -1,4 +1,4 @@
 @echo off
 cd ..
-call gulp refresh-summary
+call node ./node_modules/gulp-cli/bin/gulp.js refresh-summary
 pause
