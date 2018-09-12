@@ -51,6 +51,10 @@ public:
 	UPROPERTY(Category = SlotInfo, BlueprintReadOnly)
 	FDateTime SaveDate;
 
+	/** Date at which this slot was loaded. */
+	UPROPERTY(Category = SlotInfo, Transient, BlueprintReadOnly)
+	FDateTime LoadDate;
+
 	/** Opened level when this Slot was saved. Streaming levels wont count, only root levels. */
 	UPROPERTY(Category = SlotInfo, BlueprintReadOnly)
 	FName Map;

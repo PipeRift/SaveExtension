@@ -64,6 +64,7 @@ void USlotDataTask_Saver::OnStart()
 
 		check(CurrentInfo && SlotData);
 
+		const bool bSlotWasDifferent = CurrentInfo->Id != Slot;
 		CurrentInfo->Id = Slot;
 
 		if (bSaveThumbnail)
@@ -71,11 +72,31 @@ void USlotDataTask_Saver::OnStart()
 			CurrentInfo->SaveThumbnail(Width, Height);
 		}
 
+		// Time stats
+		{
+			CurrentInfo->SaveDate = FDateTime::Now();
 
-		//Save Time related stats
-		CurrentInfo->TotalPlayedTime += (FDateTime::Now() - CurrentInfo->SaveDate); // FIX: Now - Loaded Date, not Saved Date
-																					// TODO: Save SlotPlayedTime
-		CurrentInfo->SaveDate = FDateTime::Now();
+			// If this info has been loaded ever
+			const bool bWasLoaded = CurrentInfo->LoadDate.GetTicks() > 0;
+			if (bWasLoaded)
+			{
+				// Now - Loaded
+				const FTimespan SessionTime = CurrentInfo->SaveDate - CurrentInfo->LoadDate;
+
+				CurrentInfo->TotalPlayedTime += SessionTime;
+
+				if (!bSlotWasDifferent)
+					CurrentInfo->SlotPlayedTime += SessionTime;
+				else
+					CurrentInfo->SlotPlayedTime = SessionTime;
+			}
+			else
+			{
+				// Slot is new, played time is world seconds
+				CurrentInfo->TotalPlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
+				CurrentInfo->SlotPlayedTime = CurrentInfo->TotalPlayedTime;
+			}
+		}
 
 		//Save Level info in both files
 		CurrentInfo->Map = World->GetFName();

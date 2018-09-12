@@ -60,6 +60,10 @@ void USlotDataTask_Loader::OnMapLoaded()
 
 void USlotDataTask_Loader::AfterMapValidation()
 {
+	check(NewSlotInfo);
+
+	NewSlotInfo->LoadDate = FDateTime::Now();
+
 	USaveManager* Manager = GetManager();
 	SlotData = Manager->LoadData(NewSlotInfo);
 	if (!SlotData)
