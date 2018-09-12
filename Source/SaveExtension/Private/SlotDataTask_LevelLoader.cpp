@@ -22,7 +22,7 @@ void USlotDataTask_LevelLoader::OnStart()
 		}
 		return;
 	}
-	Finish();
+	Finish(false);
 }
 
 void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
@@ -30,7 +30,7 @@ void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 	FLevelRecord * LevelRecord = FindLevelRecord(CurrentSLevel.Get());
 	if (!LevelRecord)
 	{
-		Finish();
+		Finish(false);
 		return;
 	}
 

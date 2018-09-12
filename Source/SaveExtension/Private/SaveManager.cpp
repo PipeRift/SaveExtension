@@ -7,12 +7,8 @@
 #include "Engine/GameViewportClient.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/LocalPlayer.h"
-#include "Engine/Texture2D.h"
 #include "GameFramework/GameModeBase.h"
 #include "HighResScreenshot.h"
-#include "IImageWrapper.h"
-#include "IImageWrapperModule.h"
-#include "FileHelper.h"
 #include "Paths.h"
 
 #include <GameDelegates.h>
@@ -55,7 +51,7 @@ void USaveManager::Shutdown()
 	MarkPendingKill();
 }
 
-bool USaveManager::SaveGameToSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
+bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
 {
 	if (!CanLoadOrSave())
 		return false;
@@ -77,17 +73,15 @@ bool USaveManager::SaveGameToSlot(int32 SlotId, bool bOverrideIfNeeded, bool bSc
 	UWorld* World = GetWorld();
 	check(World);
 
-	//TODO: Check for task errors
-	CreateSaver()->Setup(SlotId, bOverrideIfNeeded)->Start();
+	//Launch task, always fail if it didn't finish or wasn't scheduled
+	const auto* Task = CreateSaver()->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Width, Height)->Start();
+	bSuccess = Task->IsSucceeded() || Task->IsScheduled();
 
-	SE_LOG(Preset, "Finished Saving", FColor::Green);
-
-	bSuccess = !bScreenshot || SaveThumbnail(SlotId, Width, Height);
 	OnSaveFinished(!bSuccess);
 	return bSuccess;
 }
 
-bool USaveManager::LoadGame(int32 Slot)
+bool USaveManager::LoadSlot(int32 Slot)
 {
 	if (!CanLoadOrSave())
 		return false;
@@ -99,15 +93,11 @@ bool USaveManager::LoadGame(int32 Slot)
 
 	TryInstantiateInfo();
 
-	const USavePreset* Preset = GetPreset();
-	SE_LOG(Preset, "Loading from Slot " + FString::FromInt(Slot));
-
-	CreateLoader()->Setup(Slot)->Start();
-
-	return true;
+	auto* Task = CreateLoader()->Setup(Slot)->Start();
+	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
-bool USaveManager::DeleteGame(int32 SlotId)
+bool USaveManager::DeleteSlot(int32 SlotId)
 {
 	if (!IsValidSlot(SlotId))
 		return false;
@@ -116,43 +106,6 @@ bool USaveManager::DeleteGame(int32 SlotId)
 	const FString DataSlot = GenerateSaveDataSlotName(SlotId);
 	return FFileAdapter::DeleteFile(InfoSlot) ||
 		   FFileAdapter::DeleteFile(DataSlot);
-}
-
-UTexture2D* USaveManager::LoadThumbnail(int32 Slot)
-{
-	if (!GEngine || !IsValidSlot(Slot))
-		return nullptr;
-
-	USlotInfo* FoundInfo = LoadInfo(Slot);
-	if (!FoundInfo || FoundInfo->ThumbnailPath.IsEmpty())
-		return nullptr;
-
-	FString Thumbnail = FoundInfo->ThumbnailPath;
-
-	// Load thumbnail as Texture2D
-	UTexture2D* Texture{ nullptr };
-	TArray<uint8> RawFileData;
-	if (FFileHelper::LoadFileToArray(RawFileData, *Thumbnail))
-	{
-		IImageWrapperModule & ImageWrapperModule = FModuleManager::LoadModuleChecked < IImageWrapperModule >(FName("ImageWrapper"));
-		TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
-		if (FFileHelper::LoadFileToArray(RawFileData, *Thumbnail))
-		{
-			if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num()))
-			{
-				const TArray<uint8>* UncompressedBGRA = nullptr;
-				if (ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA))
-				{
-					Texture = UTexture2D::CreateTransient(ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), PF_B8G8R8A8);
-					void* TextureData = Texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-					FMemory::Memcpy(TextureData, UncompressedBGRA->GetData(), UncompressedBGRA->Num());
-					Texture->PlatformData->Mips[0].BulkData.Unlock();
-					Texture->UpdateResource();
-				}
-			}
-		}
-	}
-	return Texture;
 }
 
 bool USaveManager::IsSlotSaved(int32 SlotId) const
@@ -282,54 +235,6 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 	const FString Card = GenerateSaveDataSlotName(InSaveInfo->Id);
 
 	return Cast<USlotData>(FFileAdapter::LoadFile(Card, GetPreset()));
-}
-
-bool USaveManager::SaveThumbnail(const int32 Slot, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
-{
-	if (!GEngine || !IsValidSlot(Slot))
-	{
-		return false;
-	}
-
-	TryInstantiateInfo();
-
-	//Last thumbnail if existing
-	FString Thumbnail = CurrentInfo->ThumbnailPath;
-
-	FHighResScreenshotConfig& HighResScreenshotConfig = GetHighResScreenshotConfig();
-	UGameViewportClient* GameViewport = GEngine->GameViewport;
-
-	if (!GameViewport)
-	{
-		return false;
-	}
-
-	HighResScreenshotConfig.SetHDRCapture(false);
-	FViewport * Viewport = GameViewport->Viewport;
-	if (Viewport)
-	{
-		FString Previous = Thumbnail;
-
-		IFileManager* FM = &IFileManager::Get();
-
-		if (Previous.Len() > 0 && FM->FileExists(*Previous))
-		{
-			FM->Delete(*Previous, false, true, true);
-		}
-
-		Thumbnail = FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), Slot, *FString("SaveScreenshot"), TEXT("png"));
-
-		//Set Screenshot path
-		HighResScreenshotConfig.FilenameOverride = Thumbnail;
-		//Set Screenshot Resolution
-		GScreenshotResolutionX = Width;
-		GScreenshotResolutionY = Height;
-		Viewport->TakeHighResScreenShot();
-
-		CurrentInfo->ThumbnailPath = Thumbnail;
-	}
-
-	return true;
 }
 
 USlotInfo* USaveManager::LoadInfoFromFile(const FString Name) const

@@ -23,11 +23,13 @@ void USlotDataTask_Loader::OnStart()
 {
 	USaveManager* Manager = GetManager();
 
+	SE_LOG(Preset, "Loading from Slot " + FString::FromInt(Slot));
+
 	NewSlotInfo = Manager->LoadInfo(Slot);
 	if (!NewSlotInfo)
 	{
 		SE_LOG(Preset, "Slot Info not found! Can't load.", FColor::White, true, 1);
-		Finish();
+		Finish(false);
 		return;
 	}
 
@@ -62,7 +64,7 @@ void USlotDataTask_Loader::AfterMapValidation()
 	SlotData = Manager->LoadData(NewSlotInfo);
 	if (!SlotData)
 	{
-		Finish();
+		Finish(false);
 		return;
 	}
 
@@ -170,7 +172,7 @@ void USlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStreaming*
 
 	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
 	if (!LevelRecord) {
-		Finish();
+		Finish(false);
 		return;
 	}
 
@@ -239,7 +241,7 @@ void USlotDataTask_Loader::FinishedDeserializing()
 	// Clean serialization data
 	SlotData->Clean(true);
 	GetManager()->CurrentData = SlotData;
-	Finish();
+	Finish(true);
 
 	SE_LOG(Preset, "Finished Loading", FColor::Green, false, 2);
 }

@@ -66,6 +66,12 @@ void USlotDataTask_Saver::OnStart()
 
 		CurrentInfo->Id = Slot;
 
+		if (bSaveThumbnail)
+		{
+			CurrentInfo->SaveThumbnail(Width, Height);
+		}
+
+
 		//Save Time related stats
 		CurrentInfo->TotalPlayedTime += (FDateTime::Now() - CurrentInfo->SaveDate); // FIX: Now - Loaded Date, not Saved Date
 																					// TODO: Save SlotPlayedTime
@@ -80,8 +86,10 @@ void USlotDataTask_Saver::OnStart()
 
 		// Clean serialization data
 		SlotData->Clean(true);
+
+		SE_LOG(Preset, "Finished Saving", FColor::Green);
 	}
-	Finish();
+	Finish(bSave);
 }
 
 void USlotDataTask_Saver::SerializeSync()

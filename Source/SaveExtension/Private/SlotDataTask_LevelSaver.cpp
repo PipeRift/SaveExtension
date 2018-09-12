@@ -14,5 +14,5 @@ void USlotDataTask_LevelSaver::OnStart()
 		//TODO: With async tasks Serializelevel will take charge of finishing
 		//return;
 	}
-	Finish();
+	Finish(true);
 }

@@ -6,7 +6,6 @@
 #include <PlatformFilemanager.h>
 #include <GenericPlatformFile.h>
 #include <Engine/GameInstance.h>
-#include <Queue.h>
 
 #include "SlotInfo.h"
 #include "SlotData.h"
@@ -79,46 +78,39 @@ public:
 
 	/** Save the Game into an specified Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = 2))
-	bool SaveGameToSlot(int32 Slot = 0, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360);
+	bool SaveSlot(int32 Slot = 0, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360);
 
 	/** Save the Game to a Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = 2))
-	FORCEINLINE bool SaveGameFromInfo(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360) {
+	FORCEINLINE bool SaveSlotFromInfo(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360) {
 		if (!SlotInfo) return false;
-		return SaveGameToSlot(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Width, Height);
+		return SaveSlot(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Width, Height);
 	}
 
 	/** Save the currently loaded Slot */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Saving", meta = (AdvancedDisplay = 1))
 	bool SaveCurrentSlot(bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360) {
-		return CurrentInfo ? SaveGameToSlot(CurrentInfo->Id, true, bScreenshot, Width, Height) : false;
+		return CurrentInfo ? SaveSlot(CurrentInfo->Id, true, bScreenshot, Width, Height) : false;
 	}
 
 	/** Load an specified Slot */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	bool LoadGame(int32 Slot = 0);
+	bool LoadSlot(int32 Slot = 0);
 
 	/** Load the Game from a Slot. */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	FORCEINLINE bool LoadGameFromInfo(const USlotInfo* SlotInfo) {
-		return SlotInfo ? LoadGame(SlotInfo->Id) : false;
+	FORCEINLINE bool LoadSlotFromInfo(const USlotInfo* SlotInfo) {
+		return SlotInfo ? LoadSlot(SlotInfo->Id) : false;
 	}
 
 	/** Reload the currently loaded slot */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	bool ReloadCurrentSlot() { return CurrentInfo ? LoadGame(CurrentInfo->Id) : false; }
+	bool ReloadCurrentSlot() { return CurrentInfo ? LoadSlot(CurrentInfo->Id) : false; }
 
 	/** Delete a saved game on an specified slot */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	bool DeleteGame(int32 Slot);
+	bool DeleteSlot(int32 Slot);
 
-	/** Returns given slot's loaded thumbnail */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading", meta = (DisplayName = "Load Game Screenshot"))
-	UTexture2D* LoadThumbnail(int32 Slot);
-
-	/** Check if an slot is saved on disk*/
-	UFUNCTION(Category = "SaveExtension|Other", BlueprintPure)
-	bool IsSlotSaved(int32 Slot) const;
 
 	/** @return the current SlotInfo. Will usually come from the last loaded slot */
 	UFUNCTION(Category = "SaveExtension|Other", BlueprintPure)
@@ -134,18 +126,42 @@ public:
 		return CurrentData;
 	}
 
-	/** @return the SlotInfo associated with an slot */
-	UFUNCTION(Category = "SaveExtension|Loading", BlueprintCallable)
-	FORCEINLINE USlotInfo* GetInfoFromSlot(int32 SlotId) {
-		return LoadInfo(SlotId);
-	}
+	/**
+	 * @param SlotId Id of the slotInfo to be loaded
+	 * @return the SlotInfo associated with an slot
+	 */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
+	FORCEINLINE USlotInfo* GetSlotInfo(int32 SlotId) { return LoadInfo(SlotId); }
 
-	UFUNCTION(Category = "SaveExtension|Loading", BlueprintCallable)
-	void GetAllSlotInfos(TArray<USlotInfo*>& SaveInfos, const bool SortByRecent = false);
+	/**
+	 * Find all saved games on disk. May be expensive, use with care.
+	 * @param SaveInfos All saved games found on disk
+	 * @param bSortByRecent Should slots be ordered by save date?
+	 */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
+	void GetAllSlotInfos(TArray<USlotInfo*>& SaveInfos, const bool bSortByRecent = false);
 
-	/** @return true if playing in an active slot */
-	UFUNCTION(Category = "SaveExtension", BlueprintPure)
+	/** Check if an slot exists on disk
+	* @return true if the slot exists
+	*/
+	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
+	bool IsSlotSaved(int32 Slot) const;
+
+	/** @return true if currently playing in a saved slot */
+	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
+
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
+	bool SetActivePreset(TAssetPtr<USavePreset> ActivePreset)
+	{
+		// We can only change a preset if we have no tasks running
+		if (!HasTasks())
+		{
+			PresetAsset = ActivePreset;
+			return true;
+		}
+		return false;
+	}
 
 	const USavePreset* GetPreset() const {
 		if (!PresetAsset.IsNull())
@@ -154,6 +170,7 @@ public:
 		}
 		return GetDefault<USavePreset>();
 	}
+
 
 	void TryInstantiateInfo(bool bForced = false);
 
@@ -188,19 +205,17 @@ private:
 	USlotInfo* LoadInfo(uint32 Slot) const;
 	USlotData* LoadData(const USlotInfo* Info) const;
 
-	/** Saves a thumbnail for the current slot */
-	bool SaveThumbnail(const int32 Slot, const int32 Width = 640, const int32 Height = 360);
-
 	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
 		const int32 MaxSlots = GetPreset()->GetMaxSlots();
 		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
 	}
 
 	USlotInfo* LoadInfoFromFile(const FString Name) const;
+
 	void GetSlotFileNames(TArray<FString>& FoundFiles) const;
 
-
 	void OnLevelLoaded(ULevelStreaming* StreamingLevel) {}
+
 
 	//~ Begin Tasks
 	UPROPERTY(Transient)
@@ -213,7 +228,10 @@ private:
 	USlotDataTask* CreateTask(UClass* TaskType);
 
 	void FinishTask(USlotDataTask* Task);
+
+	bool HasTasks() const { return Tasks.Num(); }
 	//~ End Tasks
+
 
 	//~ Begin Tickable Object Interface
 	virtual void Tick(float DeltaTime) override;

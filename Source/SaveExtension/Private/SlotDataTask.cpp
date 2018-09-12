@@ -27,7 +27,7 @@ const FName USlotDataTask::TagNoComponents{ "!SaveComponents" };
 const FName USlotDataTask::TagNoTags{ "!SaveTags" };
 
 
-void USlotDataTask::Start()
+USlotDataTask* USlotDataTask::Start()
 {
 	const USaveManager* Manager = GetManager();
 
@@ -37,16 +37,24 @@ void USlotDataTask::Start()
 		bRunning = true;
 		OnStart();
 	}
+	return this;
 }
 
-void USlotDataTask::Finish()
+void USlotDataTask::Finish(bool bInSuccess)
 {
 	if (bRunning)
 	{
 		OnFinish();
 		MarkPendingKill();
 		GetManager()->FinishTask(this);
+		bFinished = true;
+		bSuccess = bInSuccess;
 	}
+}
+
+bool USlotDataTask::IsScheduled() const
+{
+	return GetManager()->Tasks.Contains(this);
 }
 
 UWorld* USlotDataTask::GetWorld() const

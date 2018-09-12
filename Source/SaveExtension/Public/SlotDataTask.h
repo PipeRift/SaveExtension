@@ -36,7 +36,9 @@ class USlotDataTask : public UObject
 	static const FName TagNoTags;
 
 
-	bool bRunning;
+	uint8 bRunning : 1;
+	uint8 bFinished : 1;
+	uint8 bSuccess : 1;
 
 protected:
 
@@ -55,7 +57,7 @@ protected:
 
 public:
 
-	USlotDataTask() : Super(), bRunning(false) {}
+	USlotDataTask() : Super(), bRunning(false), bFinished(false) {}
 
 	void Prepare(USlotData* InSaveData, UWorld* InWorld, const USavePreset* InPreset)
 	{
@@ -65,13 +67,17 @@ public:
 		MaxFrameMs = Preset? Preset->GetMaxFrameMs() : 5.f;
 	}
 
-	void Start();
+	USlotDataTask* Start();
 
 	virtual void Tick(float DeltaTime) {}
 
-	void Finish();
+	void Finish(bool bInSuccess);
 
-	bool IsRunning() const { return bRunning; }
+	bool IsRunning() const  { return bRunning;  }
+	bool IsFinished() const { return bFinished; }
+	bool IsSucceeded() const  { return IsFinished() && bSuccess;  }
+	bool IsFailed() const     { return IsFinished() && !bSuccess; }
+	bool IsScheduled() const;
 
 	virtual void OnTick(float DeltaTime) {}
 

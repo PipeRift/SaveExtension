@@ -26,8 +26,11 @@ class USlotDataTask_Saver : public USlotDataTask
 {
 	GENERATED_BODY()
 
-	int32 Slot;
 	bool bOverride;
+	bool bSaveThumbnail;
+	int32 Slot;
+	int32 Width;
+	int32 Height;
 
 protected:
 
@@ -41,10 +44,13 @@ protected:
 
 public:
 
-	auto Setup(int32 InSlot, bool bInOverride)
+	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
 	{
 		Slot = InSlot;
 		bOverride = bInOverride;
+		bSaveThumbnail = bInSaveThumbnail;
+		Width = InWidth;
+		Height = InHeight;
 		return this;
 	}
 
