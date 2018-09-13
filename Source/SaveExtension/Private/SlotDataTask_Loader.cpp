@@ -242,7 +242,7 @@ void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 
 void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord& LevelRecord)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelPrepare);
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_PrepareLevel);
 
 	// Records not contained in Scene Actors		 => Actors to be Respawned
 	// Scene Actors not contained in loaded records  => Actors to be Destroyed
@@ -286,10 +286,12 @@ void USlotDataTask_Loader::FinishedDeserializing()
 
 void USlotDataTask_Loader::PrepareAllLevels()
 {
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_PrepareAllLevels);
+
 	// Prepare Main level
 	PrepareLevel(World->GetCurrentLevel(), SlotData->MainLevel);
 
-	// Prepare other loaded sublevels
+	// Prepare other loaded sub-levels
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 	for (const ULevelStreaming* Level : Levels)
 	{
