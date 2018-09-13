@@ -327,35 +327,41 @@ bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Reco
 	//Clean the record
 	Record = { Actor };
 
+	Record.bHiddenInGame = Actor->bHidden;
+	Record.bIsProcedural = IsProcedural(Actor);
+
 	if (SavesTags(Actor))
 	{
 		Record.Tags = Actor->Tags;
 	}
 
-	if (SavesTransform(Actor))
+	const bool bSavesPhysics = SavesPhysics(Actor);
+	if (SavesTransform(Actor) || bSavesPhysics)
 	{
 		Record.Transform = Actor->GetTransform();
 	}
 
-	Record.bHiddenInGame = Actor->bHidden;
-	Record.bIsProcedural = IsProcedural(Actor);
-
-	if (SavesPhysics(Actor))
+	if (bSavesPhysics)
 	{
-		auto* Root = Actor->GetRootComponent();
-		if (Root)
+		USceneComponent* const Root = Actor->GetRootComponent();
+		if (Root && Root->Mobility == EComponentMobility::Movable)
 		{
-			Record.LinearVelocity = Root->GetComponentVelocity();
-
-			auto* Primitive = Cast<UPrimitiveComponent>(Root);
-			if (Primitive)
+			if (auto* const Primitive = Cast<UPrimitiveComponent>(Root))
 			{
-				Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInDegrees();
+				Record.LinearVelocity = Primitive->GetPhysicsLinearVelocity();
+				Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInRadians();
+			}
+			else
+			{
+				Record.LinearVelocity = Root->GetComponentVelocity();
 			}
 		}
 	}
 
-	SerializeActorComponents(Actor, Record, 1);
+	if (SavesComponents(Actor))
+	{
+		SerializeActorComponents(Actor, Record, 1);
+	}
 
 	FMemoryWriter MemoryWriter(Record.Data, true);
 	FSaveExtensionArchive Archive(MemoryWriter, false);
@@ -380,9 +386,6 @@ bool USlotDataTask_Saver::SerializeController(const AController* Actor, FControl
 
 void USlotDataTask_Saver::SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 Indent)
 {
-	if (!SavesComponents(Actor))
-		return;
-
 	const TSet<UActorComponent*>& Components = Actor->GetComponents();
 	for (auto* Component : Components)
 	{
