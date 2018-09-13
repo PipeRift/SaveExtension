@@ -114,11 +114,13 @@ void USlotDataTask_Loader::DeserializeSync()
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeSync);
 
+	check(World);
+	SE_LOG(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+
+	PrepareAllLevels();
+
 	// Deserialize world
 	{
-		check(World);
-		SE_LOG(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
-
 		DeserializeLevelSync(World->GetCurrentLevel());
 
 		const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
@@ -148,8 +150,6 @@ void USlotDataTask_Loader::DeserializeLevelSync(const ULevel* Level, const ULeve
 	if (!LevelRecord)
 		return;
 
-	DeserializeLevelPrepare(Level, *LevelRecord);
-
 	for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 	{
 		DeserializeLevel_Actor(*ActorItr, *LevelRecord);
@@ -162,6 +162,8 @@ void USlotDataTask_Loader::DeserializeASync()
 	{
 		check(World);
 		SE_LOG(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+
+		PrepareAllLevels();
 
 		DeserializeLevelASync(World->GetCurrentLevel());
 	}
@@ -181,8 +183,6 @@ void USlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStreaming*
 	}
 
 	const float StartMS = GetTimeMilliseconds();
-
-	DeserializeLevelPrepare(Level, *LevelRecord);
 
 	CurrentLevel = Level;
 	CurrentSLevel = StreamingLevel;
@@ -240,6 +240,40 @@ void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 	FinishedDeserializing();
 }
 
+void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord& LevelRecord)
+{
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelPrepare);
+
+	// Records not contained in Scene Actors		 => Actors to be Respawned
+	// Scene Actors not contained in loaded records  => Actors to be Destroyed
+	// The rest									     => Just deserialize
+
+	TArray<FActorRecord> RecordsToSpawn = LevelRecord.Actors;
+	TArray<AActor*> ActorsToDestroy{};
+	{
+		// O(M*Log(N))
+		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
+		{
+			AActor* Actor{ *ActorItr };
+			if (Actor)
+			{
+				// Remove records which actors do exist
+				const bool bFoundRecord = RecordsToSpawn.RemoveSingleSwap(Actor, false);
+
+				if (!bFoundRecord && ShouldSaveAsWorld(Actor))
+				{
+					// If the actor wasn't found, mark it for destruction
+					Actor->Destroy();
+				}
+			}
+		}
+		RecordsToSpawn.Shrink();
+	}
+
+	// Create Actors that doesn't exist now but were saved
+	RespawnActors(RecordsToSpawn, Level);
+}
+
 void USlotDataTask_Loader::FinishedDeserializing()
 {
 	// Clean serialization data
@@ -248,6 +282,26 @@ void USlotDataTask_Loader::FinishedDeserializing()
 	Finish(true);
 
 	SE_LOG(Preset, "Finished Loading", FColor::Green, false, 2);
+}
+
+void USlotDataTask_Loader::PrepareAllLevels()
+{
+	// Prepare Main level
+	PrepareLevel(World->GetCurrentLevel(), SlotData->MainLevel);
+
+	// Prepare other loaded sublevels
+	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
+	for (const ULevelStreaming* Level : Levels)
+	{
+		if (Level->IsLevelLoaded())
+		{
+			const FLevelRecord* LevelRecord = FindLevelRecord(Level);
+			if (LevelRecord)
+			{
+				PrepareLevel(Level->GetLoadedLevel(), *LevelRecord);
+			}
+		}
+	}
 }
 
 void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, const ULevel* Level)
@@ -281,45 +335,6 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, co
 			}
 		}
 	}
-}
-
-void USlotDataTask_Loader::DeserializeLevelPrepare(const ULevel* Level, const FLevelRecord& LevelRecord)
-{
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelPrepare);
-
-	// Records not contained in Scene Actors		 => Actors to be Respawned
-	// Scene Actors not contained in loaded records  => Actors to be Destroyed
-	// The rest									     => Just deserialize
-
-	TArray<FActorRecord> RecordsToSpawn = LevelRecord.Actors;
-
-	TArray<AActor*> ActorsToDestroy {};
-
-	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelPrepare_Loop);
-
-		// O(M*Log(N))
-		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
-		{
-			AActor* Actor{ *ActorItr };
-			if (Actor)
-			{
-				// Remove records which actors do exist
-				const bool bFoundRecord = RecordsToSpawn.RemoveSingleSwap(Actor, false);
-
-				if (!bFoundRecord && ShouldSaveAsWorld(Actor))
-				{
-					// If the actor wasn't found, mark it for destruction
-					Actor->Destroy();
-				}
-			}
-		}
-
-		RecordsToSpawn.Shrink();
-	}
-
-	// Create Actors that doesn't exist now but were saved
-	RespawnActors(RecordsToSpawn, Level);
 }
 
 void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* Actor, const FLevelRecord& LevelRecord)

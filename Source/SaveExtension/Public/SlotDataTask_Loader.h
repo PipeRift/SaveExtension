@@ -84,7 +84,8 @@ protected:
 
 	void FinishedDeserializing();
 
-	void DeserializeLevelPrepare(const ULevel* Level, const FLevelRecord& LevelRecord);
+	void PrepareAllLevels();
+	void PrepareLevel(const ULevel* Level, const FLevelRecord& LevelRecord);
 
 	/** Deserializes all Level actors. */
 	void DeserializeLevel_Actor(AActor* Actor, const FLevelRecord& LevelRecord);
