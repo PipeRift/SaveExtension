@@ -15,6 +15,7 @@ namespace UnrealBuildTool.Rules
 					"Core",
 					"Engine",
 					"CoreUObject",
+                    "Kismet",
 					"SaveExtension"
 				}
 			);

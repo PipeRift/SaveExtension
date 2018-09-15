@@ -20,11 +20,11 @@
 // USaveDataTask
 
 const FName USlotDataTask::TagNoSave{ "!Save" };
-const FName USlotDataTask::TagTransform{ "SaveTransform" };
 const FName USlotDataTask::TagNoTransform{ "!SaveTransform" };
-const FName USlotDataTask::TagNoPhysics{ "!SavePhysics" };
 const FName USlotDataTask::TagNoComponents{ "!SaveComponents" };
+const FName USlotDataTask::TagNoPhysics{ "!SavePhysics" };
 const FName USlotDataTask::TagNoTags{ "!SaveTags" };
+const FName USlotDataTask::TagTransform{ "SaveTransform" };
 
 
 USlotDataTask* USlotDataTask::Start()
@@ -55,6 +55,11 @@ void USlotDataTask::Finish(bool bInSuccess)
 bool USlotDataTask::IsScheduled() const
 {
 	return GetManager()->Tasks.Contains(this);
+}
+
+USaveManager* USlotDataTask::GetManager() const
+{
+	return Cast<USaveManager>(GetOuter());
 }
 
 UWorld* USlotDataTask::GetWorld() const

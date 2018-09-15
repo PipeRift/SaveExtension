@@ -30,8 +30,14 @@ void FSaveExtensionEditor::StartupModule()
 	}
 
 	RegisterPropertyTypeCustomizations();
+
+	BlueprintEditorTabBinding = MakeShared<FSaveActorEditorTabBinding>();
 }
 
+void FSaveExtensionEditor::ShutdownModule()
+{
+	BlueprintEditorTabBinding = nullptr;
+}
 
 void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 {

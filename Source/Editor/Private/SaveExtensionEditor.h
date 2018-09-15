@@ -2,15 +2,62 @@
 
 #pragma once
 
-#include "PropertyEditorModule.h"
+#include <BlueprintEditorModule.h>
+#include <BlueprintEditorTabs.h>
+#include <LayoutExtender.h>
+#include <WorkflowTabManager.h>
+#include <PropertyEditorModule.h>
+#include <BlueprintEditorModes.h>
+
+#include "SaveActorEditorTabSummoner.h"
 #include "ISaveExtensionEditor.h"
 
+
+/** Shared class type that ensures safe binding to RegisterBlueprintEditorTab through an SP binding without interfering with module ownership semantics */
+class FSaveActorEditorTabBinding
+	: public TSharedFromThis<FSaveActorEditorTabBinding>
+{
+public:
+
+	FSaveActorEditorTabBinding()
+	{
+		FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
+		BlueprintEditorTabSpawnerHandle = BlueprintEditorModule.OnRegisterTabsForEditor().AddRaw(this, &FSaveActorEditorTabBinding::RegisterBlueprintEditorTab);
+		BlueprintEditorLayoutExtensionHandle = BlueprintEditorModule.OnRegisterLayoutExtensions().AddRaw(this, &FSaveActorEditorTabBinding::RegisterBlueprintEditorLayout);
+	}
+
+	void RegisterBlueprintEditorLayout(FLayoutExtender& Extender)
+	{
+		Extender.ExtendLayout(FBlueprintEditorTabs::MyBlueprintID, ELayoutExtensionPosition::After, FTabManager::FTab(FSaveActorEditorSummoner::TabName, ETabState::OpenedTab));
+	}
+
+	void RegisterBlueprintEditorTab(FWorkflowAllowedTabSet& TabFactories, FName InModeName, TSharedPtr<FBlueprintEditor> BlueprintEditor)
+	{
+		TabFactories.RegisterFactory(MakeShared<FSaveActorEditorSummoner>(BlueprintEditor));
+	}
+
+	~FSaveActorEditorTabBinding()
+	{
+		FBlueprintEditorModule* BlueprintEditorModule = FModuleManager::GetModulePtr<FBlueprintEditorModule>("Kismet");
+		if (BlueprintEditorModule)
+		{
+			BlueprintEditorModule->OnRegisterTabsForEditor().Remove(BlueprintEditorTabSpawnerHandle);
+			BlueprintEditorModule->OnRegisterLayoutExtensions().Remove(BlueprintEditorLayoutExtensionHandle);
+		}
+	}
+
+private:
+
+	/** Delegate binding handle for FBlueprintEditorModule::OnRegisterTabsForEditor */
+	FDelegateHandle BlueprintEditorTabSpawnerHandle, BlueprintEditorLayoutExtensionHandle;
+};
 
 class FSaveExtensionEditor : public ISaveExtensionEditor
 {
 public:
 
 	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
 
 private:
 
@@ -31,6 +78,9 @@ private:
 	* @param StructLayoutDelegate	The delegate to call to get the custom detail layout instance
 	*/
 	void RegisterCustomPropertyTypeLayout(FName PropertyTypeName, FOnGetPropertyTypeCustomizationInstance PropertyTypeLayoutDelegate);
+
+
+	TSharedPtr<FSaveActorEditorTabBinding> BlueprintEditorTabBinding;
 };
 
 IMPLEMENT_MODULE(FSaveExtensionEditor, SaveExtensionEditor);

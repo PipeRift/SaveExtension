@@ -27,14 +27,17 @@ class USlotDataTask : public UObject
 {
 	GENERATED_BODY()
 
+public:
 
 	static const FName TagNoSave;
-	static const FName TagTransform;
 	static const FName TagNoTransform;
-	static const FName TagNoPhysics;
 	static const FName TagNoComponents;
+	static const FName TagNoPhysics;
 	static const FName TagNoTags;
+	static const FName TagTransform;
 
+
+private:
 
 	uint8 bRunning : 1;
 	uint8 bFinished : 1;
@@ -87,9 +90,7 @@ protected:
 
 	virtual void OnFinish() {}
 
-	USaveManager* GetManager() const {
-		return Cast<USaveManager>(GetOuter());
-	}
+	USaveManager* GetManager() const;
 
 	//~ Begin UObject Interface
 	virtual UWorld* GetWorld() const override;
