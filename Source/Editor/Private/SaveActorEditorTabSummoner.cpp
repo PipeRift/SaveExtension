@@ -20,8 +20,8 @@
 const TArray<FTagInfo> SSaveActorEditorWidget::TagList
 {
 	{ TEXT("Save"),       TEXT("!Save"),           true,  LOCTEXT("save_tooltip", "Should this actor be saved?")   },
-	{ TEXT("Transform"),  TEXT("!SaveTransform"),  true, LOCTEXT("transform_tooltip", "Should save position, rotation and scale?") },
 	{ TEXT("Components"), TEXT("!SaveComponents"), true, LOCTEXT("components_tooltip", "Should save components?") },
+	{ TEXT("Transform"),  TEXT("!SaveTransform"),  true, LOCTEXT("transform_tooltip", "Should save position, rotation and scale?") },
 	{ TEXT("Physics"),    TEXT("!SavePhysics"),    true, LOCTEXT("physics_tooltip", "Should save physics?")       },
 	{ TEXT("Tags"),       TEXT("!SaveTags"),       true, LOCTEXT("tags_tooltip", "Should save tags?")             }
 };
@@ -37,9 +37,10 @@ void SSaveActorEditorWidget::Construct(const FArguments&, TWeakPtr<FBlueprintEdi
 	ChildSlot
 	.Padding(10)
 	[
-		SNew(SBorder)
-		.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
+		SNew(SVerticalBox)
 		.Visibility(this, &SSaveActorEditorWidget::GetContentVisibility)
+		+ SVerticalBox::Slot()
+		.AutoHeight().Padding(2)
 		[
 			GenerateSettingsWidget().ToSharedRef()
 		]
@@ -126,40 +127,83 @@ TSharedPtr<SWidget> SSaveActorEditorWidget::GenerateSettingsWidget()
 	AActor* Actor = GetDefaultActor();
 	if (Actor)
 	{
-		return SNew(SVerticalBox)
-		+ SVerticalBox::Slot()
-		.AutoHeight()
+		return SNew(SBorder)
+		.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
+		.Padding(0)
 		[
-			SettingItems[0]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.FillWidth(0.5f)
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(2)
 			[
-				SettingItems[1]
+				SettingItems[0]
 			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(0.5f)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(6)
 			[
-				SettingItems[2]
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.FillWidth(0.5f)
-			[
-				SettingItems[3]
-			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(0.5f)
-			[
-				SettingItems[4]
+				SNew(SBorder)
+				.BorderImage(FEditorStyle::GetBrush("Docking.Tab.ContentAreaBrush"))
+				.Padding(0)
+				.IsEnabled(this, &SSaveActorEditorWidget::IsSaveEnabled)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(FMargin{ 6, 2, 6, 1 })
+					[
+						SNew(SBorder)
+						.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
+						.Padding(0)
+						[
+							SettingItems[1]
+						]
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(FMargin{ 6, 1, 6, 1 })
+					[
+						SNew(SBorder)
+						.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
+						.Padding(0)
+						[
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							[
+								SettingItems[2]
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(6)
+							[
+								SNew(SBorder)
+								.BorderImage(FEditorStyle::GetBrush("Docking.Tab.ContentAreaBrush"))
+								.Padding(FMargin { 6, 2 })
+								.IsEnabled(this, &SSaveActorEditorWidget::IsTransformEnabled)
+								[
+									SNew(SBorder)
+									.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
+									.Padding(0)
+									[
+										SettingItems[3]
+									]
+								]
+							]
+						]
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(FMargin{ 6, 1, 6, 2 })
+					[
+						SNew(SBorder)
+						.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
+						.Padding(2)
+						[
+							SettingItems[4]
+						]
+					]
+				]
 			]
 		];
 	}

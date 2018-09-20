@@ -43,6 +43,21 @@ private:
 		return GetDefaultActor() ? EVisibility::Visible : EVisibility::Collapsed;
 	}
 
+	bool IsSaveEnabled() const {
+		if (AActor* actor = GetDefaultActor()) {
+			return !actor->ActorHasTag("!Save");
+		}
+		return false;
+	}
+
+	bool IsTransformEnabled() const {
+		if (AActor* actor = GetDefaultActor()) {
+			return !actor->ActorHasTag("!SaveTransform");
+		}
+		return false;
+	}
+
+
 	TWeakPtr<FBlueprintEditor> WeakBlueprintEditor;
 	TArray<TSharedRef<SSaveActorSettingsItem>> SettingItems;
 	bool bRefreshingVisuals;
