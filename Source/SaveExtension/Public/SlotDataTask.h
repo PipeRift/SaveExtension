@@ -36,6 +36,7 @@ public:
 	static const FName TagNoTags;
 	static const FName TagTransform;
 
+	static bool IsSaveTag(const FName& Tag);
 
 private:
 

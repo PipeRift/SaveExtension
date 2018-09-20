@@ -334,6 +334,17 @@ bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Reco
 	{
 		Record.Tags = Actor->Tags;
 	}
+	else
+	{
+		// Only save save-tags
+		for (const auto& Tag : Actor->Tags)
+		{
+			if (IsSaveTag(Tag))
+			{
+				Record.Tags.Add(Tag);
+			}
+		}
+	}
 
 	const bool bSavesPhysics = SavesPhysics(Actor);
 	if (SavesTransform(Actor) || bSavesPhysics)

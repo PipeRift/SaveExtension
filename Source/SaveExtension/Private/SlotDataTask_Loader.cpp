@@ -469,10 +469,8 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 		return false;
 	}
 
-	if (SavesTags(Actor))
-	{
-		Actor->Tags = Record.Tags;
-	}
+	// Always load saved tags
+	Actor->Tags = Record.Tags;
 
 	const bool bSavesPhysics = SavesPhysics(Actor);
 	if (SavesTransform(Actor) || bSavesPhysics)
