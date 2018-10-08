@@ -64,8 +64,6 @@ bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreensh
 	}
 
 	//Saving
-	bool bSuccess = true;
-
 	SE_LOG(Preset, "Saving to Slot " + FString::FromInt(SlotId));
 
 	UWorld* World = GetWorld();
@@ -73,9 +71,7 @@ bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreensh
 
 	//Launch task, always fail if it didn't finish or wasn't scheduled
 	const auto* Task = CreateSaver()->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Width, Height)->Start();
-	bSuccess = Task->IsSucceeded() || Task->IsScheduled();
-
-	return bSuccess;
+	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
 bool USaveManager::LoadSlot(int32 Slot)
