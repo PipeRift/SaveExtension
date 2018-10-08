@@ -322,25 +322,28 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, co
 	}
 }
 
-void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* Actor, const FLevelRecord& LevelRecord)
+void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* const Actor, const FLevelRecord& LevelRecord)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor);
-	
-	if (AAIController* const AI = Cast<AAIController>(Actor))
+
+	if (ShouldSave(Actor))
 	{
-		DeserializeAI(AI, LevelRecord);
-	}
-	else if (ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
-	{
-		DeserializeLevelScript(LevelScript, LevelRecord);
-	}
-	else if(ShouldSaveAsWorld(Actor))
-	{
-		// Find the record
-		const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
-		if (Record)
+		if (AAIController* const AI = Cast<AAIController>(Actor))
 		{
-			DeserializeActor(Actor, *Record);
+			DeserializeAI(AI, LevelRecord);
+		}
+		else if (ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
+		{
+			DeserializeLevelScript(LevelScript, LevelRecord);
+		}
+		else if (ShouldSaveAsWorld(Actor))
+		{
+			// Find the record
+			const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
+			if (Record)
+			{
+				DeserializeActor(Actor, *Record);
+			}
 		}
 	}
 }

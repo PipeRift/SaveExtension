@@ -74,33 +74,29 @@ UWorld* USlotDataTask::GetWorld() const
 
 bool USlotDataTask::ShouldSaveAsWorld(const AActor* Actor) const
 {
-	if (ShouldSave(Actor))
+	const UClass* const ActorClass = Actor->GetClass();
+	if (ActorClass == AStaticMeshActor::StaticClass() ||
+		ActorClass->IsChildOf<AInstancedFoliageActor>() ||
+		ActorClass->IsChildOf<AReflectionCapture>() ||
+		ActorClass->IsChildOf<APlayerController>() ||
+		ActorClass->IsChildOf<ALightmassPortal>() ||
+		ActorClass->IsChildOf<ANavigationData>() ||
+		ActorClass->IsChildOf<APlayerState>() ||
+		ActorClass->IsChildOf<AGameState>() ||
+		ActorClass->IsChildOf<AGameMode>() ||
+		ActorClass->IsChildOf<ALODActor>() ||
+		ActorClass->IsChildOf<ABrush>() ||
+		ActorClass->IsChildOf<AHUD>())
 	{
-		const UClass* const ActorClass = Actor->GetClass();
-		if (ActorClass == AStaticMeshActor::StaticClass() ||
-			ActorClass->IsChildOf<AInstancedFoliageActor>() ||
-			ActorClass->IsChildOf<AReflectionCapture>() ||
-			ActorClass->IsChildOf<APlayerController>() ||
-			ActorClass->IsChildOf<ALightmassPortal>() ||
-			ActorClass->IsChildOf<ANavigationData>() ||
-			ActorClass->IsChildOf<APlayerState>() ||
-			ActorClass->IsChildOf<AGameState>() ||
-			ActorClass->IsChildOf<AGameMode>() ||
-			ActorClass->IsChildOf<ALODActor>() ||
-			ActorClass->IsChildOf<ABrush>() ||
-			ActorClass->IsChildOf<AHUD>())
-		{
-			return false;
-		}
-
-		// Is a child class of our non serialized classes?
-		for (const auto& Class : Preset->IgnoredActors)
-		{
-			if (ActorClass->IsChildOf(Class))
-				return false;
-		}
-
-		return true;
+		return false;
 	}
-	return false;
+
+	// Is a child class of our non serialized classes?
+	for (const auto& Class : Preset->IgnoredActors)
+	{
+		if (ActorClass->IsChildOf(Class))
+			return false;
+	}
+
+	return true;
 }

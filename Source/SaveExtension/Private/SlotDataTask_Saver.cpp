@@ -188,22 +188,24 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const ULevelSt
 	for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 	{
 		const AActor* const Actor = *ActorItr;
+		if (ShouldSave(Actor))
+		{
+			if (const AAIController* const AI = Cast<AAIController>(Actor))
+			{
+				SerializeAI(AI, *LevelRecord);
+			}
+			else if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
+			{
+				SerializeLevelScript(LevelScript, *LevelRecord);
+			}
+			else if (ShouldSaveAsWorld(Actor))
+			{
+				FActorRecord Record;
+				SerializeActor(Actor, Record);
 
-		if (const AAIController* const AI = Cast<AAIController>(Actor))
-		{
-			SerializeAI(AI, *LevelRecord);
-		}
-		else if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
-		{
-			SerializeLevelScript(LevelScript, *LevelRecord);
-		}
-		else if (ShouldSaveAsWorld(Actor))
-		{
-			FActorRecord Record;
-			SerializeActor(Actor, Record);
-
-			// TODO: Reserve space
-			LevelRecord->Actors.Add(Record);
+				// TODO: Reserve space
+				LevelRecord->Actors.Add(Record);
+			}
 		}
 	}
 }
