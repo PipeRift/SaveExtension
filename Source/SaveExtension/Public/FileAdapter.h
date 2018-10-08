@@ -13,6 +13,8 @@
 #include "ISaveExtension.h"
 
 class USavePreset;
+class FMemoryReader;
+class FMemoryWriter;
 
 
 /** Based on GameplayStatics to add multi-threading */

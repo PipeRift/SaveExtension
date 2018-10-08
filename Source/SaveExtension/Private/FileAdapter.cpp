@@ -8,10 +8,11 @@
 #include <SaveGameSystem.h>
 #include <ArchiveSaveCompressedProxy.h>
 #include <ArchiveLoadCompressedProxy.h>
+
 #include "SavePreset.h"
 
 
-static const int UE4_SAVEGAME_FILE_TYPE_TAG = 0x53415647;		// "sAvG"
+static const int SE_SAVEGAME_FILE_TYPE_TAG = 0x0001;		// "sAvG"
 
 struct FSaveGameFileVersion
 {
@@ -40,7 +41,7 @@ FSaveFileHeader::FSaveFileHeader()
 {}
 
 FSaveFileHeader::FSaveFileHeader(TSubclassOf<USaveGame> ObjectType)
-	: FileTypeTag(UE4_SAVEGAME_FILE_TYPE_TAG)
+	: FileTypeTag(SE_SAVEGAME_FILE_TYPE_TAG)
 	, SaveGameFileVersion(FSaveGameFileVersion::LatestVersion)
 	, PackageFileUE4Version(GPackageFileUE4Version)
 	, SavedEngineVersion(FEngineVersion::Current())
@@ -71,7 +72,7 @@ void FSaveFileHeader::Read(FMemoryReader& MemoryReader)
 
 	MemoryReader << FileTypeTag;
 
-	if (FileTypeTag != UE4_SAVEGAME_FILE_TYPE_TAG)
+	if (FileTypeTag != SE_SAVEGAME_FILE_TYPE_TAG)
 	{
 		// this is an old saved game, back up the file pointer to the beginning and assume version 1
 		MemoryReader.Seek(0);
@@ -166,7 +167,7 @@ bool FFileAdapter::SaveFile(USaveGame* SaveGameObject, const FString& SlotName, 
 			Compressor.Close();
 		}
 
-		// Stuff that data into the save system with the desired file name
+		// Store that data into the save system with the desired file name
 		return SaveSystem->SaveGame(false, *SlotName, 0, *ObjectBytesPtr);
 	}
 	return false;

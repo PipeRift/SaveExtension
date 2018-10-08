@@ -88,12 +88,6 @@ bool USlotDataTask::ShouldSaveAsWorld(const AActor* Actor) const
 			return false;
 		}
 
-		// If not saving level bps
-		if (!Preset->bStoreLevelBlueprints && ActorClass->IsChildOf<ALevelScriptActor>())
-		{
-			return false;
-		}
-
 		// Is a child class of our non serialized classes?
 		for (const auto& Class : Preset->IgnoredActors)
 		{

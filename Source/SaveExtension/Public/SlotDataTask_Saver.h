@@ -41,7 +41,6 @@ protected:
 	int32 CurrentActorIndex;
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
 
-
 public:
 
 	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)

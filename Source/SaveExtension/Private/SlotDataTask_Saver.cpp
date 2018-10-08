@@ -7,6 +7,7 @@
 #include <GameFramework/GameModeBase.h>
 #include <GameFramework/GameStateBase.h>
 #include <GameFramework/PlayerController.h>
+#include <GameFramework/PlayerState.h>
 #include <GameFramework/HUD.h>
 #include <Serialization/MemoryWriter.h>
 #include <Components/CapsuleComponent.h>
@@ -180,35 +181,29 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const ULevelSt
 	}
 	check(LevelRecord);
 
-	// Empty level before we serialize
+	// Empty level record before we serialize into it
 	LevelRecord->Clean();
 
-
-	//All actors of a class
+	//All actors of the level
 	for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 	{
-		const AActor* Actor = *ActorItr;
+		const AActor* const Actor = *ActorItr;
 
-		if (ShouldSaveAsWorld(Actor))
+		if (const AAIController* const AI = Cast<AAIController>(Actor))
 		{
-			const UClass* ActorClass = Actor->GetClass();
+			SerializeAI(AI, *LevelRecord);
+		}
+		else if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
+		{
+			SerializeLevelScript(LevelScript, *LevelRecord);
+		}
+		else if (ShouldSaveAsWorld(Actor))
+		{
+			FActorRecord Record;
+			SerializeActor(Actor, Record);
 
-			if (const AAIController* AI = Cast<AAIController>(Actor))
-			{
-				SerializeAI(AI, *LevelRecord);
-			}
-			else if (const ALevelScriptActor* LevelScript = Cast<ALevelScriptActor>(Actor))
-			{
-				SerializeLevelScript(LevelScript, *LevelRecord);
-			}
-			else
-			{
-				FActorRecord Record;
-				SerializeActor(Actor, Record);
-				LevelRecord->Actors.Add(Record);
-
-				//SE_LOG(Preset, "Actor '" + Actor->GetName() + "'", FColor::White, false, 2);
-			}
+			// TODO: Reserve space
+			LevelRecord->Actors.Add(Record);
 		}
 	}
 }
@@ -219,14 +214,7 @@ void USlotDataTask_Saver::SerializeLevelScript(const ALevelScriptActor* Level, F
 	{
 		check(Level);
 
-		if (Level->IsInPersistentLevel())
-		{
-			SerializeActor(Level, LevelRecord.LevelScript);
-		}
-		else
-		{
-			//TODO: Serialize into its own streaming level
-		}
+		SerializeActor(Level, LevelRecord.LevelScript);
 
 		SE_LOG(Preset, "Level Blueprint '" + Level->GetName() + "'", FColor::White, false, 2);
 	}

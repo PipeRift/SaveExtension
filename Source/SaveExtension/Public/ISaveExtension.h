@@ -18,46 +18,34 @@ public:
 		return FModuleManager::Get().IsModuleLoaded("SaveExtension");
 	}
 
-	static void Log(const USavePreset* Preset, const FString Message, int8 Indent)
+	static void Log(const USavePreset* Preset, const FString Message, bool bError)
 	{
-		Log(Preset, Message, FColor::White, false, Indent, 2.f);
+		Log(Preset, Message, FColor::White, bError, 2.f);
 	}
 
-	static void Log(const USavePreset* Preset, const FString Message, FColor Color = FColor::White, bool bError = false, int8 Indent = 0, const float Duration = 2.f)
+	static void Log(const USavePreset* Preset, const FString Message, FColor Color = FColor::White, bool bError = false, const float Duration = 2.f)
 	{
-		if (!Preset->bDebug)
-			return;
-
-		if (bError) {
-			Color = FColor::Red;
-		}
-
-		FString ComposedMessage = {};
-
-		if (Indent <= 0) {
-			ComposedMessage += "Save Extension: ";
-		}
-		else
+		if (Preset->bDebug)
 		{
-			for (int8 i{ 1 }; i <= Indent; ++i)
-			{
-				ComposedMessage += "  ";
+			if (bError) {
+				Color = FColor::Red;
 			}
-		}
-		ComposedMessage += Message;
 
-		if (bError)
-		{
-			UE_LOG(LogSaveExtension, Error, TEXT("%s"), *ComposedMessage);
-		}
-		else
-		{
-			UE_LOG(LogSaveExtension, Log, TEXT("%s"), *ComposedMessage);
-		}
+			const FString ComposedMessage { FString::Printf(TEXT("SE: %s"), *Message) };
 
-		if (Preset->bDebugInScreen && GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, Duration, Color, ComposedMessage);
+			if (bError)
+			{
+				UE_LOG(LogSaveExtension, Error, TEXT("%s"), *ComposedMessage);
+			}
+			else
+			{
+				UE_LOG(LogSaveExtension, Log, TEXT("%s"), *ComposedMessage);
+			}
+
+			if (Preset->bDebugInScreen && GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, Duration, Color, ComposedMessage);
+			}
 		}
 	}
 };
