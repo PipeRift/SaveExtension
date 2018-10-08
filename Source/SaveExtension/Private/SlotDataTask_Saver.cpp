@@ -58,6 +58,8 @@ void USlotDataTask_Saver::OnStart()
 
 	if (bSave)
 	{
+		GetManager()->OnSaveBegan();
+
 		USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 		SlotData = Manager->GetCurrentData();
 		SlotData->Clean(false);
@@ -111,6 +113,7 @@ void USlotDataTask_Saver::OnStart()
 
 		SE_LOG(Preset, "Finished Saving", FColor::Green);
 	}
+	GetManager()->OnSaveFinished<false>();
 	Finish(bSave);
 }
 
@@ -184,6 +187,9 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const ULevelSt
 	// Empty level record before we serialize into it
 	LevelRecord->Clean();
 
+	// TODO: Analyze memory footprint on large actor amounts
+	LevelRecord->Actors.Reserve(Level->Actors.Num());
+
 	//All actors of the level
 	for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 	{
@@ -203,11 +209,11 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const ULevelSt
 				FActorRecord Record;
 				SerializeActor(Actor, Record);
 
-				// TODO: Reserve space
 				LevelRecord->Actors.Add(Record);
 			}
 		}
 	}
+	LevelRecord->Actors.Shrink();
 }
 
 void USlotDataTask_Saver::SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord)
@@ -238,26 +244,31 @@ void USlotDataTask_Saver::SerializeAI(const AAIController* AIController, FLevelR
 
 void USlotDataTask_Saver::SerializeGameMode()
 {
-	FActorRecord& Record = SlotData->GameMode;
-	const bool bSuccess = SerializeActor(World->GetAuthGameMode(), Record);
+	if (ShouldSave(World->GetAuthGameMode()))
+	{
+		FActorRecord& Record = SlotData->GameMode;
+		const bool bSuccess = SerializeActor(World->GetAuthGameMode(), Record);
 
-	SE_LOG(Preset, "Game Mode '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+		SE_LOG(Preset, "Game Mode '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	}
 }
 
 void USlotDataTask_Saver::SerializeGameState()
 {
 	const auto* GameState = World->GetGameState();
+	if (ShouldSave(GameState))
+	{
+		FActorRecord& Record = SlotData->GameState;
+		SerializeActor(GameState, Record);
 
-	FActorRecord& Record = SlotData->GameState;
-	SerializeActor(GameState, Record);
-
-	SE_LOG(Preset, "Game State '" + Record.Name.ToString() + "'", 1);
+		SE_LOG(Preset, "Game State '" + Record.Name.ToString() + "'", 1);
+	}
 }
 
 void USlotDataTask_Saver::SerializePlayerState(int32 PlayerId)
 {
 	const auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
-	if (Controller)
+	if (Controller && ShouldSave(Controller->PlayerState))
 	{
 		FActorRecord& Record = SlotData->PlayerState;
 		const bool bSuccess = SerializeActor(Controller->PlayerState, Record);
@@ -269,17 +280,19 @@ void USlotDataTask_Saver::SerializePlayerState(int32 PlayerId)
 void USlotDataTask_Saver::SerializePlayerController(int32 PlayerId)
 {
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(World, PlayerId);
+	if (ShouldSave(PlayerController))
+	{
+		FControllerRecord& Record = SlotData->PlayerController;
+		const bool bSuccess = SerializeController(PlayerController, Record);
 
-	FControllerRecord& Record = SlotData->PlayerController;
-	const bool bSuccess = SerializeController(PlayerController, Record);
-
-	SE_LOG(Preset, "Player Controller '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+		SE_LOG(Preset, "Player Controller '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	}
 }
 
 void USlotDataTask_Saver::SerializePlayerHUD(int32 PlayerId)
 {
 	const auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
-	if (Controller)
+	if (Controller && ShouldSave(Controller->MyHUD))
 	{
 		FActorRecord& Record = SlotData->PlayerHUD;
 		const bool bSuccess = SerializeActor(Controller->MyHUD, Record);
@@ -311,9 +324,6 @@ void USlotDataTask_Saver::SerializeGameInstance()
 
 bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Record)
 {
-	if (!ShouldSave(Actor))
-		return false;
-
 	//Clean the record
 	Record = { Actor };
 
@@ -373,16 +383,12 @@ bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Reco
 
 bool USlotDataTask_Saver::SerializeController(const AController* Actor, FControllerRecord& Record)
 {
-	if (ShouldSave(Actor))
+	const bool bResult = SerializeActor(Actor, Record);
+	if (bResult && Preset->bStoreControlRotation)
 	{
-		const bool bResult = SerializeActor(Actor, Record);
-		if (bResult && Preset->bStoreControlRotation)
-		{
-			Record.ControlRotation = Actor->GetControlRotation();
-		}
-		return bResult;
+		Record.ControlRotation = Actor->GetControlRotation();
 	}
-	return false;
+	return bResult;
 }
 
 void USlotDataTask_Saver::SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 Indent)
@@ -390,37 +396,34 @@ void USlotDataTask_Saver::SerializeActorComponents(const AActor* Actor, FActorRe
 	const TSet<UActorComponent*>& Components = Actor->GetComponents();
 	for (auto* Component : Components)
 	{
-		if (!IsValid(Component) ||
-			!ShouldSave(Component))
+		if (ShouldSave(Component))
 		{
-			continue;
-		}
+			FComponentRecord ComponentRecord;
+			ComponentRecord.Name = Component->GetFName();
+			ComponentRecord.Class = Component->GetClass();
 
-		FComponentRecord ComponentRecord;
-		ComponentRecord.Name = Component->GetFName();
-		ComponentRecord.Class = Component->GetClass();
-
-		if (SavesTransform(Component))
-		{
-			const USceneComponent* Scene = CastChecked<USceneComponent>(Component);
-			if (Scene->Mobility == EComponentMobility::Movable)
+			if (SavesTransform(Component))
 			{
-				ComponentRecord.Transform = Scene->GetRelativeTransform();
+				const USceneComponent* Scene = CastChecked<USceneComponent>(Component);
+				if (Scene->Mobility == EComponentMobility::Movable)
+				{
+					ComponentRecord.Transform = Scene->GetRelativeTransform();
+				}
 			}
-		}
 
-		if (SavesTags(Component))
-		{
-			ComponentRecord.Tags = Component->ComponentTags;
-		}
+			if (SavesTags(Component))
+			{
+				ComponentRecord.Tags = Component->ComponentTags;
+			}
 
-		if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
-		{
-			FMemoryWriter MemoryWriter(ComponentRecord.Data, true);
-			FSaveExtensionArchive Archive(MemoryWriter, false);
-			Component->Serialize(Archive);
+			if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
+			{
+				FMemoryWriter MemoryWriter(ComponentRecord.Data, true);
+				FSaveExtensionArchive Archive(MemoryWriter, false);
+				Component->Serialize(Archive);
+			}
+			ActorRecord.ComponentRecords.Add(ComponentRecord);
 		}
-		ActorRecord.ComponentRecords.Add(ComponentRecord);
 	}
 }
 

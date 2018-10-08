@@ -62,6 +62,9 @@ private:
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;
 
+	UPROPERTY(Transient)
+	TArray<TScriptInterface<ISaveExtensionInterface>> RegisteredInterfaces;
+
 
 	/************************************************************************/
 	/* METHODS															  */
@@ -261,15 +264,14 @@ public:
 	UFUNCTION(Category = SaveExtension, BlueprintCallable)
 	void UnregistrySaveInterface(const TScriptInterface<ISaveExtensionInterface>& Interface);
 
-private:
-
-	UPROPERTY(Transient)
-	TArray<TScriptInterface<ISaveExtensionInterface>> RegisteredInterfaces;
-
 	void OnSaveBegan();
-	void OnSaveFinished(const bool bError);
+	template<bool bError>
+	void OnSaveFinished();
 	void OnLoadBegan();
-	void OnLoadFinished(const bool bError);
+	template<bool bError>
+	void OnLoadFinished();
+
+private:
 
 	void OnMapLoadStarted(const FString& MapName);
 	void OnMapLoadFinished(UWorld* LoadedWorld);

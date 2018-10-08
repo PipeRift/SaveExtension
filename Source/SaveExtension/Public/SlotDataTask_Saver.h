@@ -106,7 +106,7 @@ private:
 	bool SerializeController(const AController* Actor, FControllerRecord& Record);
 
 	/** Serializes the components of an actor into a provided Actor Record */
-	void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0);
+	inline void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0);
 	/** END Serialization */
 
 	/** BEGIN FileSaving */

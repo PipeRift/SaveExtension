@@ -63,8 +63,6 @@ bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreensh
 		return false;
 	}
 
-	OnSaveBegan();
-
 	//Saving
 	bool bSuccess = true;
 
@@ -77,7 +75,6 @@ bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreensh
 	const auto* Task = CreateSaver()->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Width, Height)->Start();
 	bSuccess = Task->IsSucceeded() || Task->IsScheduled();
 
-	OnSaveFinished(!bSuccess);
 	return bSuccess;
 }
 
@@ -88,8 +85,6 @@ bool USaveManager::LoadSlot(int32 Slot)
 
 	if (!IsSlotSaved(Slot))
 		return false;
-
-	OnLoadBegan();
 
 	TryInstantiateInfo();
 
@@ -333,20 +328,21 @@ void USaveManager::OnSaveBegan()
 	}
 }
 
-void USaveManager::OnSaveFinished(const bool bError)
+template<bool bError>
+void USaveManager::OnSaveFinished()
 {
 	for (auto& InterfaceScript : RegisteredInterfaces)
 	{
 		UObject* Object = InterfaceScript.GetObject();
-		if (!Object)
-			return;
-
-		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
-		if (Interface) {
-			Interface->Execute_OnSaveFinished(Object, bError);
-		}
-		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass())) {
-			ISaveExtensionInterface::Execute_OnSaveFinished(Object, bError);
+		if (Object)
+		{
+			ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
+			if (Interface) {
+				Interface->Execute_OnSaveFinished(Object, bError);
+			}
+			else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass())) {
+				ISaveExtensionInterface::Execute_OnSaveFinished(Object, bError);
+			}
 		}
 	}
 
@@ -374,7 +370,8 @@ void USaveManager::OnLoadBegan()
 	}
 }
 
-void USaveManager::OnLoadFinished(const bool bError)
+template<bool bError>
+void USaveManager::OnLoadFinished()
 {
 	for (auto& InterfaceScript : RegisteredInterfaces)
 	{
