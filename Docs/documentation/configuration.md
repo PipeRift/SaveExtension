@@ -58,6 +58,8 @@ If you can't see *"Save Settings"* window opened it can be manually opened from 
 
 #### Save settings
 
+<img width=300 align="left" src="img\save_settings_zoom.png">
+
 - **Save**: If false, this actor will be completely ignored while saving. *Disable this on all actor classes you don't want to save for performance.*
   - **Components**: Should components be considered for saving? *(Most components will still not be serialized for performance)*
   - **Transform**: Should save position, rotation and scale of this actor?
