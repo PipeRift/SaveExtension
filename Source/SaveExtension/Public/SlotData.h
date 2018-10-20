@@ -43,9 +43,7 @@ FORCEINLINE bool operator==(FBaseRecord&&      A, FBaseRecord&&      B) { return
 FORCEINLINE bool operator==(const FBaseRecord& A, const FBaseRecord& B) { return A.Name == B.Name; }
 
 
-/**
-* Represents a serialized Object
-*/
+/** Represents a serialized Object */
 USTRUCT()
 struct FObjectRecord : public FBaseRecord {
 	GENERATED_USTRUCT_BODY()
@@ -66,9 +64,8 @@ struct FObjectRecord : public FBaseRecord {
 	FORCEINLINE bool operator== (const UObject* Other) const { return Name == Other->GetFName() && Class == Other->GetClass(); }
 };
 
-/**
-* Represents a serialized Component
-*/
+
+/** Represents a serialized Component */
 USTRUCT()
 struct FComponentRecord : public FObjectRecord {
 	GENERATED_USTRUCT_BODY()
@@ -78,9 +75,8 @@ struct FComponentRecord : public FObjectRecord {
 	virtual bool Serialize(FArchive& Ar) override;
 };
 
-/**
-* Represents a serialized Actor
-*/
+
+/** Represents a serialized Actor */
 USTRUCT()
 struct FActorRecord : public FObjectRecord {
 	GENERATED_USTRUCT_BODY()
@@ -101,9 +97,8 @@ struct FActorRecord : public FObjectRecord {
 	virtual bool Serialize(FArchive& Ar) override;
 };
 
-/**
-* Represents a serialized Controller
-*/
+
+/** Represents a serialized Controller */
 USTRUCT()
 struct FControllerRecord : public FActorRecord {
 	GENERATED_USTRUCT_BODY()
@@ -116,9 +111,8 @@ struct FControllerRecord : public FActorRecord {
 	virtual bool Serialize(FArchive& Ar) override;
 };
 
-/**
-* Represents a level in the world (streaming or persistent)
-*/
+
+/** Represents a level in the world (streaming or persistent) */
 USTRUCT()
 struct FLevelRecord : public FBaseRecord {
 	GENERATED_USTRUCT_BODY()
@@ -144,6 +138,7 @@ struct FLevelRecord : public FBaseRecord {
 	void Clean();
 };
 
+
 /** Represents a persistent level in the world */
 USTRUCT()
 struct FPersistentLevelRecord : public FLevelRecord {
@@ -156,7 +151,8 @@ struct FPersistentLevelRecord : public FLevelRecord {
 	}
 };
 
-/** Represents an streaming level in the world */
+
+/** Represents a serialized streaming level in the world */
 USTRUCT()
 struct FStreamingLevelRecord : public FLevelRecord {
 	GENERATED_USTRUCT_BODY()
@@ -175,9 +171,7 @@ struct FStreamingLevelRecord : public FLevelRecord {
 };
 
 
-/**
- * In charge of serializing SaveGame data
- */
+/** Serializes world data */
 struct FSaveExtensionArchive : public FObjectAndNameAsStringProxyArchive
 {
 	FSaveExtensionArchive(FArchive &InInnerArchive, bool bInLoadIfFindFails)
@@ -194,19 +188,19 @@ struct FSaveExtensionArchive : public FObjectAndNameAsStringProxyArchive
 
 
 /**
-* USaveData is the save game object in charge of saving all heavy info about a saved game.
-* E.g: Quests, Enemies, World Actors, Physics
-*/
+ * USaveData stores all information that can be accessible only while the game is loaded.
+ * Works like a common SaveGame object
+ * E.g: Items, Quests, Enemies, World Actors, AI, Physics
+ */
 UCLASS(ClassGroup = SaveExtension, hideCategories = ("Activation", "Actor Tick", "Actor", "Input", "Rendering", "Replication", "Socket", "Thumbnail"))
 class SAVEEXTENSION_API USlotData : public USaveGame
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
 public:
 
-	/** If Game is multiplayer, SaveGame system generates SaveGame Data for each player. */
-	UPROPERTY(Category = SaveData, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "63"))
-	int32 PlayerId;
+	USlotData() : Super() {}
+
 
 	/** Full Name of the Map where this SlotData was saved */
 	UPROPERTY(Category = SaveData, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -238,5 +232,6 @@ public:
 	void Clean(bool bKeepLevels);
 	FName GetFMap() const { return { *Map }; }
 
+	/** Using manual serialization. It's way faster than reflection serialization */
 	virtual void Serialize(FArchive& Ar) override;
 };

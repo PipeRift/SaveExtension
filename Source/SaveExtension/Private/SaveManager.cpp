@@ -74,17 +74,17 @@ bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreensh
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
-bool USaveManager::LoadSlot(int32 Slot)
+bool USaveManager::LoadSlotFromId(int32 SlotId)
 {
 	if (!CanLoadOrSave())
 		return false;
 
-	if (!IsSlotSaved(Slot))
+	if (!IsSlotSaved(SlotId))
 		return false;
 
 	TryInstantiateInfo();
 
-	auto* Task = CreateLoader()->Setup(Slot)->Start();
+	auto* Task = CreateLoader()->Setup(SlotId)->Start();
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
@@ -295,52 +295,46 @@ void USaveManager::Tick(float DeltaTime)
 	}
 }
 
-void USaveManager::RegistrySaveInterface(const TScriptInterface<ISaveExtensionInterface>& Interface)
+void USaveManager::SubscribeForEvents(const TScriptInterface<ISaveExtensionInterface>& Interface)
 {
-	RegisteredInterfaces.AddUnique(Interface);
+	SubscribedInterfaces.AddUnique(Interface);
 }
 
-void USaveManager::UnregistrySaveInterface(const TScriptInterface<ISaveExtensionInterface>& Interface)
+void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface)
 {
-	RegisteredInterfaces.Remove(Interface);
+	SubscribedInterfaces.Remove(Interface);
 }
 
 
 void USaveManager::OnSaveBegan()
 {
-	for(auto& InterfaceScript : RegisteredInterfaces)
-	{
-		UObject* Object = InterfaceScript.GetObject();
-		if (!Object)
-			return;
-
+	IterateSubscribedInterfaces([](auto* Object) {
 		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
-		if (Interface) {
+		if (Interface)
+		{
 			Interface->Execute_OnSaveBegan(Object);
 		}
-		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass())) {
+		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass()))
+		{
 			ISaveExtensionInterface::Execute_OnSaveBegan(Object);
 		}
-	}
+	});
 }
 
 template<bool bError>
 void USaveManager::OnSaveFinished()
 {
-	for (auto& InterfaceScript : RegisteredInterfaces)
-	{
-		UObject* Object = InterfaceScript.GetObject();
-		if (Object)
+	IterateSubscribedInterfaces([](auto* Object) {
+		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
+		if (Interface)
 		{
-			ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
-			if (Interface) {
-				Interface->Execute_OnSaveFinished(Object, bError);
-			}
-			else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass())) {
-				ISaveExtensionInterface::Execute_OnSaveFinished(Object, bError);
-			}
+			Interface->Execute_OnSaveFinished(Object, bError);
 		}
-	}
+		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass()))
+		{
+			ISaveExtensionInterface::Execute_OnSaveFinished(Object, bError);
+		}
+	});
 
 	if (!bError)
 	{
@@ -350,31 +344,23 @@ void USaveManager::OnSaveFinished()
 
 void USaveManager::OnLoadBegan()
 {
-	for (auto& InterfaceScript : RegisteredInterfaces)
-	{
-		UObject* Object = InterfaceScript.GetObject();
-		if (!Object)
-			return;
-
+	IterateSubscribedInterfaces([](auto* Object) {
 		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
-		if (Interface) {
+		if (Interface)
+		{
 			Interface->Execute_OnLoadBegan(Object);
 		}
-		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass())) {
+		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass()))
+		{
 			ISaveExtensionInterface::Execute_OnLoadBegan(Object);
 		}
-	}
+	});
 }
 
 template<bool bError>
 void USaveManager::OnLoadFinished()
 {
-	for (auto& InterfaceScript : RegisteredInterfaces)
-	{
-		UObject* Object = InterfaceScript.GetObject();
-		if (!Object)
-			return;
-
+	IterateSubscribedInterfaces([](auto* Object) {
 		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
 		if (Interface) {
 			Interface->Execute_OnLoadFinished(Object, bError);
@@ -382,7 +368,7 @@ void USaveManager::OnLoadFinished()
 		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass())) {
 			ISaveExtensionInterface::Execute_OnLoadFinished(Object, bError);
 		}
-	}
+	});
 
 	if (!bError)
 	{
@@ -418,7 +404,7 @@ UWorld* USaveManager::GetWorld() const
 
 void USaveManager::BeginDestroy()
 {
-	// Remove this manager form the static list
+	// Remove this manager from the static list
 	GlobalManagers.Remove(OwningGameInstance);
 	Super::BeginDestroy();
 }

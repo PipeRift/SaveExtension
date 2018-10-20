@@ -12,13 +12,11 @@
 
 UCLASS()
 class SAVEEXTENSIONEDITOR_API USlotInfoFactory : public UFactory {
-	GENERATED_UCLASS_BODY()
-
-protected:
-
-	virtual bool IsMacroFactory() const { return false; }
+	GENERATED_BODY()
 
 public:
+
+	USlotInfoFactory();
 
 	virtual UObject* FactoryCreateNew(UClass* Class, UObject* InParent, FName Name, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;
 };

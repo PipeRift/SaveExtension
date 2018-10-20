@@ -124,11 +124,6 @@ FArchive& FSaveExtensionArchive::operator<<(FSoftObjectPath& Value)
 /////////////////////////////////////////////////////
 // USlotData
 
-USlotData::USlotData(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
-{
-	PlayerId = 0;
-}
-
 void USlotData::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);

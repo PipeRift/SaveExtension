@@ -72,7 +72,7 @@ void USlotDataTask_Saver::OnStart()
 
 		if (bSaveThumbnail)
 		{
-			CurrentInfo->SaveThumbnail(Width, Height);
+			CurrentInfo->CaptureThumbnail(Width, Height);
 		}
 
 		// Time stats
@@ -86,7 +86,7 @@ void USlotDataTask_Saver::OnStart()
 				// Now - Loaded
 				const FTimespan SessionTime = CurrentInfo->SaveDate - CurrentInfo->LoadDate;
 
-				CurrentInfo->TotalPlayedTime += SessionTime;
+				CurrentInfo->PlayedTime += SessionTime;
 
 				if (!bSlotWasDifferent)
 					CurrentInfo->SlotPlayedTime += SessionTime;
@@ -96,8 +96,8 @@ void USlotDataTask_Saver::OnStart()
 			else
 			{
 				// Slot is new, played time is world seconds
-				CurrentInfo->TotalPlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
-				CurrentInfo->SlotPlayedTime = CurrentInfo->TotalPlayedTime;
+				CurrentInfo->PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
+				CurrentInfo->SlotPlayedTime = CurrentInfo->PlayedTime;
 			}
 		}
 

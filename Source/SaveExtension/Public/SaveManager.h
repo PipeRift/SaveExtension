@@ -6,6 +6,7 @@
 #include <PlatformFilemanager.h>
 #include <GenericPlatformFile.h>
 #include <Engine/GameInstance.h>
+#include <Tickable.h>
 
 #include "SlotInfo.h"
 #include "SlotData.h"
@@ -48,22 +49,23 @@ public:
 
 private:
 
-	/** Currently active SaveInfo. SaveInfo stores basic information about a saved game. Played time, levels, progress, etc. */
+	/** Currently loaded SaveInfo. SaveInfo stores basic information about a saved game. Played time, levels, progress, etc. */
 	UPROPERTY()
 	USlotInfo* CurrentInfo;
 
-	/** Currently active SaveData. SaveData stores all serialized info about the world. */
+	/** Currently loaded SaveData. SaveData stores all serialized info about the world. */
 	UPROPERTY()
 	USlotData* CurrentData;
 
 	/** The game instance to which this save manager is owned. */
 	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
+
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;
 
 	UPROPERTY(Transient)
-	TArray<TScriptInterface<ISaveExtensionInterface>> RegisteredInterfaces;
+	TArray<TScriptInterface<ISaveExtensionInterface>> SubscribedInterfaces;
 
 
 	/************************************************************************/
@@ -96,48 +98,55 @@ public:
 		return CurrentInfo ? SaveSlot(CurrentInfo->Id, true, bScreenshot, Width, Height) : false;
 	}
 
-	/** Load an specified Slot */
+	/** Load game from a slot Id */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	bool LoadSlot(int32 Slot = 0);
+	bool LoadSlotFromId(int32 SlotId = 0);
 
-	/** Load the Game from a Slot. */
+	/** Load game from a SlotInfo */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	FORCEINLINE bool LoadSlotFromInfo(const USlotInfo* SlotInfo) {
-		return SlotInfo ? LoadSlot(SlotInfo->Id) : false;
+	FORCEINLINE bool LoadSlot(const USlotInfo* SlotInfo) {
+		return SlotInfo ? LoadSlotFromId(SlotInfo->Id) : false;
 	}
 
-	/** Reload the currently loaded slot */
+	/** Reload the currently loaded slot if any */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	bool ReloadCurrentSlot() { return CurrentInfo ? LoadSlot(CurrentInfo->Id) : false; }
+	FORCEINLINE bool ReloadCurrentSlot() {
+		return LoadSlot(CurrentInfo);
+	}
 
-	/** Delete a saved game on an specified slot */
+	/** Delete a saved game on an specified slot Id
+	 * Performance: Interacts with disk, can be slow
+	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
-	bool DeleteSlot(int32 Slot);
+	bool DeleteSlot(int32 SlotId);
 
 
-	/** @return the current SlotInfo. Will usually come from the last loaded slot */
-	UFUNCTION(Category = "SaveExtension|Other", BlueprintPure)
+	/** Get the currently loaded SlotInfo. If game was never loaded returns a new SlotInfo */
+	UFUNCTION(BlueprintPure, Category = "SaveExtension")
 	FORCEINLINE USlotInfo* GetCurrentInfo() {
 		TryInstantiateInfo();
 		return CurrentInfo;
 	}
 
-	/** @return the current SlotData. Will usually come from the last loaded slot */
-	UFUNCTION(Category = "SaveExtension|Other", BlueprintPure)
+	/** Get the currently loaded SlotData. If game was never loaded returns an empty SlotData  */
+	UFUNCTION(BlueprintPure, Category = "SaveExtension")
 	FORCEINLINE USlotData* GetCurrentData() {
 		TryInstantiateInfo();
 		return CurrentData;
 	}
 
 	/**
-	 * @param SlotId Id of the slotInfo to be loaded
-	 * @return the SlotInfo associated with an slot
+	 * Load and return an SlotInfo by Id if it exists
+	 * Performance: Interacts with disk, can be slow
+	 * @param SlotId Id of the SlotInfo to be loaded
+	 * @return the SlotInfo associated with an Id
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
 	FORCEINLINE USlotInfo* GetSlotInfo(int32 SlotId) { return LoadInfo(SlotId); }
 
 	/**
-	 * Find all saved games on disk. May be expensive, use with care.
+	 * Find all saved games and return their SlotInfos
+	 * Performance: Interacts with disk, can be slow
 	 * @param SaveInfos All saved games found on disk
 	 * @param bSortByRecent Should slots be ordered by save date?
 	 */
@@ -154,6 +163,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
 
+	/**
+	 * Set the preset to be used for saving and loading
+	 * @return true if the preset was set successfully
+	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
 	bool SetActivePreset(TAssetPtr<USavePreset> ActivePreset)
 	{
@@ -246,6 +259,7 @@ private:
 	}
 	//~ End Tickable Object Interface
 
+
 	/***********************************************************************/
 	/* EVENTS															  */
 	/***********************************************************************/
@@ -258,11 +272,14 @@ public:
 	FOnGameLoaded OnGameLoaded;
 
 
+	/** Subscribe to receive save and load events on an Interface */
 	UFUNCTION(Category = SaveExtension, BlueprintCallable)
-	void RegistrySaveInterface(const TScriptInterface<ISaveExtensionInterface>& Interface);
+	void SubscribeForEvents(const TScriptInterface<ISaveExtensionInterface>& Interface);
 
+	/** Unsubscribe to no longer receive save and load events on an Interface */
 	UFUNCTION(Category = SaveExtension, BlueprintCallable)
-	void UnregistrySaveInterface(const TScriptInterface<ISaveExtensionInterface>& Interface);
+	void UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface);
+
 
 	void OnSaveBegan();
 	template<bool bError>
@@ -276,6 +293,13 @@ private:
 	void OnMapLoadStarted(const FString& MapName);
 	void OnMapLoadFinished(UWorld* LoadedWorld);
 
+	void IterateSubscribedInterfaces(TFunction<void(UObject*)>&& Callback) {
+		for (const TScriptInterface<ISaveExtensionInterface>& Interface : SubscribedInterfaces)
+		{
+			if (UObject* const Object = Interface.GetObject())
+				Callback(Object);
+		}
+	}
 
 	//~ Begin UObject Interface
 	virtual UWorld* GetWorld() const override;
@@ -299,13 +323,14 @@ private:
 			: FilesFound(Files)
 		{}
 
-		virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory);
+		virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override;
 	};
 
 	static TMap<TWeakObjectPtr<UGameInstance>, TWeakObjectPtr<USaveManager>> GlobalManagers;
 
 public:
 
+	/** Get the global save manager */
 	UFUNCTION(BlueprintPure, Category = SaveExtension, meta = (WorldContext = "ContextObject"))
 	static USaveManager* GetSaveManager(const UObject* ContextObject);
 };

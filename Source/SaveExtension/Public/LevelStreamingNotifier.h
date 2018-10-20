@@ -13,11 +13,13 @@ DECLARE_DELEGATE_OneParam(FLevelNotifierShown,    ULevelStreaming* );
 DECLARE_DELEGATE_OneParam(FLevelNotifierHidden,   ULevelStreaming* );
 
 
-/** ULevelStreamingNotifier expands on UE4 native level streaming events */
+/** ULevelStreamingNotifier is an adapter that expands UE4's native
+ * level streaming delegates adding a ptr to the level to each delegate
+ */
 UCLASS(ClassGroup = SaveExtension, Transient)
 class SAVEEXTENSION_API ULevelStreamingNotifier : public UObject
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
 public:
 
@@ -55,7 +57,10 @@ private:
 		}
 	}
 
-	virtual void BeginDestroy() override { UnBind(); Super::BeginDestroy(); }
+	virtual void BeginDestroy() override {
+		UnBind();
+		Super::BeginDestroy();
+	}
 
 
 	// Associated Level Streaming

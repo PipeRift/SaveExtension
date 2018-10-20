@@ -4,7 +4,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 
 
-USavePresetFactory::USavePresetFactory(const class FObjectInitializer& OBJ) : Super(OBJ) {
+USavePresetFactory::USavePresetFactory() : Super() {
 	bCreateNew = true;
 	bEditAfterNew = true;
 	SupportedClass = USavePreset::StaticClass();

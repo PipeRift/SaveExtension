@@ -6,17 +6,10 @@
 #include <IImageWrapper.h>
 #include <IImageWrapperModule.h>
 #include <HighResScreenshot.h>
+#include <Engine/GameViewportClient.h>
 #include <FileHelper.h>
+#include <Engine/Engine.h>
 
-
-USlotInfo::USlotInfo(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
-	, Id(0)
-	, TotalPlayedTime(FTimespan::Zero())
-	, SlotPlayedTime(FTimespan::Zero())
-	, SaveDate(FDateTime::Now())
-{
-}
 
 UTexture2D* USlotInfo::GetThumbnail() const
 {
@@ -50,7 +43,7 @@ UTexture2D* USlotInfo::GetThumbnail() const
 	return Texture;
 }
 
-bool USlotInfo::SaveThumbnail(const int32 Width /*= 640*/, const int32 Height /*= 360*/)
+bool USlotInfo::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height /*= 360*/)
 {
 	if (!GEngine)
 		return false;
@@ -73,7 +66,7 @@ bool USlotInfo::SaveThumbnail(const int32 Width /*= 640*/, const int32 Height /*
 				FM->Delete(*Previous, false, true, true);
 			}
 
-			SetThumbnailPath(FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), Id, *FString("SaveScreenshot"), TEXT("png")));
+			_SetThumbnailPath(FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), Id, *FString("SaveScreenshot"), TEXT("png")));
 
 			//Set Screenshot path
 			HighResScreenshotConfig.FilenameOverride = ThumbnailPath;
@@ -87,7 +80,7 @@ bool USlotInfo::SaveThumbnail(const int32 Width /*= 640*/, const int32 Height /*
 	return false;
 }
 
-void USlotInfo::SetThumbnailPath(const FString& Path)
+void USlotInfo::_SetThumbnailPath(const FString& Path)
 {
 	if (ThumbnailPath != Path)
 	{

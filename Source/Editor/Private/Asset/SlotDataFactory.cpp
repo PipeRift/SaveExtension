@@ -4,7 +4,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 
 
-USlotDataFactory::USlotDataFactory(const class FObjectInitializer& OBJ) : Super(OBJ) {
+USlotDataFactory::USlotDataFactory() : Super() {
 	bCreateNew = true;
 	bEditAfterNew = true;
 	SupportedClass = USlotData::StaticClass();
