@@ -9,10 +9,10 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/GameModeBase.h"
 #include "HighResScreenshot.h"
-#include "Paths.h"
+#include "Misc/Paths.h"
 
 #include <GameDelegates.h>
-#include <CoreDelegates.h>
+#include <Misc/CoreDelegates.h>
 
 #include "FileAdapter.h"
 
@@ -210,7 +210,7 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 	if (!IsValidSlot(SlotId))
 	{
 		SE_LOG(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
-		return false;
+		return nullptr;
 	}
 
 	const FString Card = GenerateSaveSlotName(SlotId);

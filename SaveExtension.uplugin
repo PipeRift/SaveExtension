@@ -1,42 +1,49 @@
 {
 	"FileVersion" : 3,
 	"Version" : 1,
-	"VersionName" : "0.1",
+	"VersionName" : "1.0",
 	"FriendlyName" : "Save Extension",
 	"Description" : "Provides UE4 with a save-game system with support for savegame tags, level streaming and more",
+    "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/91084f43b68047ac8da6fc88a7467936",
 	"Category" : "Piperift",
 	"CreatedBy" : "Piperift",
-	"CreatedByURL" : "http://piperift.com",
-	"SupportURL" : "mailto:info@piperift.com",
+	"CreatedByURL" : "https://piperift.com",
+    "DocsURL": "https://piperift.com/SaveExtension/",
+	"SupportURL" : "info@piperift.com",
 	"EngineVersion" : "4.20.0",
-	"CanContainContent" : true,
+    "EnabledByDefault": true,
+    "CanContainContent": false,
 	"IsBetaVersion" : false,
-	"Installed" : true,
-	"RequiresBuildPlatform" : false,
-	"Modules" :
-	[
+	"Modules" : [
 		{
 			"Name" : "SaveExtension",
 			"Type" : "Runtime",
 			"LoadingPhase" : "PreDefault",
-			"WhitelistPlatforms" :
-			[
+			"WhitelistPlatforms": [
 				"Win64",
 				"Win32",
 				"Linux",
-				"Mac",
-				"IOS",
-				"Android"
+				"HTML5",
+				"Android",
+				"PS4",
+				"XboxOne",
+				"Switch",
+				"Mac"
 			]
 		},
 		{
 			"Name" : "SaveExtensionEditor",
 			"Type" : "Editor",
 			"LoadingPhase" : "PostEngineInit",
-			"WhitelistPlatforms" :
-			[
+			"WhitelistPlatforms": [
 				"Win64",
+				"Win32",
 				"Linux",
+				"HTML5",
+				"Android",
+				"PS4",
+				"XboxOne",
+				"Switch",
 				"Mac"
 			]
 		}

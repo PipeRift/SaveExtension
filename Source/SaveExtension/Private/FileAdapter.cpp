@@ -2,12 +2,13 @@
 
 #include "FileAdapter.h"
 
-#include <UObjectGlobals.h>
-#include <MemoryReader.h>
-#include <MemoryWriter.h>
+#include <UObject/UObjectGlobals.h>
+#include <UObject/Package.h>
+#include <Serialization/MemoryReader.h>
+#include <Serialization/MemoryWriter.h>
+#include <Serialization/ArchiveSaveCompressedProxy.h>
+#include <Serialization/ArchiveLoadCompressedProxy.h>
 #include <SaveGameSystem.h>
-#include <ArchiveSaveCompressedProxy.h>
-#include <ArchiveLoadCompressedProxy.h>
 
 #include "SavePreset.h"
 

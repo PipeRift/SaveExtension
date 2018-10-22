@@ -3,7 +3,9 @@
 #include "SSaveActorSettingsItem.h"
 
 #include <Widgets/SBoxPanel.h>
+#include <Widgets/SOverlay.h>
 #include <Widgets/Layout/SBorder.h>
+#include <Widgets/Input/SButton.h>
 #include <EditorStyleSet.h>
 
 

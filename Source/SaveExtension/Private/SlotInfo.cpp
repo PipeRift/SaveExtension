@@ -7,7 +7,7 @@
 #include <IImageWrapperModule.h>
 #include <HighResScreenshot.h>
 #include <Engine/GameViewportClient.h>
-#include <FileHelper.h>
+#include <Misc/FileHelper.h>
 #include <Engine/Engine.h>
 
 

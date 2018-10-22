@@ -430,7 +430,6 @@ void USlotDataTask_Saver::SerializeActorComponents(const AActor* Actor, FActorRe
 bool USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataName) const
 {
 	USaveManager* Manager = GetManager();
-	const USavePreset* Preset = Manager->GetPreset();
 
 	USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 	USlotData* CurrentData = Manager->GetCurrentData();

@@ -4,8 +4,8 @@
 
 #include "SlotInfo.h"
 
-#include "Public/AssetTypeActions_Base.h"
-#include "Editor/UnrealEd/Classes/Factories/Factory.h"
+#include "AssetTypeActions_Base.h"
+#include "Factories/Factory.h"
 
 #include "SlotInfoFactory.generated.h"
 

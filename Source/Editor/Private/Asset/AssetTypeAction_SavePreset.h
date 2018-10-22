@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Private/SaveExtensionEditor.h"
+#include "SaveExtensionEditor.h"
 
 #include "AssetTypeActions_Base.h"
 

@@ -10,6 +10,8 @@
 #include <Engine/LevelScriptActor.h>
 #include <GameFramework/Controller.h>
 #include <AIController.h>
+#include <Components/StaticMeshComponent.h>
+#include <Components/SkeletalMeshComponent.h>
 
 #include "SavePreset.h"
 #include "SlotData.h"
@@ -42,7 +44,7 @@ private:
 
 	uint8 bRunning : 1;
 	uint8 bFinished : 1;
-	uint8 bSuccess : 1;
+	uint8 bSucceeded : 1;
 
 protected:
 
@@ -79,8 +81,8 @@ public:
 
 	bool IsRunning() const  { return bRunning;  }
 	bool IsFinished() const { return bFinished; }
-	bool IsSucceeded() const  { return IsFinished() && bSuccess;  }
-	bool IsFailed() const     { return IsFinished() && !bSuccess; }
+	bool IsSucceeded() const  { return IsFinished() && bSucceeded;  }
+	bool IsFailed() const     { return IsFinished() && !bSucceeded; }
 	bool IsScheduled() const;
 
 	virtual void OnTick(float DeltaTime) {}

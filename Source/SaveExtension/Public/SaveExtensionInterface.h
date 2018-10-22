@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Interface.h>
+#include <UObject/Interface.h>
 #include "SaveExtensionInterface.generated.h"
 
 UINTERFACE(Category = SaveExtension, BlueprintType)

@@ -1,8 +1,9 @@
 // Copyright 2015-2018 Piperift. All Rights Reserved.
 
 #include "SlotData.h"
+#include <TimerManager.h>
+
 #include "SavePreset.h"
-#include "TimerManager.h"
 
 
 /**

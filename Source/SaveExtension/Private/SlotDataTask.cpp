@@ -53,7 +53,7 @@ void USlotDataTask::Finish(bool bInSuccess)
 		MarkPendingKill();
 		GetManager()->FinishTask(this);
 		bFinished = true;
-		bSuccess = bInSuccess;
+		bSucceeded = bInSuccess;
 	}
 }
 

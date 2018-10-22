@@ -3,8 +3,8 @@
 #pragma once
 
 #include <CoreMinimal.h>
-#include <PlatformFilemanager.h>
-#include <GenericPlatformFile.h>
+#include <HAL/PlatformFilemanager.h>
+#include <GenericPlatform/GenericPlatformFile.h>
 #include <Engine/GameInstance.h>
 #include <Tickable.h>
 

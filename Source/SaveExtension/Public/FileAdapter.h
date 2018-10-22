@@ -4,11 +4,11 @@
 
 #include <CoreMinimal.h>
 #include <GameFramework/SaveGame.h>
-#include <EngineVersion.h>
-#include <SubclassOf.h>
-#include <CustomVersion.h>
+#include <Misc/EngineVersion.h>
+#include <Templates/SubclassOf.h>
+#include <Serialization/CustomVersion.h>
+#include <Serialization/ObjectAndNameAsStringProxyArchive.h>
 #include <PlatformFeatures.h>
-#include <ObjectAndNameAsStringProxyArchive.h>
 
 #include "ISaveExtension.h"
 
