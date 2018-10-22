@@ -17,8 +17,7 @@ public class SaveExtension : ModuleRules
 				"Foliage",
 				"AIModule",
 				"CoreUObject",
-				"ImageWrapper",
-				"NavigationSystem"
+				"ImageWrapper"
 			}
 		);
 
