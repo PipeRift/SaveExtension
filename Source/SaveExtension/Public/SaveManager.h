@@ -83,19 +83,19 @@ public:
 
 	/** Save the Game into an specified Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = 2))
-	bool SaveSlot(int32 Slot = 0, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360);
+	bool SaveSlotToId(int32 Slot = 0, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360);
 
 	/** Save the Game to a Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = 2))
-	FORCEINLINE bool SaveSlotFromInfo(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360) {
+	FORCEINLINE bool SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360) {
 		if (!SlotInfo) return false;
-		return SaveSlot(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Width, Height);
+		return SaveSlotToId(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Width, Height);
 	}
 
 	/** Save the currently loaded Slot */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Saving", meta = (AdvancedDisplay = 1))
 	bool SaveCurrentSlot(bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360) {
-		return CurrentInfo ? SaveSlot(CurrentInfo->Id, true, bScreenshot, Width, Height) : false;
+		return SaveSlot(CurrentInfo, true, bScreenshot, Width, Height);
 	}
 
 	/** Load game from a slot Id */
@@ -154,12 +154,14 @@ public:
 	void GetAllSlotInfos(TArray<USlotInfo*>& SaveInfos, const bool bSortByRecent = false);
 
 	/** Check if an slot exists on disk
-	* @return true if the slot exists
-	*/
+	 * @return true if the slot exists
+	 */
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	bool IsSlotSaved(int32 Slot) const;
 
-	/** @return true if currently playing in a saved slot */
+	/** Check if currently playing in a saved slot
+	 * @return true if currently playing in a saved slot
+	 */
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
 

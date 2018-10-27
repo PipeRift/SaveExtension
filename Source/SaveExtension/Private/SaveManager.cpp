@@ -51,7 +51,7 @@ void USaveManager::Shutdown()
 	MarkPendingKill();
 }
 
-bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
+bool USaveManager::SaveSlotToId(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
 {
 	if (!CanLoadOrSave())
 		return false;
