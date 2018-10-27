@@ -263,7 +263,7 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 				// Remove records which actors do exist
 				const bool bFoundRecord = RecordsToSpawn.RemoveSingleSwap(Actor, false);
 
-				if (!bFoundRecord && ShouldSaveAsWorld(Actor))
+				if (!bFoundRecord && ShouldSave(Actor) && ShouldSaveAsWorld(Actor))
 				{
 					// If the actor wasn't found, mark it for destruction
 					Actor->Destroy();
