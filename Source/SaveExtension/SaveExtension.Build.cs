@@ -1,3 +1,5 @@
+// Copyright 2015-2018 Piperift. All Rights Reserved.
+
 using UnrealBuildTool;
 using System.IO;
 
@@ -21,9 +23,6 @@ public class SaveExtension : ModuleRules
 				"NavigationSystem"
 			}
 		);
-
-		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory,"Private"));
-		PublicIncludePaths.Add(Path.Combine(ModuleDirectory,"Public"));
 	}
 }
 

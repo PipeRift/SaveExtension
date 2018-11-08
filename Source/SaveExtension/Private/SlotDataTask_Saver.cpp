@@ -111,7 +111,7 @@ void USlotDataTask_Saver::OnStart()
 		// Clean serialization data
 		SlotData->Clean(true);
 
-		SE_LOG(Preset, "Finished Saving", FColor::Green);
+		SELog(Preset, "Finished Saving", FColor::Green);
 	}
 	GetManager()->OnSaveFinished<false>();
 	Finish(bSave);
@@ -146,7 +146,7 @@ void USlotDataTask_Saver::SerializeSync()
 void USlotDataTask_Saver::SerializeWorld()
 {
 	check(World);
-	SE_LOG(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	// Save current game seconds
 	SlotData->TimeSeconds = World->TimeSeconds;
@@ -168,7 +168,7 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const ULevelSt
 	check(IsValid(Level));
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SE_LOG(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	FLevelRecord* LevelRecord = &SlotData->MainLevel;
 
@@ -224,7 +224,7 @@ void USlotDataTask_Saver::SerializeLevelScript(const ALevelScriptActor* Level, F
 
 		SerializeActor(Level, LevelRecord.LevelScript);
 
-		SE_LOG(Preset, "Level Blueprint '" + Level->GetName() + "'", FColor::White, false, 2);
+		SELog(Preset, "Level Blueprint '" + Level->GetName() + "'", FColor::White, false, 2);
 	}
 }
 
@@ -238,7 +238,7 @@ void USlotDataTask_Saver::SerializeAI(const AAIController* AIController, FLevelR
 		SerializeController(AIController, Record);
 		LevelRecord.AIControllers.Add(Record);
 
-		SE_LOG(Preset, "AI Controller '" + AIController->GetName() + "'", FColor::White, 1);
+		SELog(Preset, "AI Controller '" + AIController->GetName() + "'", FColor::White, 1);
 	}
 }
 
@@ -249,7 +249,7 @@ void USlotDataTask_Saver::SerializeGameMode()
 		FActorRecord& Record = SlotData->GameMode;
 		const bool bSuccess = SerializeActor(World->GetAuthGameMode(), Record);
 
-		SE_LOG(Preset, "Game Mode '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+		SELog(Preset, "Game Mode '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 	}
 }
 
@@ -261,7 +261,7 @@ void USlotDataTask_Saver::SerializeGameState()
 		FActorRecord& Record = SlotData->GameState;
 		SerializeActor(GameState, Record);
 
-		SE_LOG(Preset, "Game State '" + Record.Name.ToString() + "'", 1);
+		SELog(Preset, "Game State '" + Record.Name.ToString() + "'", 1);
 	}
 }
 
@@ -273,7 +273,7 @@ void USlotDataTask_Saver::SerializePlayerState(int32 PlayerId)
 		FActorRecord& Record = SlotData->PlayerState;
 		const bool bSuccess = SerializeActor(Controller->PlayerState, Record);
 
-		SE_LOG(Preset, "Player State '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+		SELog(Preset, "Player State '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 	}
 }
 
@@ -285,7 +285,7 @@ void USlotDataTask_Saver::SerializePlayerController(int32 PlayerId)
 		FControllerRecord& Record = SlotData->PlayerController;
 		const bool bSuccess = SerializeController(PlayerController, Record);
 
-		SE_LOG(Preset, "Player Controller '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+		SELog(Preset, "Player Controller '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 	}
 }
 
@@ -297,7 +297,7 @@ void USlotDataTask_Saver::SerializePlayerHUD(int32 PlayerId)
 		FActorRecord& Record = SlotData->PlayerHUD;
 		const bool bSuccess = SerializeActor(Controller->MyHUD, Record);
 
-		SE_LOG(Preset, "Player HUD '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+		SELog(Preset, "Player HUD '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 	}
 }
 
@@ -306,7 +306,7 @@ void USlotDataTask_Saver::SerializeGameInstance()
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(World);
 	if (!GameInstance)
 	{
-		SE_LOG(Preset, "Game Instance - No Game Instance Found", FColor::White, true, 1);
+		SELog(Preset, "Game Instance - No Game Instance Found", FColor::White, true, 1);
 		return;
 	}
 
@@ -319,7 +319,7 @@ void USlotDataTask_Saver::SerializeGameInstance()
 
 	SlotData->GameInstance = MoveTemp(Record);
 
-	SE_LOG(Preset, "Game Instance '" + Record.Name.ToString() + "'", FColor::White, 1);
+	SELog(Preset, "Game Instance '" + Record.Name.ToString() + "'", FColor::White, 1);
 }
 
 bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Record)

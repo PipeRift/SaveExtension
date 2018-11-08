@@ -247,7 +247,7 @@ private:
 
 	void FinishTask(USlotDataTask* Task);
 
-	bool HasTasks() const { return Tasks.Num(); }
+	bool HasTasks() const { return Tasks.Num() > 0; }
 	//~ End Tasks
 
 

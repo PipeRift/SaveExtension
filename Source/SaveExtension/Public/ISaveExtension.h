@@ -53,7 +53,9 @@ public:
 
 //Only log in Editor
 #if WITH_EDITORONLY_DATA
-#define SE_LOG(...) ISaveExtension::Log(##__VA_ARGS__)
+template <typename ...Args>
+void SELog(Args&& ...args) { ISaveExtension::Log(Forward<Args>(args)...); }
 #else
-#define SE_LOG(...)
+template <typename ...Args>
+void SELog(Args&& ...args) {} // Optimized away by compiler
 #endif

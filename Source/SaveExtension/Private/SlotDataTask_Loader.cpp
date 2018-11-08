@@ -24,12 +24,12 @@ void USlotDataTask_Loader::OnStart()
 {
 	USaveManager* Manager = GetManager();
 
-	SE_LOG(Preset, "Loading from Slot " + FString::FromInt(Slot));
+	SELog(Preset, "Loading from Slot " + FString::FromInt(Slot));
 
 	NewSlotInfo = Manager->LoadInfo(Slot);
 	if (!NewSlotInfo)
 	{
-		SE_LOG(Preset, "Slot Info not found! Can't load.", FColor::White, true, 1);
+		SELog(Preset, "Slot Info not found! Can't load.", FColor::White, true, 1);
 		Finish(false);
 		return;
 	}
@@ -42,7 +42,7 @@ void USlotDataTask_Loader::OnStart()
 		//Keep loaded Info for loading
 		UGameplayStatics::OpenLevel(this, NewSlotInfo->Map);
 
-		SE_LOG(Preset, "Slot '" + FString::FromInt(Slot) + "' is recorded on another Map. Loading before charging slot.", FColor::White, false, 1);
+		SELog(Preset, "Slot '" + FString::FromInt(Slot) + "' is recorded on another Map. Loading before charging slot.", FColor::White, false, 1);
 	}
 	else
 	{
@@ -118,7 +118,7 @@ void USlotDataTask_Loader::DeserializeSync()
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeSync);
 
 	check(World);
-	SE_LOG(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	PrepareAllLevels();
 
@@ -147,7 +147,7 @@ void USlotDataTask_Loader::DeserializeLevelSync(const ULevel* Level, const ULeve
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelSync);
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SE_LOG(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
 	if (!LevelRecord)
@@ -164,7 +164,7 @@ void USlotDataTask_Loader::DeserializeASync()
 	// Deserialize world
 	{
 		check(World);
-		SE_LOG(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+		SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 		PrepareAllLevels();
 
@@ -177,7 +177,7 @@ void USlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStreaming*
 	check(IsValid(Level));
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SE_LOG(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
 	if (!LevelRecord) {
@@ -261,7 +261,7 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 			if (Actor)
 			{
 				// Remove records which actors do exist
-				const bool bFoundRecord = RecordsToSpawn.RemoveSingleSwap(Actor, false);
+				const bool bFoundRecord = RecordsToSpawn.RemoveSingleSwap(Actor, false) > 0;
 
 				if (!bFoundRecord && ShouldSave(Actor) && ShouldSaveAsWorld(Actor))
 				{
@@ -286,7 +286,7 @@ void USlotDataTask_Loader::FinishedDeserializing()
 	GetManager()->OnLoadFinished<false>();
 	Finish(true);
 
-	SE_LOG(Preset, "Finished Loading", FColor::Green, false, 2);
+	SELog(Preset, "Finished Loading", FColor::Green, false, 2);
 }
 
 void USlotDataTask_Loader::PrepareAllLevels()
@@ -366,7 +366,7 @@ void USlotDataTask_Loader::DeserializeLevelScript(ALevelScriptActor* Level, cons
 		{
 			const bool bSuccess = DeserializeActor(Level, Record);
 
-			SE_LOG(Preset, "Level Blueprint '" + Record.Name.ToString() + "'", FColor::White, !bSuccess, 2);
+			SELog(Preset, "Level Blueprint '" + Record.Name.ToString() + "'", FColor::White, !bSuccess, 2);
 		}
 	}
 }
@@ -386,7 +386,7 @@ void USlotDataTask_Loader::DeserializeAI(AAIController* AIController, const FLev
 		{
 			const bool bSuccess = DeserializeActor(AIController, *Record);
 
-			SE_LOG(Preset, "AI Controller '" + Record->Name.ToString() + "'", FColor::White, !bSuccess, 2);
+			SELog(Preset, "AI Controller '" + Record->Name.ToString() + "'", FColor::White, !bSuccess, 2);
 		}
 	}
 }
@@ -396,7 +396,7 @@ void USlotDataTask_Loader::DeserializeGameMode()
 	const FActorRecord& Record = SlotData->GameMode;
 	const bool bSuccess = DeserializeActor(World->GetAuthGameMode(), Record);
 
-	SE_LOG(Preset, "Game Mode '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	SELog(Preset, "Game Mode '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 void USlotDataTask_Loader::DeserializeGameState()
@@ -406,7 +406,7 @@ void USlotDataTask_Loader::DeserializeGameState()
 	const FActorRecord& Record = SlotData->GameState;
 	const bool bSuccess = DeserializeActor(GameState, Record);
 
-	SE_LOG(Preset, "Game State '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	SELog(Preset, "Game State '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 void USlotDataTask_Loader::DeserializePlayerState(int32 PlayerId)
@@ -418,7 +418,7 @@ void USlotDataTask_Loader::DeserializePlayerState(int32 PlayerId)
 	const FActorRecord& Record = SlotData->PlayerState;
 	const bool bSuccess = DeserializeActor(Controller->PlayerState, Record);
 
-	SE_LOG(Preset, "Player State '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	SELog(Preset, "Player State '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 void USlotDataTask_Loader::DeserializePlayerController(int32 PlayerId)
@@ -428,7 +428,7 @@ void USlotDataTask_Loader::DeserializePlayerController(int32 PlayerId)
 	const FControllerRecord& Record = SlotData->PlayerController;
 	const bool bSuccess = DeserializeController(Controller, Record);
 
-	SE_LOG(Preset, "Player Controller '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	SELog(Preset, "Player Controller '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 void USlotDataTask_Loader::DeserializePlayerHUD(int32 PlayerId)
@@ -440,7 +440,7 @@ void USlotDataTask_Loader::DeserializePlayerHUD(int32 PlayerId)
 	const FActorRecord& Record = SlotData->PlayerHUD;
 	const bool bSuccess = DeserializeActor(Controller->MyHUD, Record);
 
-	SE_LOG(Preset, "Player HUD '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	SELog(Preset, "Player HUD '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 void USlotDataTask_Loader::DeserializeGameInstance()
@@ -460,7 +460,7 @@ void USlotDataTask_Loader::DeserializeGameInstance()
 		GameInstance->Serialize(Archive);
 	}
 
-	SE_LOG(Preset, "Player Instance '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	SELog(Preset, "Player Instance '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& Record)
@@ -564,7 +564,7 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 				const FComponentRecord* Record = ActorRecord.ComponentRecords.FindByKey(Component);
 
 				if (!Record) {
-					SE_LOG(Preset, "Component '" + Component->GetFName().ToString() + "' - Record not found", FColor::Red, false, Indent + 1);
+					SELog(Preset, "Component '" + Component->GetFName().ToString() + "' - Record not found", FColor::Red, false, Indent + 1);
 					continue;
 				}
 

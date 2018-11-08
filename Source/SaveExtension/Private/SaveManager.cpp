@@ -59,12 +59,12 @@ bool USaveManager::SaveSlotToId(int32 SlotId, bool bOverrideIfNeeded, bool bScre
 	const USavePreset* Preset = GetPreset();
 	if (!IsValidSlot(SlotId))
 	{
-		SE_LOG(Preset, "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
+		SELog(Preset, "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
 		return false;
 	}
 
 	//Saving
-	SE_LOG(Preset, "Saving to Slot " + FString::FromInt(SlotId));
+	SELog(Preset, "Saving to Slot " + FString::FromInt(SlotId));
 
 	UWorld* World = GetWorld();
 	check(World);
@@ -209,7 +209,7 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 {
 	if (!IsValidSlot(SlotId))
 	{
-		SE_LOG(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
+		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
@@ -378,7 +378,7 @@ void USaveManager::OnLoadFinished()
 
 void USaveManager::OnMapLoadStarted(const FString& MapName)
 {
-	SE_LOG(GetPreset(), "Loading Map '" + MapName + "'", FColor::Purple);
+	SELog(GetPreset(), "Loading Map '" + MapName + "'", FColor::Purple);
 }
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)
