@@ -283,7 +283,7 @@ void USlotDataTask_Loader::FinishedDeserializing()
 	SlotData->Clean(true);
 	GetManager()->CurrentData = SlotData;
 
-	GetManager()->OnLoadFinished<false>();
+	GetManager()->OnLoadFinished(false);
 	Finish(true);
 
 	SELog(Preset, "Finished Loading", FColor::Green, false, 2);

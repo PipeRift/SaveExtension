@@ -321,10 +321,9 @@ void USaveManager::OnSaveBegan()
 	});
 }
 
-template<bool bError>
-void USaveManager::OnSaveFinished()
+void USaveManager::OnSaveFinished(const bool bError)
 {
-	IterateSubscribedInterfaces([](auto* Object) {
+	IterateSubscribedInterfaces([bError](auto* Object) {
 		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
 		if (Interface)
 		{
@@ -357,10 +356,9 @@ void USaveManager::OnLoadBegan()
 	});
 }
 
-template<bool bError>
-void USaveManager::OnLoadFinished()
+void USaveManager::OnLoadFinished(const bool bError)
 {
-	IterateSubscribedInterfaces([](auto* Object) {
+	IterateSubscribedInterfaces([bError](auto* Object) {
 		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
 		if (Interface) {
 			Interface->Execute_OnLoadFinished(Object, bError);

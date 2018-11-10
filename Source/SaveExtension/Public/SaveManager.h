@@ -284,11 +284,9 @@ public:
 
 
 	void OnSaveBegan();
-	template<bool bError>
-	void OnSaveFinished();
+	void OnSaveFinished(const bool bError);
 	void OnLoadBegan();
-	template<bool bError>
-	void OnLoadFinished();
+	void OnLoadFinished(const bool bError);
 
 private:
 

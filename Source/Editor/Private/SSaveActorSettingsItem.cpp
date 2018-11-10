@@ -6,6 +6,7 @@
 #include <Widgets/SOverlay.h>
 #include <Widgets/Layout/SBorder.h>
 #include <Widgets/Input/SButton.h>
+#include <Widgets/Text/STextBlock.h>
 #include <EditorStyleSet.h>
 
 

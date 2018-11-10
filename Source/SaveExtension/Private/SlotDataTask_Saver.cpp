@@ -113,7 +113,7 @@ void USlotDataTask_Saver::OnStart()
 
 		SELog(Preset, "Finished Saving", FColor::Green);
 	}
-	GetManager()->OnSaveFinished<false>();
+	GetManager()->OnSaveFinished(false);
 	Finish(bSave);
 }
 
