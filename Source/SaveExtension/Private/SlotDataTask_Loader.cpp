@@ -80,8 +80,7 @@ void USlotDataTask_Loader::AfterMapValidation()
 
 	BeforeDeserialize();
 
-	if (Preset->GetAsyncMode() == ESaveASyncMode::LoadAsync ||
-		Preset->GetAsyncMode() == ESaveASyncMode::SaveAndLoadAsync)
+	if (Preset->IsLoadAsync())
 		DeserializeASync();
 	else
 		DeserializeSync();

@@ -19,6 +19,50 @@
 
 
 /////////////////////////////////////////////////////
+// FSlotDataActorsTask
+const FName FSlotDataActorsTask::TagNoSave{ "!Save" };
+const FName FSlotDataActorsTask::TagNoTransform{ "!SaveTransform" };
+const FName FSlotDataActorsTask::TagNoPhysics{ "!SavePhysics" };
+const FName FSlotDataActorsTask::TagNoComponents{ "!SaveComponents" };
+const FName FSlotDataActorsTask::TagNoTags{ "!SaveTags" };
+const FName FSlotDataActorsTask::TagTransform{ "SaveTransform" };
+
+bool FSlotDataActorsTask::IsSaveTag(const FName& Tag)
+{
+	return Tag == TagNoSave || Tag == TagNoTransform || Tag == TagNoPhysics || Tag == TagNoComponents || Tag == TagNoTags;
+}
+
+bool FSlotDataActorsTask::ShouldSaveAsWorld(const AActor* Actor) const
+{
+	const UClass* const ActorClass = Actor->GetClass();
+	if (ActorClass == AStaticMeshActor::StaticClass() ||
+		ActorClass->IsChildOf<AInstancedFoliageActor>() ||
+		ActorClass->IsChildOf<AReflectionCapture>() ||
+		ActorClass->IsChildOf<APlayerController>() ||
+		ActorClass->IsChildOf<ALightmassPortal>() ||
+		ActorClass->IsChildOf<ANavigationData>() ||
+		ActorClass->IsChildOf<APlayerState>() ||
+		ActorClass->IsChildOf<AGameState>() ||
+		ActorClass->IsChildOf<AGameMode>() ||
+		ActorClass->IsChildOf<ALODActor>() ||
+		ActorClass->IsChildOf<ABrush>() ||
+		ActorClass->IsChildOf<AHUD>())
+	{
+		return false;
+	}
+
+	// Is a child class of our non serialized classes?
+	/*for (const auto& Class : IgnoredClasses)
+	{
+		if (ActorClass->IsChildOf(Class))
+			return false;
+	}*/
+
+	return true;
+}
+
+
+/////////////////////////////////////////////////////
 // USaveDataTask
 
 const FName USlotDataTask::TagNoSave{ "!Save" };

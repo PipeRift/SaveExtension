@@ -10,12 +10,76 @@
 #include <Engine/LevelScriptActor.h>
 #include <GameFramework/Controller.h>
 #include <AIController.h>
+#include <Async/AsyncWork.h>
 
 #include "SavePreset.h"
 #include "SlotData.h"
 
 #include "SlotDataTask.h"
 #include "SlotDataTask_Saver.generated.h"
+
+
+/////////////////////////////////////////////////////
+// FSerializeActorsTask
+// Async task to serialize actors from a level.
+class FSerializeActorsTask : public FSlotDataActorsTask
+{
+	const TArray<AActor*>* const LevelActors;
+	const int32 StartIndex;
+	const int32 Num;
+
+	FLevelRecord* LevelRecord;
+
+	FActorRecord LevelScriptRecord;
+	TArray<FActorRecord> ActorRecords;
+	TArray<FControllerRecord> AIControllerRecords;
+
+
+public:
+
+	explicit FSerializeActorsTask(const TArray<AActor*>* const InLevelActors, const int32 StartIndex, const int32 Num, FLevelRecord* LevelRecord, const USavePreset* Preset) : 
+		FSlotDataActorsTask(Preset),
+		LevelActors(InLevelActors),
+		StartIndex(StartIndex),
+		Num(FMath::Min(Num, LevelActors->Num() - StartIndex)),
+		LevelRecord(LevelRecord),
+		LevelScriptRecord{}, ActorRecords{}, AIControllerRecords{}
+	{
+		//ActorRecords.Reserve(Num);
+	}
+
+	void DoWork();
+
+	/** Called after task has completed to recover resulting information */
+	void DumpData() {
+		if (LevelScriptRecord.IsValid())
+			LevelRecord->LevelScript = LevelScriptRecord;
+
+		// Shrink not needed. Move wont keep reserved space
+		LevelRecord->Actors.Append(MoveTemp(ActorRecords));
+		LevelRecord->AIControllers.Append(MoveTemp(AIControllerRecords));
+	}
+
+	FORCEINLINE TStatId GetStatId() const
+	{
+		RETURN_QUICK_DECLARE_CYCLE_STAT(FSerializeActorsTask, STATGROUP_ThreadPoolAsyncTasks);
+	}
+
+private:
+
+	void SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord) const;
+
+	void SerializeAI(const AAIController* AIController, FLevelRecord& LevelRecord) const;
+
+	/** Serializes an actor into this Controller Record */
+	bool SerializeController(const AController* Actor, FControllerRecord& Record) const;
+	
+	/** Serializes an actor into this Actor Record */
+	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;
+
+	/** Serializes the components of an actor into a provided Actor Record */
+	inline void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0) const;
+};
 
 
 /**
@@ -41,6 +105,10 @@ protected:
 	int32 CurrentActorIndex;
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
 
+	/** Start AsyncTasks */
+	TArray<FAsyncTask<FSerializeActorsTask>> Tasks;
+	/** End AsyncTasks */
+
 public:
 
 	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
@@ -59,7 +127,7 @@ protected:
 
 	/** BEGIN Serialization */
 	void SerializeSync();
-	void SerializeLevelSync(const ULevel* Level, const ULevelStreaming* StreamingLevel = nullptr);
+	void SerializeLevelSync(const ULevel* Level, const int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
 
 	void SerializeASync();
 	void SerializeLevelASync(const ULevel* Level, const ULevelStreaming* StreamingLevel = nullptr);
@@ -70,9 +138,9 @@ protected:
 
 private:
 
-	void SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord);
+	void SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord) const;
 
-	void SerializeAI(const AAIController* AIController, FLevelRecord& LevelRecord);
+	void SerializeAI(const AAIController* AIController, FLevelRecord& LevelRecord) const;
 
 	/** Serializes the GameMode. Only with 'SaveGameMode' enabled. */
 	void SerializeGameMode();
@@ -100,13 +168,13 @@ private:
 
 
 	/** Serializes an actor into this Actor Record */
-	bool SerializeActor(const AActor* Actor, FActorRecord& Record);
+	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;
 
 	/** Serializes an actor into this Controller Record */
-	bool SerializeController(const AController* Actor, FControllerRecord& Record);
+	bool SerializeController(const AController* Actor, FControllerRecord& Record) const;
 
 	/** Serializes the components of an actor into a provided Actor Record */
-	inline void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0);
+	inline void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0) const;
 	/** END Serialization */
 
 	/** BEGIN FileSaving */

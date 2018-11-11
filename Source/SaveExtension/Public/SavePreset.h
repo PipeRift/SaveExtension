@@ -16,7 +16,7 @@ UENUM()
 enum class ESaveASyncMode : uint8 {
 	OnlySync,
 	LoadAsync,
-	SaveASync,
+	SaveAsync,
 	SaveAndLoadAsync
 };
 
@@ -150,4 +150,11 @@ public:
 
 	FORCEINLINE ESaveASyncMode GetAsyncMode() const { return AsyncMode; }
 	FORCEINLINE float GetMaxFrameMs() const { return MaxFrameMs; }
+
+	FORCEINLINE bool IsLoadAsync() const {
+		return AsyncMode == ESaveASyncMode::LoadAsync || AsyncMode == ESaveASyncMode::SaveAndLoadAsync;
+	}
+	FORCEINLINE bool IsSaveAsync() const {
+		return AsyncMode == ESaveASyncMode::SaveAsync || AsyncMode == ESaveASyncMode::SaveAndLoadAsync;
+	}
 };

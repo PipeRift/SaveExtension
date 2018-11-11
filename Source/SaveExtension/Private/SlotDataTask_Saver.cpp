@@ -20,6 +20,147 @@
 
 
 /////////////////////////////////////////////////////
+// FSerializeActorsTask
+void FSerializeActorsTask::DoWork()
+{
+	for (int32 I = 0; I < Num; ++I)
+	{
+		const AActor* const Actor = (*LevelActors)[StartIndex + I];
+		if (ShouldSave(Actor))
+		{
+			if (const AAIController* const AI = Cast<AAIController>(Actor))
+			{
+				if (bStoreAIControllers)
+				{
+					FControllerRecord Record;
+					SerializeController(AI, Record);
+					AIControllerRecords.Add(MoveTemp(Record));
+				}
+			}
+			else if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
+			{
+				if (bStoreLevelBlueprints) {
+					SerializeActor(LevelScript, LevelScriptRecord);
+				}
+			}
+			else if (ShouldSaveAsWorld(Actor))
+			{
+				FActorRecord Record;
+				SerializeActor(Actor, Record);
+				ActorRecords.Add(MoveTemp(Record));
+			}
+		}
+	}
+}
+
+bool FSerializeActorsTask::SerializeController(const AController* Actor, FControllerRecord& Record) const
+{
+	const bool bResult = SerializeActor(Actor, Record);
+	if (bResult && bStoreControlRotation)
+	{
+		Record.ControlRotation = Actor->GetControlRotation();
+	}
+	return bResult;
+}
+
+bool FSerializeActorsTask::SerializeActor(const AActor* Actor, FActorRecord& Record) const
+{
+
+	//Clean the record
+	Record = { Actor };
+
+	Record.bHiddenInGame = Actor->bHidden;
+	Record.bIsProcedural = IsProcedural(Actor);
+
+	if (SavesTags(Actor))
+	{
+		Record.Tags = Actor->Tags;
+	}
+	else
+	{
+		// Only save save-tags
+		for (const auto& Tag : Actor->Tags)
+		{
+			if (IsSaveTag(Tag))
+			{
+				Record.Tags.Add(Tag);
+			}
+		}
+	}
+
+	const bool bSavesPhysics = SavesPhysics(Actor);
+	if (SavesTransform(Actor) || bSavesPhysics)
+	{
+		Record.Transform = Actor->GetTransform();
+	}
+
+	if (bSavesPhysics)
+	{
+		USceneComponent* const Root = Actor->GetRootComponent();
+		if (Root && Root->Mobility == EComponentMobility::Movable)
+		{
+			if (auto* const Primitive = Cast<UPrimitiveComponent>(Root))
+			{
+				Record.LinearVelocity = Primitive->GetPhysicsLinearVelocity();
+				Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInRadians();
+			}
+			else
+			{
+				Record.LinearVelocity = Root->GetComponentVelocity();
+			}
+		}
+	}
+
+	if (SavesComponents(Actor))
+	{
+		SerializeActorComponents(Actor, Record, 1);
+	}
+
+	FMemoryWriter MemoryWriter(Record.Data, true);
+	FSaveExtensionArchive Archive(MemoryWriter, false);
+	const_cast<AActor*>(Actor)->Serialize(Archive);
+
+	return true;
+}
+
+void FSerializeActorsTask::SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent /*= 0*/) const
+{
+	const TSet<UActorComponent*>& Components = Actor->GetComponents();
+	for (auto* Component : Components)
+	{
+		if (ShouldSave(Component))
+		{
+			FComponentRecord ComponentRecord;
+			ComponentRecord.Name = Component->GetFName();
+			ComponentRecord.Class = Component->GetClass();
+
+			if (SavesTransform(Component))
+			{
+				const USceneComponent* Scene = CastChecked<USceneComponent>(Component);
+				if (Scene->Mobility == EComponentMobility::Movable)
+				{
+					ComponentRecord.Transform = Scene->GetRelativeTransform();
+				}
+			}
+
+			if (SavesTags(Component))
+			{
+				ComponentRecord.Tags = Component->ComponentTags;
+			}
+
+			if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
+			{
+				FMemoryWriter MemoryWriter(ComponentRecord.Data, true);
+				FSaveExtensionArchive Archive(MemoryWriter, false);
+				Component->Serialize(Archive);
+			}
+			ActorRecord.ComponentRecords.Add(ComponentRecord);
+		}
+	}
+}
+
+
+/////////////////////////////////////////////////////
 // USaveDataTask_Saver
 
 void USlotDataTask_Saver::OnStart()
@@ -99,6 +240,9 @@ void USlotDataTask_Saver::OnStart()
 				CurrentInfo->PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
 				CurrentInfo->SlotPlayedTime = CurrentInfo->PlayedTime;
 			}
+
+			// Save current game seconds
+			SlotData->TimeSeconds = World->TimeSeconds;
 		}
 
 		//Save Level info in both files
@@ -148,75 +292,78 @@ void USlotDataTask_Saver::SerializeWorld()
 	check(World);
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
-	// Save current game seconds
-	SlotData->TimeSeconds = World->TimeSeconds;
-
-	SerializeLevelSync(World->GetCurrentLevel());
-
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
+
+	const int32 NumberOfThreads = FPlatformMisc::NumberOfWorkerThreadsToSpawn();
+	const int32 TasksPerLevel = FMath::Max(1, FMath::RoundToInt(float(NumberOfThreads) / (Levels.Num() + 1)));
+
+	Tasks.Reserve(NumberOfThreads);
+
+	SerializeLevelSync(World->GetCurrentLevel(), TasksPerLevel);
 	for (const ULevelStreaming* Level : Levels)
 	{
 		if (Level->IsLevelLoaded())
 		{
-			SerializeLevelSync(Level->GetLoadedLevel(), Level);
+			SerializeLevelSync(Level->GetLoadedLevel(), TasksPerLevel, Level);
 		}
 	}
+
+	// Start all serialization tasks
+	if (Tasks.Num() > 0)
+	{
+		Tasks[0].StartSynchronousTask();
+		for (int32 I = 1; I < Tasks.Num(); ++I)
+		{
+			Tasks[I].StartBackgroundTask();
+		}
+	}
+	// Wait until all tasks have finished
+	for (auto& AsyncTask : Tasks)
+	{
+		AsyncTask.EnsureCompletion();
+	}
+	// All tasks finished, sync data
+	for (auto& AsyncTask : Tasks)
+	{
+		AsyncTask.GetTask().DumpData();
+	}
+	Tasks.Empty();
 }
 
-void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const ULevelStreaming* StreamingLevel)
+void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
 {
 	check(IsValid(Level));
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
-	FLevelRecord* LevelRecord = &SlotData->MainLevel;
 
+	// Find level record. By default, main level
+	FLevelRecord* LevelRecord = &SlotData->MainLevel;
 	if (StreamingLevel)
 	{
 		// Find or create the sub-level
-		int32 Index = SlotData->SubLevels.IndexOfByKey(StreamingLevel);
-		if (Index == INDEX_NONE)
-		{
-			Index = SlotData->SubLevels.Add({ StreamingLevel });
-		}
+		const int32 Index = SlotData->SubLevels.AddUnique({ StreamingLevel });
 		LevelRecord = &SlotData->SubLevels[Index];
 	}
 	check(LevelRecord);
 
-	// Empty level record before we serialize into it
+	// Empty level record before serializing it
 	LevelRecord->Clean();
 
-	// TODO: Analyze memory footprint on large actor amounts
-	LevelRecord->Actors.Reserve(Level->Actors.Num());
+	const int32 ActorCount = Level->Actors.Num();
+	const int32 ObjectsPerTask = FMath::CeilToInt((float)ActorCount / AssignedTasks);
 
-	//All actors of the level
-	for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
+	// Split all actors between async tasks
+	int32 StartIndex{ 0 };
+	while (StartIndex < ActorCount)
 	{
-		const AActor* const Actor = *ActorItr;
-		if (ShouldSave(Actor))
-		{
-			if (const AAIController* const AI = Cast<AAIController>(Actor))
-			{
-				SerializeAI(AI, *LevelRecord);
-			}
-			else if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
-			{
-				SerializeLevelScript(LevelScript, *LevelRecord);
-			}
-			else if (ShouldSaveAsWorld(Actor))
-			{
-				FActorRecord Record;
-				SerializeActor(Actor, Record);
-
-				LevelRecord->Actors.Add(Record);
-			}
-		}
+		Tasks.Emplace(&Level->Actors, StartIndex, ObjectsPerTask, LevelRecord, Preset);
+		StartIndex += ObjectsPerTask;
 	}
-	LevelRecord->Actors.Shrink();
 }
 
-void USlotDataTask_Saver::SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord)
+void USlotDataTask_Saver::SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord) const
 {
 	if (Preset->bStoreLevelBlueprints)
 	{
@@ -228,7 +375,7 @@ void USlotDataTask_Saver::SerializeLevelScript(const ALevelScriptActor* Level, F
 	}
 }
 
-void USlotDataTask_Saver::SerializeAI(const AAIController* AIController, FLevelRecord& LevelRecord)
+void USlotDataTask_Saver::SerializeAI(const AAIController* AIController, FLevelRecord& LevelRecord) const
 {
 	if (Preset->bStoreAIControllers)
 	{
@@ -322,7 +469,7 @@ void USlotDataTask_Saver::SerializeGameInstance()
 	SELog(Preset, "Game Instance '" + Record.Name.ToString() + "'", FColor::White, 1);
 }
 
-bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Record)
+bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Record) const
 {
 	//Clean the record
 	Record = { Actor };
@@ -381,7 +528,7 @@ bool USlotDataTask_Saver::SerializeActor(const AActor* Actor, FActorRecord& Reco
 	return true;
 }
 
-bool USlotDataTask_Saver::SerializeController(const AController* Actor, FControllerRecord& Record)
+bool USlotDataTask_Saver::SerializeController(const AController* Actor, FControllerRecord& Record) const
 {
 	const bool bResult = SerializeActor(Actor, Record);
 	if (bResult && Preset->bStoreControlRotation)
@@ -391,7 +538,7 @@ bool USlotDataTask_Saver::SerializeController(const AController* Actor, FControl
 	return bResult;
 }
 
-void USlotDataTask_Saver::SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 Indent)
+void USlotDataTask_Saver::SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 Indent) const
 {
 	const TSet<UActorComponent*>& Components = Actor->GetComponents();
 	for (auto* Component : Components)

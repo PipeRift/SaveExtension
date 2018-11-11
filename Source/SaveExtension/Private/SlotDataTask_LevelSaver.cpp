@@ -10,7 +10,7 @@ void USlotDataTask_LevelSaver::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
-		SerializeLevelSync(StreamingLevel->GetLoadedLevel(), StreamingLevel);
+		SerializeLevelSync(StreamingLevel->GetLoadedLevel(), 1, StreamingLevel);
 		//TODO: With async tasks Serializelevel will take charge of finishing
 		//return;
 	}

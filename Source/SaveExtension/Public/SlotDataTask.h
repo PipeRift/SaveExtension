@@ -19,6 +19,80 @@
 #include "SlotDataTask.generated.h"
 
 
+/////////////////////////////////////////////////////
+// FSlotDataActorsTask
+// Async task to serialize actors from a level.
+class FSlotDataActorsTask : public FNonAbandonableTask {
+public:
+
+	static const FName TagNoSave;
+	static const FName TagNoTransform;
+	static const FName TagNoComponents;
+	static const FName TagNoPhysics;
+	static const FName TagNoTags;
+	static const FName TagTransform;
+
+	static bool IsSaveTag(const FName& Tag);
+
+protected:
+
+	const bool bStoreLevelBlueprints;
+	const bool bStoreAIControllers;
+	const bool bStoreComponents;
+	const bool bStoreControlRotation;
+
+
+	FSlotDataActorsTask(const USavePreset* Preset) :
+		bStoreLevelBlueprints(Preset->bStoreLevelBlueprints),
+		bStoreAIControllers(Preset->bStoreAIControllers),
+		bStoreComponents(Preset->bStoreComponents),
+		bStoreControlRotation(Preset->bStoreControlRotation)
+	{}
+
+	//Actor Tags
+	FORCEINLINE bool ShouldSave(const AActor* Actor) const { return IsValid(Actor) && !HasTag(Actor, TagNoSave); }
+	FORCEINLINE bool SavesTransform(const AActor* Actor) const { return Actor && Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform); }
+	FORCEINLINE bool SavesPhysics(const AActor* Actor) const { return Actor && !HasTag(Actor, TagNoPhysics); }
+	FORCEINLINE bool SavesComponents(const AActor* Actor) const { return bStoreComponents && Actor && !HasTag(Actor, TagNoComponents); }
+	FORCEINLINE bool SavesTags(const AActor* Actor) const { return Actor && !HasTag(Actor, TagNoTags); }
+	FORCEINLINE bool IsProcedural(const AActor* Actor) const { return Actor && Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
+
+	bool ShouldSaveAsWorld(const AActor* Actor) const;
+
+
+	//Component Tags
+	FORCEINLINE bool ShouldSave(const UActorComponent* Component) const {
+		if (IsValid(Component) &&
+			!HasTag(Component, TagNoSave))
+		{
+			const UClass* const Class = Component->GetClass();
+			return !Class->IsChildOf<UStaticMeshComponent>() &&
+				!Class->IsChildOf<USkeletalMeshComponent>();
+		}
+		return false;
+	}
+
+	bool SavesTransform(const UActorComponent* Component) const {
+		return Component &&
+			Component->GetClass()->IsChildOf<USceneComponent>() &&
+			HasTag(Component, TagTransform);
+	}
+	FORCEINLINE bool SavesTags(const UActorComponent* Component) const { return Component && !HasTag(Component, TagNoTags); }
+
+private:
+
+	static FORCEINLINE bool HasTag(const AActor* Actor, const FName Tag) {
+		check(Actor);
+		return Actor->ActorHasTag(Tag);
+	}
+
+	static FORCEINLINE bool HasTag(const UActorComponent* Component, const FName Tag) {
+		check(Component);
+		return Component->ComponentHasTag(Tag);
+	}
+};
+
+
 class USaveManager;
 
 /**
@@ -101,7 +175,7 @@ protected:
 
 
 	//Actor Tags
-	FORCEINLINE bool ShouldSave(const AActor* Actor) const     { return IsValid(Actor) && !HasTag(Actor, TagNoSave);	   }
+	FORCEINLINE bool ShouldSave(const AActor* Actor) const     { return IsValid(Actor) && !HasTag(Actor, TagNoSave); }
 	FORCEINLINE bool SavesTransform(const AActor* Actor) const { return Actor && Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform);  }
 	FORCEINLINE bool SavesPhysics(const AActor* Actor) const   { return Actor && !HasTag(Actor, TagNoPhysics);	}
 	FORCEINLINE bool SavesComponents(const AActor* Actor) const { return Preset->bStoreComponents && Actor && !HasTag(Actor, TagNoComponents); }
