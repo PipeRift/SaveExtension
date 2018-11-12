@@ -294,7 +294,7 @@ void USlotDataTask_Saver::SerializeWorld()
 
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 
-	const int32 NumberOfThreads = FPlatformMisc::NumberOfWorkerThreadsToSpawn();
+	const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn());
 	const int32 TasksPerLevel = FMath::Max(1, FMath::RoundToInt(float(NumberOfThreads) / (Levels.Num() + 1)));
 
 	Tasks.Reserve(NumberOfThreads);

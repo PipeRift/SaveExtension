@@ -10,9 +10,8 @@ void USlotDataTask_LevelSaver::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
-		SerializeLevelSync(StreamingLevel->GetLoadedLevel(), 1, StreamingLevel);
-		//TODO: With async tasks Serializelevel will take charge of finishing
-		//return;
+		const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn());
+		SerializeLevelSync(StreamingLevel->GetLoadedLevel(), NumberOfThreads, StreamingLevel);
 	}
 	Finish(true);
 }

@@ -23,17 +23,6 @@
 // FSlotDataActorsTask
 // Async task to serialize actors from a level.
 class FSlotDataActorsTask : public FNonAbandonableTask {
-public:
-
-	static const FName TagNoSave;
-	static const FName TagNoTransform;
-	static const FName TagNoComponents;
-	static const FName TagNoPhysics;
-	static const FName TagNoTags;
-	static const FName TagTransform;
-
-	static bool IsSaveTag(const FName& Tag);
-
 protected:
 
 	const bool bStoreLevelBlueprints;

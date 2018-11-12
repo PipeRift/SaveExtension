@@ -20,17 +20,6 @@
 
 /////////////////////////////////////////////////////
 // FSlotDataActorsTask
-const FName FSlotDataActorsTask::TagNoSave{ "!Save" };
-const FName FSlotDataActorsTask::TagNoTransform{ "!SaveTransform" };
-const FName FSlotDataActorsTask::TagNoPhysics{ "!SavePhysics" };
-const FName FSlotDataActorsTask::TagNoComponents{ "!SaveComponents" };
-const FName FSlotDataActorsTask::TagNoTags{ "!SaveTags" };
-const FName FSlotDataActorsTask::TagTransform{ "SaveTransform" };
-
-bool FSlotDataActorsTask::IsSaveTag(const FName& Tag)
-{
-	return Tag == TagNoSave || Tag == TagNoTransform || Tag == TagNoPhysics || Tag == TagNoComponents || Tag == TagNoTags;
-}
 
 bool FSlotDataActorsTask::ShouldSaveAsWorld(const AActor* Actor) const
 {
