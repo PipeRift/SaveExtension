@@ -10,7 +10,7 @@
 	"CreatedByURL" : "https://piperift.com",
     "DocsURL": "https://piperift.com/SaveExtension/",
 	"SupportURL" : "info@piperift.com",
-	"EngineVersion" : "4.20.0",
+	"EngineVersion" : "4.21.0",
     "EnabledByDefault": true,
     "CanContainContent": false,
 	"IsBetaVersion" : false,
