@@ -107,6 +107,7 @@ struct FControllerRecord : public FActorRecord {
 
 
 	FControllerRecord() : Super() {}
+	FControllerRecord(const AActor* Actor) : Super(Actor) {}
 
 	virtual bool Serialize(FArchive& Ar) override;
 };

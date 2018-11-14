@@ -23,31 +23,41 @@
 // FSerializeActorsTask
 void FSerializeActorsTask::DoWork()
 {
+	bool bIsAIController;
+	bool bIsLevelScript;
+
 	for (int32 I = 0; I < Num; ++I)
 	{
 		const AActor* const Actor = (*LevelActors)[StartIndex + I];
 		if (ShouldSave(Actor))
 		{
-			if (const AAIController* const AI = Cast<AAIController>(Actor))
+			bIsAIController = false;
+			bIsLevelScript = false;
+
+			if (ShouldSaveAsWorld(Actor, bIsAIController, bIsLevelScript))
 			{
-				if (bStoreAIControllers)
+				if (bIsAIController)
 				{
-					FControllerRecord Record;
-					SerializeController(AI, Record);
-					AIControllerRecords.Add(MoveTemp(Record));
+					if (const AAIController* const AI = Cast<AAIController>(Actor))
+					{
+						FControllerRecord Record;
+						SerializeController(AI, Record);
+						AIControllerRecords.Add(MoveTemp(Record));
+					}
 				}
-			}
-			else if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
-			{
-				if (bStoreLevelBlueprints) {
-					SerializeActor(LevelScript, LevelScriptRecord);
+				else if (bIsLevelScript)
+				{
+					if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
+					{
+						SerializeActor(LevelScript, LevelScriptRecord);
+					}
 				}
-			}
-			else if (ShouldSaveAsWorld(Actor))
-			{
-				FActorRecord Record;
-				SerializeActor(Actor, Record);
-				ActorRecords.Add(MoveTemp(Record));
+				else
+				{
+					FActorRecord Record;
+					SerializeActor(Actor, Record);
+					ActorRecords.Add(MoveTemp(Record));
+				}
 			}
 		}
 	}
@@ -81,7 +91,7 @@ bool FSerializeActorsTask::SerializeActor(const AActor* Actor, FActorRecord& Rec
 		// Only save save-tags
 		for (const auto& Tag : Actor->Tags)
 		{
-			if (IsSaveTag(Tag))
+			if (USlotDataTask::IsSaveTag(Tag))
 			{
 				Record.Tags.Add(Tag);
 			}

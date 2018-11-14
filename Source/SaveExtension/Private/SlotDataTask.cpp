@@ -21,9 +21,22 @@
 /////////////////////////////////////////////////////
 // FSlotDataActorsTask
 
-bool FSlotDataActorsTask::ShouldSaveAsWorld(const AActor* Actor) const
+bool FSlotDataActorsTask::ShouldSaveAsWorld(const AActor* Actor, bool& bIsAIController, bool& bIsLevelScript) const
 {
 	const UClass* const ActorClass = Actor->GetClass();
+
+	bIsAIController = ActorClass->IsChildOf<AAIController>();
+	if (bIsAIController)
+	{
+		return bStoreAIControllers;
+	}
+
+	bIsLevelScript = ActorClass->IsChildOf<ALevelScriptActor>();
+	if (bIsLevelScript)
+	{
+		return bStoreLevelBlueprints;
+	}
+
 	if (ActorClass == AStaticMeshActor::StaticClass() ||
 		ActorClass->IsChildOf<AInstancedFoliageActor>() ||
 		ActorClass->IsChildOf<AReflectionCapture>() ||
@@ -107,9 +120,22 @@ UWorld* USlotDataTask::GetWorld() const
 	return GetOuter()->GetWorld();
 }
 
-bool USlotDataTask::ShouldSaveAsWorld(const AActor* Actor) const
+bool USlotDataTask::ShouldSaveAsWorld(const AActor* Actor, bool& bIsAIController, bool& bIsLevelScript) const
 {
 	const UClass* const ActorClass = Actor->GetClass();
+
+	bIsAIController = ActorClass->IsChildOf<AAIController>();
+	if (bIsAIController)
+	{
+		return Preset->bStoreAIControllers;
+	}
+
+	bIsLevelScript = ActorClass->IsChildOf<ALevelScriptActor>();
+	if (bIsLevelScript)
+	{
+		return Preset->bStoreLevelBlueprints;
+	}
+
 	if (ActorClass == AStaticMeshActor::StaticClass() ||
 		ActorClass->IsChildOf<AInstancedFoliageActor>() ||
 		ActorClass->IsChildOf<AReflectionCapture>() ||

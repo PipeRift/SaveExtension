@@ -250,30 +250,36 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 	// Scene Actors not contained in loaded records  => Actors to be Destroyed
 	// The rest									     => Just deserialize
 
-	TArray<FActorRecord> RecordsToSpawn = LevelRecord.Actors;
+	TArray<FActorRecord>      ActorsToSpawn = LevelRecord.Actors;
+	TArray<FControllerRecord> AIsToSpawn    = LevelRecord.AIControllers;
 	TArray<AActor*> ActorsToDestroy{};
 	{
+		bool bIsAIController = false;
+		bool bIsLevelScript = false;
+
 		// O(M*Log(N))
 		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 		{
-			AActor* Actor{ *ActorItr };
-			if (Actor)
+			AActor* const Actor{ *ActorItr };
+			if (ShouldSave(Actor))
 			{
 				// Remove records which actors do exist
-				const bool bFoundRecord = RecordsToSpawn.RemoveSingleSwap(Actor, false) > 0;
+				const bool bFoundAIRecord = AIsToSpawn.RemoveSingleSwap(Actor, false) > 0;
+				const bool bFoundActorRecord = !bFoundAIRecord && ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
 
-				if (!bFoundRecord && ShouldSave(Actor) && ShouldSaveAsWorld(Actor))
+				if (!bFoundAIRecord && !bFoundActorRecord && ShouldSaveAsWorld(Actor, bIsAIController, bIsLevelScript))
 				{
 					// If the actor wasn't found, mark it for destruction
 					Actor->Destroy();
 				}
 			}
 		}
-		RecordsToSpawn.Shrink();
+		ActorsToSpawn.Shrink();
 	}
 
 	// Create Actors that doesn't exist now but were saved
-	RespawnActors(RecordsToSpawn, Level);
+	RespawnActors(ActorsToSpawn, Level);
+	// TODO: Respawn AIs
 }
 
 void USlotDataTask_Loader::FinishedDeserializing()
@@ -332,21 +338,32 @@ void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* const Actor, const FLe
 
 	if (ShouldSave(Actor))
 	{
-		if (AAIController* const AI = Cast<AAIController>(Actor))
+		bool bIsAIController = false;
+		bool bIsLevelScript = false;
+		if (ShouldSaveAsWorld(Actor, bIsAIController, bIsLevelScript))
 		{
-			DeserializeAI(AI, LevelRecord);
-		}
-		else if (ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
-		{
-			DeserializeLevelScript(LevelScript, LevelRecord);
-		}
-		else if (ShouldSaveAsWorld(Actor))
-		{
-			// Find the record
-			const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
-			if (Record)
+			if (bIsAIController)
 			{
-				DeserializeActor(Actor, *Record);
+				if (AAIController* const AI = Cast<AAIController>(Actor))
+				{
+					DeserializeAI(AI, LevelRecord);
+				}
+			}
+			else if (bIsLevelScript)
+			{
+				if (ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
+				{
+					DeserializeLevelScript(LevelScript, LevelRecord);
+				}
+			}
+			else
+			{
+				// Find the record
+				const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
+				if (Record)
+				{
+					DeserializeActor(Actor, *Record);
+				}
 			}
 		}
 	}
