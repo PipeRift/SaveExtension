@@ -28,6 +28,7 @@ class FSerializeActorsTask : public FSlotDataActorsTask
 	const int32 StartIndex;
 	const int32 Num;
 
+	/** USE ONLY FOR DUMPING DATA */
 	FLevelRecord* LevelRecord;
 
 	FActorRecord LevelScriptRecord;
@@ -37,15 +38,16 @@ class FSerializeActorsTask : public FSlotDataActorsTask
 
 public:
 
-	explicit FSerializeActorsTask(const TArray<AActor*>* const InLevelActors, const int32 StartIndex, const int32 Num, FLevelRecord* LevelRecord, const USavePreset* Preset) : 
-		FSlotDataActorsTask(Preset),
+	explicit FSerializeActorsTask(const bool bIsSync, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 StartIndex, const int32 Num, FLevelRecord* LevelRecord, const USavePreset* Preset) :
+		FSlotDataActorsTask(bIsSync, World, SlotData, Preset),
 		LevelActors(InLevelActors),
 		StartIndex(StartIndex),
 		Num(FMath::Min(Num, LevelActors->Num() - StartIndex)),
 		LevelRecord(LevelRecord),
 		LevelScriptRecord{}, ActorRecords{}, AIControllerRecords{}
 	{
-		//ActorRecords.Reserve(Num);
+		// No apparent performance benefit
+		// ActorRecords.Reserve(Num);
 	}
 
 	void DoWork();
@@ -74,6 +76,15 @@ private:
 	/** Serializes an actor into this Controller Record */
 	bool SerializeController(const AController* Actor, FControllerRecord& Record) const;
 	
+
+	void SerializeGameMode();
+	void SerializeGameState();
+	void SerializePlayerState(int32 PlayerId);
+	void SerializePlayerController(int32 PlayerId);
+	void SerializePlayerHUD(int32 PlayerId);
+	void SerializeGameInstance();
+
+
 	/** Serializes an actor into this Actor Record */
 	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;
 
@@ -134,48 +145,9 @@ protected:
 
 	/** Serializes all world actors. */
 	void SerializeWorld();
-
+	/** END Serialization */
 
 private:
-
-	void SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord) const;
-
-	void SerializeAI(const AAIController* AIController, FLevelRecord& LevelRecord) const;
-
-	/** Serializes the GameMode. Only with 'SaveGameMode' enabled. */
-	void SerializeGameMode();
-
-	/** Serializes the GameState. Only with 'SaveGameState' enabled. */
-	void SerializeGameState();
-
-	/** Serializes the PlayerState. Only with 'SavePlayerState' enabled. */
-	void SerializePlayerState(int32 PlayerId);
-
-	/** Serializes PlayerControllers. Only with 'SavePlayerControllers' enabled. */
-	void SerializePlayerController(int32 PlayerId);
-
-	/** Serializes Player HUD Actor and its Properties.
-	Requires 'SaveGameMode' flag to be used. */
-	void SerializePlayerHUD(int32 PlayerId);
-
-	/** Serializes Current Player's Pawn and its Properties.
-	Requires 'SaveGameMode' flag to be used. */
-	//void SerializePlayerPawn(int32 PlayerId);
-
-	/** Serializes Game Instance Object and its Properties.
-	Requires 'SaveGameMode' flag to be used. */
-	void SerializeGameInstance();
-
-
-	/** Serializes an actor into this Actor Record */
-	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;
-
-	/** Serializes an actor into this Controller Record */
-	bool SerializeController(const AController* Actor, FControllerRecord& Record) const;
-
-	/** Serializes the components of an actor into a provided Actor Record */
-	inline void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0) const;
-	/** END Serialization */
 
 	/** BEGIN FileSaving */
 	bool SaveFile(const FString& InfoName, const FString& DataName) const;

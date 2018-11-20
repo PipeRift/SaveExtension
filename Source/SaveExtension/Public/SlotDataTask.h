@@ -157,13 +157,26 @@ protected:
 class FSlotDataActorsTask : public FNonAbandonableTask {
 protected:
 
+	const bool bIsSync;
+	/** USE ONLY IF SYNC */
+	const UWorld* const World;
+	/** USE ONLY IF SYNC */
+	USlotData* SlotData;
+
+	const bool bStoreGameMode;
+	const bool bStoreGameInstance;
 	const bool bStoreLevelBlueprints;
 	const bool bStoreAIControllers;
 	const bool bStoreComponents;
 	const bool bStoreControlRotation;
 
 
-	FSlotDataActorsTask(const USavePreset* Preset) :
+	FSlotDataActorsTask(const bool bIsSync, const UWorld* World, USlotData* SlotData, const USavePreset* Preset) :
+		bIsSync(bIsSync),
+		World(World),
+		SlotData(SlotData),
+		bStoreGameMode(Preset->bStoreGameMode),
+		bStoreGameInstance(Preset->bStoreGameInstance),
 		bStoreLevelBlueprints(Preset->bStoreLevelBlueprints),
 		bStoreAIControllers(Preset->bStoreAIControllers),
 		bStoreComponents(Preset->bStoreComponents),
