@@ -93,15 +93,15 @@ USlotDataTask* USlotDataTask::Start()
 	return this;
 }
 
-void USlotDataTask::Finish(bool bInSuccess)
+void USlotDataTask::Finish(bool bSuccess)
 {
 	if (bRunning)
 	{
-		OnFinish();
+		OnFinish(bSuccess);
 		MarkPendingKill();
 		GetManager()->FinishTask(this);
 		bFinished = true;
-		bSucceeded = bInSuccess;
+		bSucceeded = bSuccess;
 	}
 }
 

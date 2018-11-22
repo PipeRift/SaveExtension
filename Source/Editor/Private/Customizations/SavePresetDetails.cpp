@@ -35,25 +35,28 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		DetailBuilder.EditCategory(TEXT("Serialization"));
 
 		IDetailCategoryBuilder& Category = DetailBuilder.EditCategory(TEXT("Asynchronous"));
-		Category.AddProperty(TEXT("AsyncMode"));
-		Category.AddCustomRow(LOCTEXT("AsyncWarning", "Asynchronous Warning"))
-		.Visibility({ this, &FSavePresetDetails::GetWarningVisibility })
-		.ValueContent()
-		.MinDesiredWidth(300.f)
-		.MaxDesiredWidth(400.f)
-		[
-			SNew(SBorder)
-			.Padding(2.f)
-			.BorderImage(FEditorStyle::GetBrush("ErrorReporting.EmptyBox"))
-			.BorderBackgroundColor(this, &FSavePresetDetails::GetWarningColor)
+		{
+			Category.AddProperty(TEXT("MultithreadedSerialization"));
+			Category.AddProperty(TEXT("FrameSplittedSerialization"));
+			Category.AddCustomRow(LOCTEXT("AsyncWarning", "Asynchronous Warning"))
+			.Visibility({ this, &FSavePresetDetails::GetWarningVisibility })
+			.ValueContent()
+			.MinDesiredWidth(300.f)
+			.MaxDesiredWidth(400.f)
 			[
-				SNew(STextBlock)
-				.Text(LOCTEXT("AsyncWarningText", "WARNING: Asynchronous loading or saving is not recommended while using Level Streaming or World Composition"))
-				.AutoWrapText(true)
-			]
-		];
+				SNew(SBorder)
+				.Padding(2.f)
+				.BorderImage(FEditorStyle::GetBrush("ErrorReporting.EmptyBox"))
+				.BorderBackgroundColor(this, &FSavePresetDetails::GetWarningColor)
+				[
+					SNew(STextBlock)
+					.Text(LOCTEXT("AsyncWarningText", "WARNING: Asynchronous loading or saving is not recommended while using Level Streaming or World Composition"))
+					.AutoWrapText(true)
+				]
+			];
 
-		Category.AddProperty(TEXT("MaxFrameMs")).EditCondition({ this, &FSavePresetDetails::CanEditAsynchronous }, NULL);
+			Category.AddProperty(TEXT("MaxFrameMs")).EditCondition({ this, &FSavePresetDetails::CanEditAsynchronous }, NULL);
+		}
 
 		DetailBuilder.EditCategory(TEXT("Level Streaming"));
 	}
@@ -68,7 +71,7 @@ EVisibility FSavePresetDetails::GetWarningVisibility() const
 {
 	if (Settings.IsValid())
 	{
-		return Settings->GetAsyncMode() == ESaveASyncMode::OnlySync ? EVisibility::Collapsed : EVisibility::Visible;
+		return Settings->GetFrameSplitSerialization() == ESaveASyncMode::OnlySync ? EVisibility::Collapsed : EVisibility::Visible;
 	}
 	return EVisibility::Collapsed;
 }
@@ -77,7 +80,7 @@ bool FSavePresetDetails::CanEditAsynchronous() const
 {
 	if (Settings.IsValid())
 	{
-		return Settings->GetAsyncMode() != ESaveASyncMode::OnlySync;
+		return Settings->GetFrameSplitSerialization() != ESaveASyncMode::OnlySync;
 	}
 	return true;
 }

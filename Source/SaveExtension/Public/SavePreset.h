@@ -121,17 +121,29 @@ public:
 
 protected:
 
-	/** Defines what will be asynchronous. Nothing, Saving, Loading or Both */
+	/** Serialization will be multi-threaded between all available cores. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous")
-	ESaveASyncMode AsyncMode;
+	ESaveASyncMode MultithreadedSerialization;
+
+	/** Split serialization between multiple frames. Ignored if MultithreadedSerialization is used
+	 * Currently only implemented on Loading
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous")
+	ESaveASyncMode FrameSplittedSerialization;
+
 
 	/** Max milliseconds to use every frame in an asynchronous operation.
 	 * If running at 60Fps (16.6ms), loading or saving asynchronously will add MaxFrameMS:
 	 * 16.6ms + 5MS = 21.6ms -> 46Fps
-	 * This means gameplay will not be stopped nor have frame drops while saving or loading
+	 * This means gameplay will not be stopped nor have frame drops while saving or loading. Works best for non multi-threaded platforms
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous", meta = (UIMin="3", UIMax="10"))
 	float MaxFrameMs;
+
+	/** Files will be loaded or saved on a secondary thread while game continues */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous")
+	ESaveASyncMode MultithreadedFiles;
+
 
 protected:
 
@@ -142,19 +154,36 @@ protected:
 	bool bSaveAndLoadSublevels;
 
 
+	/** HELPERS */
 public:
 
 	FORCEINLINE int32 GetMaxSlots() const {
 		return MaxSlots <= 0 ? 16384 : MaxSlots;
 	}
 
-	FORCEINLINE ESaveASyncMode GetAsyncMode() const { return AsyncMode; }
+
+	FORCEINLINE bool IsMTSerializationLoad() const {
+		return MultithreadedSerialization == ESaveASyncMode::LoadAsync || MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
+	}
+	FORCEINLINE bool IsMTSerializationSave() const {
+		return MultithreadedSerialization == ESaveASyncMode::SaveAsync || MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
+	}
+
+	FORCEINLINE ESaveASyncMode GetFrameSplitSerialization() const { return FrameSplittedSerialization; }
 	FORCEINLINE float GetMaxFrameMs() const { return MaxFrameMs; }
 
-	FORCEINLINE bool IsLoadAsync() const {
-		return AsyncMode == ESaveASyncMode::LoadAsync || AsyncMode == ESaveASyncMode::SaveAndLoadAsync;
+	FORCEINLINE bool IsFrameSplitLoad() const {
+		return !IsMTSerializationLoad() && (FrameSplittedSerialization == ESaveASyncMode::LoadAsync || FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
 	}
-	FORCEINLINE bool IsSaveAsync() const {
-		return AsyncMode == ESaveASyncMode::SaveAsync || AsyncMode == ESaveASyncMode::SaveAndLoadAsync;
+	FORCEINLINE bool IsFrameSplitSave() const {
+		return !IsMTSerializationSave() && (FrameSplittedSerialization == ESaveASyncMode::SaveAsync || FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
 	}
+
+	FORCEINLINE bool IsMTFilesLoad() const {
+		return MultithreadedFiles == ESaveASyncMode::LoadAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
+	}
+	FORCEINLINE bool IsMTFilesSave() const {
+		return MultithreadedFiles == ESaveASyncMode::SaveAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
+	}
+
 };

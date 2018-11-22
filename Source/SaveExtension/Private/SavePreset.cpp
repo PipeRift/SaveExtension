@@ -24,8 +24,9 @@ USavePreset::USavePreset()
 	, bStoreComponents(true)
 	, bStoreControlRotation(true)
 	, bUseCompression(true)
-
-	, AsyncMode(ESaveASyncMode::OnlySync)
+	, MultithreadedSerialization(ESaveASyncMode::SaveAsync)
+	, FrameSplittedSerialization(ESaveASyncMode::OnlySync)
 	, MaxFrameMs(5.f)
+	, MultithreadedFiles(ESaveASyncMode::SaveAndLoadAsync)
 	, bSaveAndLoadSublevels(true)
 {}

@@ -11,6 +11,7 @@
 #include <SaveGameSystem.h>
 
 #include "SavePreset.h"
+#include "Tasks/SaveFileTask.h"
 
 
 static const int SE_SAVEGAME_FILE_TYPE_TAG = 0x0001;		// "sAvG"
@@ -41,7 +42,7 @@ FSaveFileHeader::FSaveFileHeader()
 	, CustomVersionFormat(static_cast<int32>(ECustomVersionSerializationFormat::Unknown))
 {}
 
-FSaveFileHeader::FSaveFileHeader(TSubclassOf<USaveGame> ObjectType)
+FSaveFileHeader::FSaveFileHeader(TSubclassOf<USaveGame> ObjectType, bool bIsCompressed)
 	: FileTypeTag(SE_SAVEGAME_FILE_TYPE_TAG)
 	, SaveGameFileVersion(FSaveGameFileVersion::LatestVersion)
 	, PackageFileUE4Version(GPackageFileUE4Version)
@@ -49,6 +50,7 @@ FSaveFileHeader::FSaveFileHeader(TSubclassOf<USaveGame> ObjectType)
 	, CustomVersionFormat(static_cast<int32>(ECustomVersionSerializationFormat::Latest))
 	, CustomVersions(FCustomVersionContainer::GetRegistered())
 	, SaveGameClassName(ObjectType->GetPathName())
+	, bIsCompressed(bIsCompressed)
 {}
 
 void FSaveFileHeader::Empty()
@@ -60,6 +62,7 @@ void FSaveFileHeader::Empty()
 	CustomVersionFormat = (int32)ECustomVersionSerializationFormat::Unknown;
 	CustomVersions.Empty();
 	SaveGameClassName.Empty();
+	bIsCompressed = false;
 }
 
 bool FSaveFileHeader::IsEmpty() const
@@ -103,6 +106,8 @@ void FSaveFileHeader::Read(FMemoryReader& MemoryReader)
 
 	// Get the class name
 	MemoryReader << SaveGameClassName;
+
+	MemoryReader << bIsCompressed;
 }
 
 void FSaveFileHeader::Write(FMemoryWriter& MemoryWriter)
@@ -124,6 +129,8 @@ void FSaveFileHeader::Write(FMemoryWriter& MemoryWriter)
 
 	// Write the class name so we know what class to load to
 	MemoryWriter << SaveGameClassName;
+
+	MemoryWriter << bIsCompressed;
 }
 
 
@@ -131,83 +138,84 @@ void FSaveFileHeader::Write(FMemoryWriter& MemoryWriter)
 * FSaveFileHeader
 */
 
-bool FFileAdapter::SaveFile(USaveGame* SaveGameObject, const FString& SlotName, const USavePreset* Preset)
+bool FFileAdapter::SaveFile(USaveGame* SaveGameObject, const FString& SlotName, const bool bUseCompression)
 {
-	check(Preset);
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_SaveFile);
 
 	ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem();
 	// If we have a system and an object to save and a save name...
 	if (SaveSystem && SaveGameObject && !SlotName.IsEmpty())
 	{
-		TArray<uint8> ObjectBytes;
-
-		FMemoryWriter MemoryWriter(ObjectBytes, true);
-		FSaveFileHeader SaveHeader(SaveGameObject->GetClass());
-		SaveHeader.Write(MemoryWriter);
-
+		TArray<uint8> SaveGameBytes{};
+		TArray<uint8> CompressedBytes{};
 		{
 			QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_SaveFile_Serialize);
+
 			// Serialize SaveGame Object
+			FMemoryWriter MemoryWriter(SaveGameBytes, true);
 			FObjectAndNameAsStringProxyArchive Ar(MemoryWriter, false);
 			SaveGameObject->Serialize(Ar);
+
+			if (bUseCompression)
+			{
+				// Compress SaveGame Object
+				FArchiveSaveCompressedProxy Compressor(CompressedBytes, ECompressionFlags::COMPRESS_ZLIB);
+				Compressor << SaveGameBytes;
+				Compressor.Close();
+			}
 		}
 
-		TArray<uint8> CompressedBytes;
-		//Ptr looking towards the compressed file data
-		TArray<uint8>* ObjectBytesPtr = &ObjectBytes;
-		if (Preset->bUseCompression)
-		{
-			ObjectBytesPtr = &CompressedBytes;
+		// Should use compressed bytes?
+		TArray<uint8>& DataBytesPtr = bUseCompression ? CompressedBytes : SaveGameBytes;
 
-			// Compress SaveGame Object
-			FArchiveSaveCompressedProxy Compressor = FArchiveSaveCompressedProxy(CompressedBytes, ECompressionFlags::COMPRESS_ZLIB);
-			Compressor << ObjectBytes;
-			Compressor.Flush();
-			Compressor.FlushCache();
-			Compressor.Close();
-		}
+
+		// Write header before data
+		TArray<uint8> FileBytes{};
+		FMemoryWriter HeaderWriter(FileBytes, true);
+
+		FSaveFileHeader SaveHeader(SaveGameObject->GetClass(), bUseCompression);
+		SaveHeader.Write(HeaderWriter);
+		HeaderWriter << DataBytesPtr;
 
 		// Store that data into the save system with the desired file name
-		return SaveSystem->SaveGame(false, *SlotName, 0, *ObjectBytesPtr);
+		return SaveSystem->SaveGame(false, *SlotName, 0, FileBytes);
 	}
 	return false;
 }
 
-USaveGame* FFileAdapter::LoadFile(const FString& SlotName, const USavePreset* Preset)
+USaveGame* FFileAdapter::LoadFile(const FString& SlotName)
 {
-	check(Preset);
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_LoadFile);
 
 	ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem();
 	// If we have a save system and a valid name..
 	if (SaveSystem && !SlotName.IsEmpty())
 	{
-		// Load raw data from slot
 		TArray<uint8> ObjectBytes;
-
 		bool bSuccess = SaveSystem->LoadGame(false, *SlotName, 0, ObjectBytes);
 		if (bSuccess)
 		{
-			TArray<uint8> UncompressedBytes;
-			//Ptr looking towards the uncompressed file data
-			TArray<uint8>* ObjectBytesPtr = &ObjectBytes;
+			TArray<uint8> DataBytes;
+			FSaveFileHeader SaveHeader{};
+			{// Read header
+				FMemoryReader MemoryReader(ObjectBytes, true);
+				SaveHeader.Read(MemoryReader);
+				MemoryReader << DataBytes;
+			}
 
-			if (Preset->bUseCompression)
+			// Uncompress if header indicates so
+			TArray<uint8> UncompressedBytes{};
+			if (SaveHeader.bIsCompressed)
 			{
-				ObjectBytesPtr = &UncompressedBytes;
-
-				FArchiveLoadCompressedProxy Decompressor(ObjectBytes, ECompressionFlags::COMPRESS_ZLIB);
+				FArchiveLoadCompressedProxy Decompressor(DataBytes, ECompressionFlags::COMPRESS_ZLIB);
 				if (Decompressor.GetError())
 					return nullptr;
 
 				Decompressor << UncompressedBytes;
 				Decompressor.Close();
 			}
+			TArray<uint8>& DataBytesPtr = SaveHeader.bIsCompressed ? UncompressedBytes : DataBytes;
 
-			FMemoryReader MemoryReader(*ObjectBytesPtr, true);
-			FSaveFileHeader SaveHeader;
-			SaveHeader.Read(MemoryReader);
 
 			// Try and find it, and failing that, load it
 			UClass* SaveGameClass = FindObject<UClass>(ANY_PACKAGE, *SaveHeader.SaveGameClassName);
@@ -218,13 +226,13 @@ USaveGame* FFileAdapter::LoadFile(const FString& SlotName, const USavePreset* Pr
 			if (SaveGameClass != nullptr)
 			{
 				USaveGame* SaveGameObj = NewObject<USaveGame>(GetTransientPackage(), SaveGameClass);
-
 				{
+					// Serialize data into Object
 					QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_LoadFile_Deserialize);
+					FMemoryReader MemoryReader(DataBytesPtr, true);
 					FObjectAndNameAsStringProxyArchive Ar(MemoryReader, true);
 					SaveGameObj->Serialize(Ar);
 				}
-
 				return SaveGameObj;
 			}
 		}

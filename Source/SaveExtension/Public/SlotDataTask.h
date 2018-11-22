@@ -77,7 +77,7 @@ public:
 
 	virtual void Tick(float DeltaTime) {}
 
-	void Finish(bool bInSuccess);
+	void Finish(bool bSuccess);
 
 	bool IsRunning() const  { return bRunning;  }
 	bool IsFinished() const { return bFinished; }
@@ -91,7 +91,7 @@ protected:
 
 	virtual void OnStart() {}
 
-	virtual void OnFinish() {}
+	virtual void OnFinish(bool bSuccess) {}
 
 	USaveManager* GetManager() const;
 

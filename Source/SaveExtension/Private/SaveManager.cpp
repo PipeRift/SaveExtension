@@ -225,12 +225,12 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 
 	const FString Card = GenerateSaveDataSlotName(InSaveInfo->Id);
 
-	return Cast<USlotData>(FFileAdapter::LoadFile(Card, GetPreset()));
+	return Cast<USlotData>(FFileAdapter::LoadFile(Card));
 }
 
 USlotInfo* USaveManager::LoadInfoFromFile(const FString Name) const
 {
-	return Cast<USlotInfo>(FFileAdapter::LoadFile(Name, GetPreset()));
+	return Cast<USlotInfo>(FFileAdapter::LoadFile(Name));
 }
 
 void USaveManager::GetSlotFileNames(TArray<FString>& FoundFiles) const

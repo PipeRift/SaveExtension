@@ -343,14 +343,32 @@ void USlotDataTask_Saver::OnStart()
 
 		SerializeSync();
 		SaveFile(InfoCard, DataCard);
+		return;
+	}
+	Finish(false);
+}
 
+void USlotDataTask_Saver::OnFinish(bool bSuccess)
+{
+	if (bSuccess)
+	{
 		// Clean serialization data
 		SlotData->Clean(true);
 
 		SELog(Preset, "Finished Saving", FColor::Green);
 	}
-	GetManager()->OnSaveFinished(false);
-	Finish(bSave);
+	GetManager()->OnSaveFinished(!bSuccess);
+}
+
+void USlotDataTask_Saver::BeginDestroy()
+{
+	if (SaveInfoTask)
+		delete SaveInfoTask;
+
+	if (SaveDataTask)
+		delete SaveDataTask;
+
+	Super::BeginDestroy();
 }
 
 void USlotDataTask_Saver::SerializeSync()
@@ -370,7 +388,8 @@ void USlotDataTask_Saver::SerializeWorld()
 
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 
-	const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn());
+	// Threads available + 1 (Synchronous Thread)
+	const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn() + 1);
 	const int32 TasksPerLevel = FMath::Max(1, FMath::RoundToInt(float(NumberOfThreads) / (Levels.Num() + 1)));
 
 	Tasks.Reserve(NumberOfThreads);
@@ -390,7 +409,10 @@ void USlotDataTask_Saver::SerializeWorld()
 		Tasks[0].StartSynchronousTask();
 		for (int32 I = 1; I < Tasks.Num(); ++I)
 		{
-			Tasks[I].StartBackgroundTask();
+			if(Preset->IsMTSerializationSave())
+				Tasks[I].StartBackgroundTask();
+			else
+				Tasks[I].StartSynchronousTask();
 		}
 	}
 	// Wait until all tasks have finished
@@ -406,9 +428,12 @@ void USlotDataTask_Saver::SerializeWorld()
 	Tasks.Empty();
 }
 
-void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
+void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
 {
 	check(IsValid(Level));
+
+	if (Preset->IsMTSerializationSave())
+		AssignedTasks = 1;
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
@@ -434,24 +459,32 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, const int32 As
 	int32 Index{ 0 };
 	while (Index < ActorCount)
 	{
+		// Add new Task
 		const bool IsFirstTask = Index <= 0;
 		Tasks.Emplace(IsFirstTask, World, SlotData, &Level->Actors, Index, ObjectsPerTask, LevelRecord, Preset);
 		Index += ObjectsPerTask;
 	}
 }
 
-bool USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataName) const
+void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataName)
 {
 	USaveManager* Manager = GetManager();
 
 	USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 	USlotData* CurrentData = Manager->GetCurrentData();
 
-	if (FFileAdapter::SaveFile(CurrentInfo, InfoName, Preset) &&
-		FFileAdapter::SaveFile(CurrentData, DataName, Preset))
-	{
-		return true;
-	}
+	SaveInfoTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, InfoName, Preset->bUseCompression);
+	SaveDataTask = new FAsyncTask<FSaveFileTask>(CurrentData, DataName, Preset->bUseCompression);
 
-	return false;
+	if (Preset->IsMTFilesSave())
+	{
+		SaveInfoTask->StartBackgroundTask();
+		SaveDataTask->StartBackgroundTask();
+	}
+	else
+	{
+		SaveInfoTask->StartSynchronousTask();
+		SaveDataTask->StartSynchronousTask();
+		Finish(true);
+	}
 }

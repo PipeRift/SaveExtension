@@ -80,7 +80,7 @@ void USlotDataTask_Loader::AfterMapValidation()
 
 	BeforeDeserialize();
 
-	if (Preset->IsLoadAsync())
+	if (Preset->IsFrameSplitLoad())
 		DeserializeASync();
 	else
 		DeserializeSync();

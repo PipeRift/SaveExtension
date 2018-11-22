@@ -12,6 +12,7 @@
 
 #include "ISaveExtension.h"
 
+
 class USavePreset;
 class FMemoryReader;
 class FMemoryWriter;
@@ -21,7 +22,7 @@ class FMemoryWriter;
 struct FSaveFileHeader
 {
 	FSaveFileHeader();
-	FSaveFileHeader(TSubclassOf<USaveGame> ObjectType);
+	FSaveFileHeader(TSubclassOf<USaveGame> ObjectType, bool bIsCompressed);
 
 	void Empty();
 	bool IsEmpty() const;
@@ -36,6 +37,7 @@ struct FSaveFileHeader
 	int32 CustomVersionFormat;
 	FCustomVersionContainer CustomVersions;
 	FString SaveGameClassName;
+	bool bIsCompressed;
 };
 
 /** Based on GameplayStatics to add multi-threading */
@@ -43,11 +45,10 @@ class FFileAdapter
 {
 public:
 
-	static bool SaveFile(USaveGame* SaveGameObject, const FString& SlotName, const USavePreset* Preset);
+	static bool SaveFile(USaveGame* SaveGameObject, const FString& SlotName, const bool bUseCompression);
 
-	static USaveGame* LoadFile(const FString& SlotName, const USavePreset* Preset);
+	static USaveGame* LoadFile(const FString& SlotName);
 
 	static bool DeleteFile(const FString& SlotName);
-
 	static bool DoesFileExist(const FString& SlotName);
 };

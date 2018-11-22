@@ -10,8 +10,7 @@ void USlotDataTask_LevelLoader::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
-		if (Preset->GetAsyncMode() == ESaveASyncMode::LoadAsync ||
-			Preset->GetAsyncMode() == ESaveASyncMode::SaveAndLoadAsync)
+		if (Preset->IsFrameSplitLoad())
 		{
 			DeserializeLevelASync(StreamingLevel->GetLoadedLevel(), StreamingLevel);
 		}

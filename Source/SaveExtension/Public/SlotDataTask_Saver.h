@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "SlotDataTask.h"
 #include "ISaveExtension.h"
 
 #include <Engine/Level.h>
@@ -15,7 +16,7 @@
 #include "SavePreset.h"
 #include "SlotData.h"
 
-#include "SlotDataTask.h"
+#include "SaveFileTask.h"
 #include "SlotDataTask_Saver.generated.h"
 
 
@@ -75,7 +76,7 @@ private:
 
 	/** Serializes an actor into this Controller Record */
 	bool SerializeController(const AController* Actor, FControllerRecord& Record) const;
-	
+
 
 	void SerializeGameMode();
 	void SerializeGameState();
@@ -118,9 +119,12 @@ protected:
 
 	/** Start AsyncTasks */
 	TArray<FAsyncTask<FSerializeActorsTask>> Tasks;
+	FAsyncTask<FSaveFileTask>* SaveInfoTask;
+	FAsyncTask<FSaveFileTask>* SaveDataTask;
 	/** End AsyncTasks */
 
 public:
+	USlotDataTask_Saver() : USlotDataTask(), SaveInfoTask(nullptr), SaveDataTask(nullptr) {}
 
 	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
 	{
@@ -133,12 +137,20 @@ public:
 	}
 
 	virtual void OnStart() override;
+	virtual void Tick(float DeltaTime) override
+	{
+		// If save file tasks exist and are both done
+		if (SaveInfoTask && SaveDataTask && SaveInfoTask->IsDone() && SaveDataTask->IsDone())
+			Finish(true);
+	}
+	virtual void OnFinish(bool bSuccess) override;
+	virtual void BeginDestroy() override;
 
 protected:
 
 	/** BEGIN Serialization */
 	void SerializeSync();
-	void SerializeLevelSync(const ULevel* Level, const int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
+	void SerializeLevelSync(const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
 
 	void SerializeASync();
 	void SerializeLevelASync(const ULevel* Level, const ULevelStreaming* StreamingLevel = nullptr);
@@ -150,6 +162,6 @@ protected:
 private:
 
 	/** BEGIN FileSaving */
-	bool SaveFile(const FString& InfoName, const FString& DataName) const;
+	void SaveFile(const FString& InfoName, const FString& DataName);
 	/** End FileSaving */
 };
