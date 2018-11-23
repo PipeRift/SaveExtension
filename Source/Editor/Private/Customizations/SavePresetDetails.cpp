@@ -50,7 +50,7 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 				.BorderBackgroundColor(this, &FSavePresetDetails::GetWarningColor)
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("AsyncWarningText", "WARNING: Asynchronous loading or saving is not recommended while using Level Streaming or World Composition"))
+					.Text(LOCTEXT("AsyncWarningText", "WARNING: Frame-splitted loading or saving is not recommended while using Level Streaming or World Composition"))
 					.AutoWrapText(true)
 				]
 			];
