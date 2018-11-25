@@ -9,7 +9,7 @@ gulp.task('default', function() {
 
 gulp.task('build', function(cb) {
   runSequence(
-    'refresh-summary',
+    //'refresh-summary',
     'generate-book',
     function() {
       gulpGitbook(".", cb);
@@ -17,19 +17,21 @@ gulp.task('build', function(cb) {
 });
 
 gulp.task('build-light', function(cb) {
-  runSequence(
+  /*runSequence(
     'refresh-summary',
   function() {
     gulpGitbook(".", cb);
-  });
+  });*/
+  gulpGitbook(".", cb);
 });
 
 gulp.task('serve', function(cb) {
-  runSequence(
+  /*runSequence(
     'refresh-summary',
   function() {
     gulpGitbook.serve(".", cb);
-  });
+  });*/
+  gulpGitbook.serve(".", cb);
 });
 
 gulp.task('refresh-summary', function(cb) {

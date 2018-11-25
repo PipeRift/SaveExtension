@@ -6,11 +6,15 @@ This plugin is for Unreal Engine 4 and has support for versions **4.20** and **4
 
 ## Intended Usage
 
-Our plugins are designed to work for very different games and needs, but, naturally, it was created around certain requirements.
+Our plugins are designed to work for very different games and needs, but naturally, they are more focused towards satisfying certain needs.
 
-In the case of SaveExtension, it has been developed to support games with high amounts of content in the world like open worlds or narrative games.
+**Save Extension** in particular has been created to help games with high amounts of content in the world like open world or narrative games that need to save world state with the less amount of work or complexity possible.
 
-What I mean by this is that you usually wouldn't serialize a world for a mario game. It can do it, but may not be worth it. Other games might have items to be picked, player states, AI, or streaming levels that require this serialization and here's where the strength of SaveExtension comes.
+As an example, a game like Super Mario probably wouldn't need **Save Extension**, because it doesn't need to store world state. It can do it, but may not be worth it. Other games might have items to be picked, player states, AI, or streaming levels that require this serialization and here's where the strength of **Save Extension** really shines.
+
+## Quick Start
+
+Check [Quick Start](quick-start.md) to see how to setup and configure the plugin.
 
 ## Supported Features
 
