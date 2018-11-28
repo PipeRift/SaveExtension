@@ -4,9 +4,9 @@ Quick Start will show the basic steps to follow to setup the plugin and start us
 
 ## Setting Up the Project
 
-We can start by creating an empty project ([How to create UE4 projects](https://docs.unrealengine.com/en-US/Engine/Basics/Projects/Browser)) or using your own and then installing the plugin into it, from marketplace or inside *Plugins* folder (See [Installation](installation.md)).
+We can start by creating an empty project ([How to create UE4 projects](https://docs.unrealengine.com/en-US/Engine/Basics/Projects/Browser)) or instead using your own. Then installing the plugin from marketplace or inside Plugins folder (See [Installation](http://www.hemingwayapp.com/installation.md)).
 
-If everything went right we should see the plugin enabled under *Edit->Plugins->Piperift*
+If everything went right, we should see the plugin enabled under *Edit->Plugins->Piperift*
 
 ![Plugin Enabled](img/plugin_enabled.png)
 
