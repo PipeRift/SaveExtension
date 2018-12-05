@@ -51,8 +51,8 @@ protected:
 	UPROPERTY()
 	USlotData* SlotData;
 
-	UPROPERTY()
-	UWorld* World;
+	//UPROPERTY()
+	//UWorld* World;
 
 	UPROPERTY()
 	const USavePreset* Preset;
@@ -68,7 +68,7 @@ public:
 	void Prepare(USlotData* InSaveData, UWorld* InWorld, const USavePreset* InPreset)
 	{
 		SlotData = InSaveData;
-		World = InWorld;
+		//World = InWorld;
 		Preset = InPreset;
 		MaxFrameMs = Preset? Preset->GetMaxFrameMs() : 5.f;
 	}

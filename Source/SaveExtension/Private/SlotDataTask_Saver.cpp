@@ -291,6 +291,7 @@ void USlotDataTask_Saver::OnStart()
 
 	if (bSave)
 	{
+		const UWorld* World = GetWorld();
 		GetManager()->OnSaveBegan();
 
 		USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
@@ -374,6 +375,7 @@ void USlotDataTask_Saver::BeginDestroy()
 void USlotDataTask_Saver::SerializeSync()
 {
 	// Has Authority
+	const UWorld* World = GetWorld();
 	if (World->GetAuthGameMode())
 	{
 		// Save World
@@ -383,6 +385,7 @@ void USlotDataTask_Saver::SerializeSync()
 
 void USlotDataTask_Saver::SerializeWorld()
 {
+	const UWorld* World = GetWorld();
 	check(World);
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
@@ -430,6 +433,7 @@ void USlotDataTask_Saver::SerializeWorld()
 
 void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
 {
+	const UWorld* World = GetWorld();
 	check(IsValid(Level));
 
 	if (Preset->IsMTSerializationSave())
