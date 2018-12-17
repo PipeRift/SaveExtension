@@ -15,6 +15,8 @@
 #include <Misc/CoreDelegates.h>
 
 #include "FileAdapter.h"
+#include "Multithreading/LoadSlotInfoTask.h"
+#include "LatentActions/LoadInfosAction.h"
 
 
 USaveManager::USaveManager()
@@ -70,7 +72,7 @@ bool USaveManager::SaveSlotToId(int32 SlotId, bool bOverrideIfNeeded, bool bScre
 	check(World);
 
 	//Launch task, always fail if it didn't finish or wasn't scheduled
-	const auto* Task = CreateSaver()->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Width, Height)->Start();
+	const auto* Task = CreateTask<USlotDataTask_Saver>()->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Width, Height)->Start();
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
@@ -84,7 +86,7 @@ bool USaveManager::LoadSlotFromId(int32 SlotId)
 
 	TryInstantiateInfo();
 
-	auto* Task = CreateLoader()->Setup(SlotId)->Start();
+	auto* Task = CreateTask<USlotDataTask_Loader>()->Setup(SlotId)->Start();
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
@@ -99,6 +101,26 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 		   FFileAdapter::DeleteFile(DataSlot);
 }
 
+void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate)
+{
+	auto* LoadTask = new FAsyncTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate));
+	LoadTask->StartBackgroundTask();
+
+	LoadInfosTasks.Add(LoadTask);
+}
+
+void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
+{
+	if (UWorld* World = GetWorld())
+	{
+		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
+		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		{
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FLoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
+		}
+	}
+}
+
 bool USaveManager::IsSlotSaved(int32 SlotId) const
 {
 	if (!IsValidSlot(SlotId))
@@ -108,32 +130,6 @@ bool USaveManager::IsSlotSaved(int32 SlotId) const
 	const FString DataSlot = GenerateSaveDataSlotName(SlotId);
 	return FFileAdapter::DoesFileExist(InfoSlot) &&
 		   FFileAdapter::DoesFileExist(DataSlot);
-}
-
-void USaveManager::GetAllSlotInfos(TArray<USlotInfo*>& SaveInfos, const bool SortByRecent)
-{
-	const USavePreset* Preset = GetPreset();
-
-	TArray<FString> FileNames;
-	GetSlotFileNames(FileNames);
-
-	SaveInfos.Empty();
-	SaveInfos.Reserve(FileNames.Num());
-
-	for (const FString& File : FileNames)
-	{
-		USlotInfo* Info = LoadInfoFromFile(File);
-		if (Info) {
-			SaveInfos.Add(Info);
-		}
-	}
-
-	if (SortByRecent)
-	{
-		SaveInfos.Sort([](const USlotInfo& A, const USlotInfo& B) {
-			return A.SaveDate > B.SaveDate;
-		});
-	}
 }
 
 FString USaveManager::EventGenerateSaveSlot_Implementation(const int32 SlotId) const
@@ -197,12 +193,12 @@ void USaveManager::UpdateLevelStreamings()
 
 void USaveManager::SerializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
-	CreateLevelSaver()->Setup(LevelStreaming)->Start();
+	CreateTask<USlotDataTask_LevelSaver>()->Setup(LevelStreaming)->Start();
 }
 
 void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
-	CreateLevelLoader()->Setup(LevelStreaming)->Start();
+	CreateTask<USlotDataTask_LevelLoader>()->Setup(LevelStreaming)->Start();
 }
 
 USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
@@ -213,9 +209,12 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 		return nullptr;
 	}
 
-	const FString Card = GenerateSaveSlotName(SlotId);
+	FAsyncTask<FLoadSlotInfoTask>* LoadInfoTask = new FAsyncTask<FLoadSlotInfoTask>(this, SlotId);
+	LoadInfoTask->StartSynchronousTask();
 
-	return LoadInfoFromFile(Card);
+	check(LoadInfoTask->IsDone());
+
+	return LoadInfoTask->GetTask().GetLoadedSlot();
 }
 
 USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
@@ -228,46 +227,9 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 	return Cast<USlotData>(FFileAdapter::LoadFile(Card));
 }
 
-USlotInfo* USaveManager::LoadInfoFromFile(const FString Name) const
+USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
 {
-	return Cast<USlotInfo>(FFileAdapter::LoadFile(Name));
-}
-
-void USaveManager::GetSlotFileNames(TArray<FString>& FoundFiles) const
-{
-	const FString SaveFolder{ FString::Printf(TEXT("%sSaveGames/"), *FPaths::ProjectSavedDir()) };
-
-	if (!SaveFolder.IsEmpty())
-	{
-		FFindSlotVisitor Visitor { FoundFiles };
-		Visitor.bOnlyInfos = true;
-		FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(*SaveFolder, Visitor);
-	}
-}
-
-USlotDataTask_Saver* USaveManager::CreateSaver()
-{
-	return Cast<USlotDataTask_Saver>(CreateTask(USlotDataTask_Saver::StaticClass()));
-}
-
-USlotDataTask_LevelSaver* USaveManager::CreateLevelSaver()
-{
-	return Cast<USlotDataTask_LevelSaver>(CreateTask(USlotDataTask_LevelSaver::StaticClass()));
-}
-
-USlotDataTask_Loader* USaveManager::CreateLoader()
-{
-	return Cast<USlotDataTask_Loader>(CreateTask(USlotDataTask_Loader::StaticClass()));
-}
-
-USlotDataTask_LevelLoader* USaveManager::CreateLevelLoader()
-{
-	return Cast<USlotDataTask_LevelLoader>(CreateTask(USlotDataTask_LevelLoader::StaticClass()));
-}
-
-USlotDataTask* USaveManager::CreateTask(UClass* TaskType)
-{
-	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType);
+	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
 	Task->Prepare(CurrentData, GetWorld(), GetPreset());
 	Tasks.Add(Task);
 	return Task;
@@ -293,6 +255,17 @@ void USaveManager::Tick(float DeltaTime)
 			Task->Tick(DeltaTime);
 		}
 	}
+
+	// Finish loading info tasks
+	LoadInfosTasks.RemoveAllSwap([](auto* Task) {
+		if (Task->IsDone())
+		{
+			Task->GetTask().CallDelegate();
+			delete Task;
+			return true;
+		}
+		return false;
+	});
 }
 
 void USaveManager::SubscribeForEvents(const TScriptInterface<ISaveExtensionInterface>& Interface)
@@ -404,40 +377,15 @@ void USaveManager::BeginDestroy()
 {
 	// Remove this manager from the static list
 	GlobalManagers.Remove(OwningGameInstance);
-	Super::BeginDestroy();
-}
 
-bool USaveManager::FFindSlotVisitor::Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory)
-{
-	if (!bIsDirectory)
+	for (auto* LoadInfoTask : LoadInfosTasks)
 	{
-		FString FullFilePath(FilenameOrDirectory);
-		if (FPaths::GetExtension(FullFilePath) == TEXT("sav"))
-		{
-			FString CleanFilename = FPaths::GetBaseFilename(FullFilePath);
-			CleanFilename.RemoveFromEnd(".sav");
-
-			if (bOnlyInfos)
-			{
-				if (!CleanFilename.EndsWith("_data"))
-				{
-					FilesFound.Add(CleanFilename);
-				}
-			}
-			else if (bOnlyDatas)
-			{
-				if (CleanFilename.EndsWith("_data"))
-				{
-					FilesFound.Add(CleanFilename);
-				}
-			}
-			else
-			{
-				FilesFound.Add(CleanFilename);
-			}
-		}
+		if (!LoadInfoTask->IsIdle())
+			LoadInfoTask->EnsureCompletion(false);
+		delete LoadInfoTask;
 	}
-	return true;
+
+	Super::BeginDestroy();
 }
 
 
