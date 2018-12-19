@@ -5,6 +5,7 @@
 #include <CoreMinimal.h>
 #include <HAL/PlatformFilemanager.h>
 #include <GenericPlatform/GenericPlatformFile.h>
+#include <Async/AsyncWork.h>
 #include <Engine/GameInstance.h>
 #include <Tickable.h>
 
@@ -19,6 +20,7 @@
 #include "SlotDataTask_Loader.h"
 #include "SlotDataTask_LevelSaver.h"
 #include "SlotDataTask_LevelLoader.h"
+#include "Multithreading/LoadAllSlotInfosTask.h"
 
 #include "SaveManager.generated.h"
 
@@ -39,7 +41,7 @@ class SAVEEXTENSION_API USaveManager : public UObject, public FTickableGameObjec
 
 
 	/************************************************************************/
-	/* PROPERTIES														   */
+	/* PROPERTIES														    */
 	/************************************************************************/
 public:
 
@@ -61,6 +63,8 @@ private:
 	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
 
+	TArray<FAsyncTask<FLoadAllSlotInfosTask>*> LoadInfosTasks;
+
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;
 
@@ -69,7 +73,7 @@ private:
 
 
 	/************************************************************************/
-	/* METHODS															  */
+	/* METHODS											     			    */
 	/************************************************************************/
 public:
 
@@ -144,14 +148,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
 	FORCEINLINE USlotInfo* GetSlotInfo(int32 SlotId) { return LoadInfo(SlotId); }
 
+
 	/**
 	 * Find all saved games and return their SlotInfos
-	 * Performance: Interacts with disk, can be slow
-	 * @param SaveInfos All saved games found on disk
 	 * @param bSortByRecent Should slots be ordered by save date?
+	 * @param SaveInfos All saved games found on disk
 	 */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
-	void GetAllSlotInfos(TArray<USlotInfo*>& SaveInfos, const bool bSortByRecent = false);
+	void LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate);
+
+private:
+
+	/**
+	 * Find all saved games and return their SlotInfos
+	 * @param bSortByRecent Should slots be ordered by save date?
+	 * @param SaveInfos All saved games found on disk
+	 */
+	UFUNCTION(BlueprintCallable, Category = Dialogue, meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", Duration = "-1.0", DisplayName = "Load All Slot Infos"))
+	void BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo);
+
+public:
 
 	/** Check if an slot exists on disk
 	 * @return true if the slot exists
@@ -228,10 +243,6 @@ private:
 		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
 	}
 
-	USlotInfo* LoadInfoFromFile(const FString Name) const;
-
-	void GetSlotFileNames(TArray<FString>& FoundFiles) const;
-
 	void OnLevelLoaded(ULevelStreaming* StreamingLevel) {}
 
 
@@ -239,15 +250,19 @@ private:
 	UPROPERTY(Transient)
 	TArray<USlotDataTask*> Tasks;
 
-	USlotDataTask_Saver* CreateSaver();
-	USlotDataTask_LevelSaver* CreateLevelSaver();
-	USlotDataTask_Loader* CreateLoader();
-	USlotDataTask_LevelLoader* CreateLevelLoader();
-	USlotDataTask* CreateTask(UClass* TaskType);
+	template<class TaskType>
+	TaskType* CreateTask() {
+		return Cast<TaskType>(CreateTask(TaskType::StaticClass()));
+	}
+	USlotDataTask* CreateTask(TSubclassOf<USlotDataTask> TaskType);
 
 	void FinishTask(USlotDataTask* Task);
 
 	bool HasTasks() const { return Tasks.Num() > 0; }
+
+	/** @return true when saving or loading anything, including levels */
+	UFUNCTION(BlueprintPure, Category = SaveExtension)
+	FORCEINLINE bool IsSavingOrLoading() const { return HasTasks(); }
 	//~ End Tasks
 
 
@@ -310,21 +325,6 @@ private:
 	/**
 	* STATIC
 	*/
-
-	/** Used to find next available slot id */
-	class FFindSlotVisitor : public IPlatformFile::FDirectoryVisitor
-	{
-	public:
-		bool bOnlyInfos = false;
-		bool bOnlyDatas = false;
-		TArray<FString>& FilesFound;
-
-		FFindSlotVisitor(TArray<FString>& Files)
-			: FilesFound(Files)
-		{}
-
-		virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override;
-	};
 
 	static TMap<TWeakObjectPtr<UGameInstance>, TWeakObjectPtr<USaveManager>> GlobalManagers;
 

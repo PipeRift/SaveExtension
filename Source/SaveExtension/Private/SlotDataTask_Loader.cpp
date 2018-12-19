@@ -26,6 +26,11 @@ void USlotDataTask_Loader::OnStart()
 
 	SELog(Preset, "Loading from Slot " + FString::FromInt(Slot));
 
+
+	if (Preset->IsMTFilesLoad())
+	{
+	}
+
 	NewSlotInfo = Manager->LoadInfo(Slot);
 	if (!NewSlotInfo)
 	{

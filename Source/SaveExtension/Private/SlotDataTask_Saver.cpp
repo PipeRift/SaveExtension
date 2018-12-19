@@ -473,7 +473,7 @@ void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataN
 	USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 	USlotData* CurrentData = Manager->GetCurrentData();
 
-	SaveInfoTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, InfoName, Preset->bUseCompression);
+	SaveInfoTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, InfoName, false /* Infos don't use compression to be loaded faster */);
 	SaveDataTask = new FAsyncTask<FSaveFileTask>(CurrentData, DataName, Preset->bUseCompression);
 
 	if (Preset->IsMTFilesSave())

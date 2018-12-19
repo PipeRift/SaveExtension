@@ -16,6 +16,7 @@
 #include "SlotData.h"
 
 #include "SlotDataTask.h"
+#include "Multithreading/LoadFileTask.h"
 #include "SlotDataTask_Loader.generated.h"
 
 
@@ -40,6 +41,11 @@ protected:
 
 	int32 CurrentActorIndex;
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
+
+	/** Start AsyncTasks */
+	FAsyncTask<FLoadFileTask>* LoadInfoTask;
+	FAsyncTask<FLoadFileTask>* LoadDataTask;
+	/** End AsyncTasks */
 
 public:
 
