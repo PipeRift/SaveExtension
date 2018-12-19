@@ -43,16 +43,23 @@ protected:
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
 
 	/** Start AsyncTasks */
-	FAsyncTask<FLoadFileTask>* LoadInfoTask;
 	FAsyncTask<FLoadFileTask>* LoadDataTask;
 	/** End AsyncTasks */
+
+	bool bDeserializing;
 
 public:
 
 	bool bLoadingMap;
 
 
-	USlotDataTask_Loader() : Super(), bLoadingMap(false) {}
+	USlotDataTask_Loader()
+		: Super()
+		, CurrentActorIndex(0)
+		, LoadDataTask(nullptr)
+		, bDeserializing(false)
+		, bLoadingMap(false)
+	{}
 
 	auto Setup(int32 InSlot)
 	{
@@ -66,17 +73,23 @@ private:
 
 	virtual void OnStart() override;
 
-	virtual void Tick(float DeltaTime) override {
-		if(CurrentLevel.IsValid())
-			DeserializeASyncLoop();
-	}
+	virtual void Tick(float DeltaTime) override;
+	virtual void BeginDestroy() override;
 
-	void AfterMapValidation();
+	void StartDeserialization();
 
 	/** Spawns Actors hat were saved but which actors are not in the world. */
 	void RespawnActors(const TArray<FActorRecord>& Records, const ULevel* Level);
 
 protected:
+
+	//~ Begin Files
+	void StartLoadingData();
+
+	USlotData* GetLoadedData() const;
+	FORCEINLINE const bool IsDataLoaded() const { return LoadDataTask && LoadDataTask->IsDone(); };
+	//~ End Files
+
 
 	/** BEGIN Deserialization */
 	void BeforeDeserialize();

@@ -207,20 +207,19 @@ public:
 
 	void TryInstantiateInfo(bool bForced = false);
 
-	virtual FString GenerateSaveSlot(const int32 SlotId) const { return EventGenerateSaveSlot(SlotId); }
-
-	FString GenerateSaveSlotName(const int32 SlotId) const {
-		return GenerateSaveSlot(SlotId);
+	virtual FString GenerateBaseSlotName(const int32 SlotId) const {
+		return IsValidSlot(SlotId)? FString::FromInt(SlotId) : FString{};
 	}
 
-	FString GenerateSaveDataSlotName(const int32 SlotId) const {
-		return GenerateSaveSlotName(SlotId).Append(TEXT("_data"));
+	FString GenerateSlotInfoName(const int32 SlotId) const {
+		return GenerateBaseSlotName(SlotId);
+	}
+
+	FString GenerateSlotDataName(const int32 SlotId) const {
+		return GenerateSlotInfoName(SlotId).Append(TEXT("_data"));
 	}
 
 protected:
-
-	UFUNCTION(BlueprintNativeEvent, Category = SaveExtension, meta = (DisplayName = "Generate Save Slot"))
-	FString EventGenerateSaveSlot(const int32 SlotId) const;
 
 	bool CanLoadOrSave();
 

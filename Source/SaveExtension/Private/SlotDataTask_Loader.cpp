@@ -26,11 +26,6 @@ void USlotDataTask_Loader::OnStart()
 
 	SELog(Preset, "Loading from Slot " + FString::FromInt(Slot));
 
-
-	if (Preset->IsMTFilesLoad())
-	{
-	}
-
 	NewSlotInfo = Manager->LoadInfo(Slot);
 	if (!NewSlotInfo)
 	{
@@ -39,7 +34,10 @@ void USlotDataTask_Loader::OnStart()
 		return;
 	}
 
-	//Cross-Level loading
+	// Load data while level loads
+	StartLoadingData();
+
+	// Cross-Level loading
 	const UWorld* World = GetWorld();
 	if (World->GetFName() != NewSlotInfo->Map)
 	{
@@ -50,37 +48,67 @@ void USlotDataTask_Loader::OnStart()
 
 		SELog(Preset, "Slot '" + FString::FromInt(Slot) + "' is recorded on another Map. Loading before charging slot.", FColor::White, false, 1);
 	}
+	else if(IsDataLoaded())
+	{
+		// Will only continue if data has been loaded. Otherwise, it will check on tick
+		StartDeserialization();
+	}
+}
+
+void USlotDataTask_Loader::Tick(float DeltaTime)
+{
+	if (bDeserializing)
+	{
+		if (CurrentLevel.IsValid())
+			DeserializeASyncLoop();
+	}
 	else
 	{
-		AfterMapValidation();
+		// If Map load finished or didn't start and Data is loaded
+		if (!bLoadingMap && IsDataLoaded())
+			StartDeserialization();
 	}
+}
+
+void USlotDataTask_Loader::BeginDestroy()
+{
+	if (LoadDataTask) {
+		LoadDataTask->EnsureCompletion(false);
+		delete LoadDataTask;
+	}
+
+	Super::BeginDestroy();
 }
 
 void USlotDataTask_Loader::OnMapLoaded()
 {
 	const UWorld* World = GetWorld();
-	if (World->GetFName() != NewSlotInfo->Map)
+	if (World->GetFName() == NewSlotInfo->Map)
 	{
 		bLoadingMap = false;
-		AfterMapValidation();
+
+		if(IsDataLoaded())
+			StartDeserialization();
 	}
 }
 
-void USlotDataTask_Loader::AfterMapValidation()
+void USlotDataTask_Loader::StartDeserialization()
 {
 	check(NewSlotInfo);
 
+	bDeserializing = true;
 	NewSlotInfo->LoadDate = FDateTime::Now();
 
 	USaveManager* Manager = GetManager();
-	SlotData = Manager->LoadData(NewSlotInfo);
+
+	SlotData = GetLoadedData();
 	if (!SlotData)
 	{
 		Finish(false);
 		return;
 	}
 
-	GetManager()->OnLoadBegan();
+	Manager->OnLoadBegan();
 
 	//Apply current Info if succeeded
 	Manager->CurrentInfo = NewSlotInfo;
@@ -91,6 +119,24 @@ void USlotDataTask_Loader::AfterMapValidation()
 		DeserializeASync();
 	else
 		DeserializeSync();
+}
+
+void USlotDataTask_Loader::StartLoadingData()
+{
+	const FString SlotDataName = GetManager()->GenerateSlotDataName(Slot);
+	LoadDataTask = new FAsyncTask<FLoadFileTask>(SlotDataName);
+
+	if (Preset->IsMTFilesLoad())
+		LoadDataTask->StartBackgroundTask();
+	else
+		LoadDataTask->StartSynchronousTask();
+}
+
+USlotData* USlotDataTask_Loader::GetLoadedData() const
+{
+	if (IsDataLoaded())
+		return Cast<USlotData>(LoadDataTask->GetTask().GetSaveGame());
+	return nullptr;
 }
 
 void USlotDataTask_Loader::BeforeDeserialize()
@@ -289,7 +335,7 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 
 	// Create Actors that doesn't exist now but were saved
 	RespawnActors(ActorsToSpawn, Level);
-	// TODO: Respawn AIs
+	// #TODO: Respawn AIs
 }
 
 void USlotDataTask_Loader::FinishedDeserializing()

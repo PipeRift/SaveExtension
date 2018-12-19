@@ -95,8 +95,8 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 	if (!IsValidSlot(SlotId))
 		return false;
 
-	const FString InfoSlot = GenerateSaveSlotName(SlotId);
-	const FString DataSlot = GenerateSaveDataSlotName(SlotId);
+	const FString InfoSlot = GenerateSlotInfoName(SlotId);
+	const FString DataSlot = GenerateSlotDataName(SlotId);
 	return FFileAdapter::DeleteFile(InfoSlot) ||
 		   FFileAdapter::DeleteFile(DataSlot);
 }
@@ -126,19 +126,10 @@ bool USaveManager::IsSlotSaved(int32 SlotId) const
 	if (!IsValidSlot(SlotId))
 		return false;
 
-	const FString InfoSlot = GenerateSaveSlotName(SlotId);
-	const FString DataSlot = GenerateSaveDataSlotName(SlotId);
+	const FString InfoSlot = GenerateSlotInfoName(SlotId);
+	const FString DataSlot = GenerateSlotDataName(SlotId);
 	return FFileAdapter::DoesFileExist(InfoSlot) &&
 		   FFileAdapter::DoesFileExist(DataSlot);
-}
-
-FString USaveManager::EventGenerateSaveSlot_Implementation(const int32 SlotId) const
-{
-	if(!IsValidSlot(SlotId)) {
-		return FString();
-	}
-
-	return FString::FromInt(SlotId);
 }
 
 bool USaveManager::CanLoadOrSave()
@@ -222,7 +213,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 	if (!InSaveInfo)
 		return nullptr;
 
-	const FString Card = GenerateSaveDataSlotName(InSaveInfo->Id);
+	const FString Card = GenerateSlotDataName(InSaveInfo->Id);
 
 	return Cast<USlotData>(FFileAdapter::LoadFile(Card));
 }

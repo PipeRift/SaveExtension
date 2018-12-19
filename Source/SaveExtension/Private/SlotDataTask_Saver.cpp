@@ -261,8 +261,8 @@ void USlotDataTask_Saver::OnStart()
 	Manager->TryInstantiateInfo();
 
 	bool bSave = true;
-	const FString InfoCard = Manager->GenerateSaveSlotName(Slot);
-	const FString DataCard = Manager->GenerateSaveDataSlotName(Slot);
+	const FString InfoCard = Manager->GenerateSlotInfoName(Slot);
+	const FString DataCard = Manager->GenerateSlotDataName(Slot);
 
 	//Overriding
 	{
@@ -364,11 +364,15 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 
 void USlotDataTask_Saver::BeginDestroy()
 {
-	if (SaveInfoTask)
+	if (SaveInfoTask) {
+		SaveInfoTask->EnsureCompletion(false);
 		delete SaveInfoTask;
+	}
 
-	if (SaveDataTask)
+	if (SaveDataTask) {
+		SaveDataTask->EnsureCompletion(false);
 		delete SaveDataTask;
+	}
 
 	Super::BeginDestroy();
 }
