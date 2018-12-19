@@ -40,6 +40,7 @@ void USlotDataTask_Loader::OnStart()
 	}
 
 	//Cross-Level loading
+	const UWorld* World = GetWorld();
 	if (World->GetFName() != NewSlotInfo->Map)
 	{
 		bLoadingMap = true;
@@ -57,6 +58,7 @@ void USlotDataTask_Loader::OnStart()
 
 void USlotDataTask_Loader::OnMapLoaded()
 {
+	const UWorld* World = GetWorld();
 	if (World->GetFName() != NewSlotInfo->Map)
 	{
 		bLoadingMap = false;
@@ -94,6 +96,7 @@ void USlotDataTask_Loader::AfterMapValidation()
 void USlotDataTask_Loader::BeforeDeserialize()
 {
 	// Set current game time to the saved value
+	UWorld* World = GetWorld();
 	World->TimeSeconds = SlotData->TimeSeconds;
 
 	if (Preset->bStoreGameInstance)
@@ -120,7 +123,8 @@ void USlotDataTask_Loader::BeforeDeserialize()
 void USlotDataTask_Loader::DeserializeSync()
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeSync);
-
+	
+	const UWorld* World = GetWorld();
 	check(World);
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
@@ -167,6 +171,7 @@ void USlotDataTask_Loader::DeserializeASync()
 {
 	// Deserialize world
 	{
+		const UWorld* World = GetWorld();
 		check(World);
 		SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
@@ -304,6 +309,7 @@ void USlotDataTask_Loader::PrepareAllLevels()
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_PrepareAllLevels);
 
 	// Prepare Main level
+	const UWorld* World = GetWorld();
 	PrepareLevel(World->GetCurrentLevel(), SlotData->MainLevel);
 
 	// Prepare other loaded sub-levels
@@ -329,10 +335,10 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, co
 	SpawnInfo.OverrideLevel = const_cast<ULevel*>(Level);
 
 	// Respawn all procedural actors
+	UWorld* World = GetWorld();
 	for (const auto& Record : Records)
 	{
 		SpawnInfo.Name = Record.Name;
-
 		World->SpawnActor(Record.Class.Get(), &Record.Transform, SpawnInfo);
 	}
 }
@@ -414,6 +420,7 @@ void USlotDataTask_Loader::DeserializeAI(AAIController* AIController, const FLev
 
 void USlotDataTask_Loader::DeserializeGameMode()
 {
+	const UWorld* World = GetWorld();
 	const FActorRecord& Record = SlotData->GameMode;
 	const bool bSuccess = DeserializeActor(World->GetAuthGameMode(), Record);
 
@@ -422,6 +429,7 @@ void USlotDataTask_Loader::DeserializeGameMode()
 
 void USlotDataTask_Loader::DeserializeGameState()
 {
+	const UWorld* World = GetWorld();
 	auto* GameState = World->GetGameState();
 
 	const FActorRecord& Record = SlotData->GameState;
@@ -432,6 +440,7 @@ void USlotDataTask_Loader::DeserializeGameState()
 
 void USlotDataTask_Loader::DeserializePlayerState(int32 PlayerId)
 {
+	const UWorld* World = GetWorld();
 	const auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
 	if (!Controller)
 		return;
@@ -444,6 +453,7 @@ void USlotDataTask_Loader::DeserializePlayerState(int32 PlayerId)
 
 void USlotDataTask_Loader::DeserializePlayerController(int32 PlayerId)
 {
+	const UWorld* World = GetWorld();
 	auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
 
 	const FControllerRecord& Record = SlotData->PlayerController;
@@ -454,6 +464,7 @@ void USlotDataTask_Loader::DeserializePlayerController(int32 PlayerId)
 
 void USlotDataTask_Loader::DeserializePlayerHUD(int32 PlayerId)
 {
+	const UWorld* World = GetWorld();
 	const auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
 	if (!Controller)
 		return;
@@ -467,6 +478,7 @@ void USlotDataTask_Loader::DeserializePlayerHUD(int32 PlayerId)
 void USlotDataTask_Loader::DeserializeGameInstance()
 {
 	bool bSuccess = true;
+	const UWorld* World = GetWorld();
 	auto* GameInstance = World->GetGameInstance();
 	const FObjectRecord& Record = SlotData->GameInstance;
 
@@ -625,7 +637,8 @@ FLevelRecord* USlotDataTask_Loader::FindLevelRecord(const ULevelStreaming* Level
 void USlotDataTask_Loader::FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const
 {
 	OutLevelStreaming = nullptr;
-
+	
+	const UWorld* World = GetWorld();
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 	if (CurrentLevel.IsValid() && Levels.Num() > 0)
 	{
