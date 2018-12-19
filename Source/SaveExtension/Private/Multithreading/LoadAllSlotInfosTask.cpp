@@ -1,6 +1,6 @@
 // Copyright 2015-2018 Piperift. All Rights Reserved.
 
-#include "LoadAllSlotInfosTask.h"
+#include "Multithreading/LoadAllSlotInfosTask.h"
 
 #include <HAL/PlatformFilemanager.h>
 

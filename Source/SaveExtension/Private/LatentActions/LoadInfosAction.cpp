@@ -1,6 +1,6 @@
 // Copyright 2015-2018 Piperift. All Rights Reserved.
 
-#include "LoadInfosAction.h"
+#include "LatentActions/LoadInfosAction.h"
 #include "SaveManager.h"
 #include "SlotInfo.h"
 
