@@ -52,9 +52,6 @@ protected:
 	USlotData* SlotData;
 
 	UPROPERTY()
-	UWorld* World;
-
-	UPROPERTY()
 	const USavePreset* Preset;
 
 	// Cached value from preset to avoid cache misses
@@ -65,10 +62,9 @@ public:
 
 	USlotDataTask() : Super(), bRunning(false), bFinished(false) {}
 
-	void Prepare(USlotData* InSaveData, UWorld* InWorld, const USavePreset* InPreset)
+	void Prepare(USlotData* InSaveData, const USavePreset* InPreset)
 	{
 		SlotData = InSaveData;
-		World = InWorld;
 		Preset = InPreset;
 		MaxFrameMs = Preset? Preset->GetMaxFrameMs() : 5.f;
 	}
