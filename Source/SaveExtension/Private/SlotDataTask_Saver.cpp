@@ -292,6 +292,7 @@ void USlotDataTask_Saver::OnStart()
 	if (bSave)
 	{
 		const UWorld* World = GetWorld();
+
 		GetManager()->OnSaveBegan();
 
 		USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
@@ -375,8 +376,7 @@ void USlotDataTask_Saver::BeginDestroy()
 void USlotDataTask_Saver::SerializeSync()
 {
 	// Has Authority
-	const UWorld* World = GetWorld();
-	if (World->GetAuthGameMode())
+	if (GetWorld()->GetAuthGameMode())
 	{
 		// Save World
 		SerializeWorld();
@@ -386,7 +386,7 @@ void USlotDataTask_Saver::SerializeSync()
 void USlotDataTask_Saver::SerializeWorld()
 {
 	const UWorld* World = GetWorld();
-	check(World);
+
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
@@ -433,7 +433,6 @@ void USlotDataTask_Saver::SerializeWorld()
 
 void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
 {
-	const UWorld* World = GetWorld();
 	check(IsValid(Level));
 
 	if (Preset->IsMTSerializationSave())
@@ -465,7 +464,7 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 	{
 		// Add new Task
 		const bool IsFirstTask = Index <= 0;
-		Tasks.Emplace(IsFirstTask, World, SlotData, &Level->Actors, Index, ObjectsPerTask, LevelRecord, Preset);
+		Tasks.Emplace(IsFirstTask, GetWorld(), SlotData, &Level->Actors, Index, ObjectsPerTask, LevelRecord, Preset);
 		Index += ObjectsPerTask;
 	}
 }

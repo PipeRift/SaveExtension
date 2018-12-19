@@ -230,7 +230,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
 {
 	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentData, GetWorld(), GetPreset());
+	Task->Prepare(CurrentData, GetPreset());
 	Tasks.Add(Task);
 	return Task;
 }

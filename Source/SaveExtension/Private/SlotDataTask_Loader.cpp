@@ -95,8 +95,9 @@ void USlotDataTask_Loader::AfterMapValidation()
 
 void USlotDataTask_Loader::BeforeDeserialize()
 {
-	// Set current game time to the saved value
 	UWorld* World = GetWorld();
+
+	// Set current game time to the saved value
 	World->TimeSeconds = SlotData->TimeSeconds;
 
 	if (Preset->bStoreGameInstance)
@@ -123,9 +124,10 @@ void USlotDataTask_Loader::BeforeDeserialize()
 void USlotDataTask_Loader::DeserializeSync()
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeSync);
-	
+
 	const UWorld* World = GetWorld();
 	check(World);
+
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	PrepareAllLevels();
@@ -171,13 +173,11 @@ void USlotDataTask_Loader::DeserializeASync()
 {
 	// Deserialize world
 	{
-		const UWorld* World = GetWorld();
-		check(World);
-		SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+		SELog(Preset, "World '" + GetWorld()->GetName() + "'", FColor::Green, false, 1);
 
 		PrepareAllLevels();
 
-		DeserializeLevelASync(World->GetCurrentLevel());
+		DeserializeLevelASync(GetWorld()->GetCurrentLevel());
 	}
 }
 
@@ -308,8 +308,10 @@ void USlotDataTask_Loader::PrepareAllLevels()
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_PrepareAllLevels);
 
-	// Prepare Main level
 	const UWorld* World = GetWorld();
+	check(World);
+
+	// Prepare Main level
 	PrepareLevel(World->GetCurrentLevel(), SlotData->MainLevel);
 
 	// Prepare other loaded sub-levels
@@ -334,8 +336,9 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, co
 	FActorSpawnParameters SpawnInfo{};
 	SpawnInfo.OverrideLevel = const_cast<ULevel*>(Level);
 
-	// Respawn all procedural actors
 	UWorld* World = GetWorld();
+
+	// Respawn all procedural actors
 	for (const auto& Record : Records)
 	{
 		SpawnInfo.Name = Record.Name;
@@ -420,17 +423,15 @@ void USlotDataTask_Loader::DeserializeAI(AAIController* AIController, const FLev
 
 void USlotDataTask_Loader::DeserializeGameMode()
 {
-	const UWorld* World = GetWorld();
 	const FActorRecord& Record = SlotData->GameMode;
-	const bool bSuccess = DeserializeActor(World->GetAuthGameMode(), Record);
+	const bool bSuccess = DeserializeActor(GetWorld()->GetAuthGameMode(), Record);
 
 	SELog(Preset, "Game Mode '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 void USlotDataTask_Loader::DeserializeGameState()
 {
-	const UWorld* World = GetWorld();
-	auto* GameState = World->GetGameState();
+	auto* GameState = GetWorld()->GetGameState();
 
 	const FActorRecord& Record = SlotData->GameState;
 	const bool bSuccess = DeserializeActor(GameState, Record);
@@ -440,8 +441,7 @@ void USlotDataTask_Loader::DeserializeGameState()
 
 void USlotDataTask_Loader::DeserializePlayerState(int32 PlayerId)
 {
-	const UWorld* World = GetWorld();
-	const auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
+	const auto* Controller = UGameplayStatics::GetPlayerController(GetWorld(), PlayerId);
 	if (!Controller)
 		return;
 
@@ -453,8 +453,7 @@ void USlotDataTask_Loader::DeserializePlayerState(int32 PlayerId)
 
 void USlotDataTask_Loader::DeserializePlayerController(int32 PlayerId)
 {
-	const UWorld* World = GetWorld();
-	auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
+	auto* Controller = UGameplayStatics::GetPlayerController(GetWorld(), PlayerId);
 
 	const FControllerRecord& Record = SlotData->PlayerController;
 	const bool bSuccess = DeserializeController(Controller, Record);
@@ -464,8 +463,7 @@ void USlotDataTask_Loader::DeserializePlayerController(int32 PlayerId)
 
 void USlotDataTask_Loader::DeserializePlayerHUD(int32 PlayerId)
 {
-	const UWorld* World = GetWorld();
-	const auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
+	const auto* Controller = UGameplayStatics::GetPlayerController(GetWorld(), PlayerId);
 	if (!Controller)
 		return;
 
@@ -478,8 +476,7 @@ void USlotDataTask_Loader::DeserializePlayerHUD(int32 PlayerId)
 void USlotDataTask_Loader::DeserializeGameInstance()
 {
 	bool bSuccess = true;
-	const UWorld* World = GetWorld();
-	auto* GameInstance = World->GetGameInstance();
+	auto* GameInstance = GetWorld()->GetGameInstance();
 	const FObjectRecord& Record = SlotData->GameInstance;
 
 	if (!IsValid(GameInstance) || GameInstance->GetClass() != Record.Class)
