@@ -16,10 +16,10 @@ Ex. It reduces the amount of work I have to do
 **Is it related to a problem?**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-**Optionally, propose an approach to the feature (the less we think the better!)**
+**[Optional] Propose an approach to the feature (the less we think the better!)**
 How would it work? Ex. I would suggest using instanced objects
 
 **Any other possible approach?**
 
-**Additional context**
+**[Optional] Additional context**
 Add any other context or screenshots about the feature request

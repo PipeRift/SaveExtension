@@ -25,9 +25,9 @@ If applicable, add the logs of your project or screenshots to help explain your 
 *Logs can be found under "MyProject/Saved/Logs/MyProject.log"*
 
 **Environment (please complete the following information):**
- - Engine Version [e.g. 4.21.1]
- - Plugin Version [e.g. 1.1]
+ - Engine Version: [e.g. 4.21.1]
+ - Plugin Version: [e.g. 1.1]
  - OS: [e.g. Windows]
 
-**Additional context**
+**[Optional] Additional context**
 Add any other context about the problem here.
