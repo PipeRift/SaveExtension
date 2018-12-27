@@ -70,6 +70,18 @@ void USlotDataTask_Loader::Tick(float DeltaTime)
 	}
 }
 
+void USlotDataTask_Loader::OnFinish(bool bSuccess)
+{
+	if (bSuccess)
+	{
+		SELog(Preset, "Finished Loading", FColor::Green);
+	}
+
+	// Execute delegates
+	Delegate.ExecuteIfBound((bSuccess) ? NewSlotInfo : nullptr);
+	GetManager()->OnLoadFinished(!bSuccess);
+}
+
 void USlotDataTask_Loader::BeginDestroy()
 {
 	if (LoadDataTask) {
@@ -344,10 +356,7 @@ void USlotDataTask_Loader::FinishedDeserializing()
 	SlotData->Clean(true);
 	GetManager()->CurrentData = SlotData;
 
-	GetManager()->OnLoadFinished(false);
 	Finish(true);
-
-	SELog(Preset, "Finished Loading", FColor::Green, false, 2);
 }
 
 void USlotDataTask_Loader::PrepareAllLevels()
@@ -680,7 +689,7 @@ FLevelRecord* USlotDataTask_Loader::FindLevelRecord(const ULevelStreaming* Level
 void USlotDataTask_Loader::FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const
 {
 	OutLevelStreaming = nullptr;
-	
+
 	const UWorld* World = GetWorld();
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 	if (CurrentLevel.IsValid() && Levels.Num() > 0)

@@ -360,10 +360,11 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 		SELog(Preset, "Finished Saving", FColor::Green);
 	}
 
+	// Execute delegates
 	USaveManager* Manager = GetManager();
+	check(Manager);
 	Delegate.ExecuteIfBound((Manager && bSuccess)? Manager->GetCurrentInfo() : nullptr);
-
-	GetManager()->OnSaveFinished(!bSuccess);
+	Manager->OnSaveFinished(!bSuccess);
 }
 
 void USlotDataTask_Saver::BeginDestroy()

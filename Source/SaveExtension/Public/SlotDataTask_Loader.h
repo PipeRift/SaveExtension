@@ -84,6 +84,7 @@ private:
 	virtual void OnStart() override;
 
 	virtual void Tick(float DeltaTime) override;
+	virtual void OnFinish(bool bSuccess) override;
 	virtual void BeginDestroy() override;
 
 	void StartDeserialization();
