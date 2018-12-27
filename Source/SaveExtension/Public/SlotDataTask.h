@@ -18,8 +18,8 @@
 
 #include "SlotDataTask.generated.h"
 
-
 class USaveManager;
+
 
 /**
 * Base class for managing a SaveData file

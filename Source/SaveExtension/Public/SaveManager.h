@@ -21,11 +21,33 @@
 #include "SlotDataTask_LevelSaver.h"
 #include "SlotDataTask_LevelLoader.h"
 #include "Multithreading/LoadAllSlotInfosTask.h"
+#include "LatentActions/LoadGameAction.h"
+#include "LatentActions/SaveGameAction.h"
 
 #include "SaveManager.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSaved,  USlotInfo*, SlotInfo);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoaded, USlotInfo*, SlotInfo);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC,  USlotInfo*, SlotInfo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USlotInfo*, SlotInfo);
+
+
+/**
+ * Comment
+ */
+USTRUCT(BlueprintType)
+struct FScreenshotSize
+{
+	GENERATED_BODY()
+
+public:
+	FScreenshotSize() : Width(640), Height(360) {}
+	FScreenshotSize(int32 Width, int32 Height) : Width(Width), Height(Height) {}
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Screenshot)
+	int32 Width;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Screenshot)
+	int32 Height;
+};
 
 
 /**
@@ -84,39 +106,108 @@ public:
 
 	void SetGameInstance(UGameInstance* GameInstance) { OwningGameInstance = GameInstance; }
 
+	/** BLUEPRINTS */
 
 	/** Save the Game into an specified Slot */
-	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = 2))
-	bool SaveSlotToId(int32 Slot = 0, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360);
+	bool SaveSlot(int32 SlotId, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
 
 	/** Save the Game to a Slot */
-	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = 2))
-	FORCEINLINE bool SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360) {
-		if (!SlotInfo) return false;
-		return SaveSlotToId(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Width, Height);
+	bool SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
+		if (!SlotInfo)
+			return false;
+		return SaveSlot(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
 	}
 
 	/** Save the currently loaded Slot */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Saving", meta = (AdvancedDisplay = 1))
-	bool SaveCurrentSlot(bool bScreenshot = false, const int32 Width = 640, const int32 Height = 360) {
-		return SaveSlot(CurrentInfo, true, bScreenshot, Width, Height);
+	bool SaveCurrentSlot(bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
+		return SaveSlot(CurrentInfo, true, bScreenshot, Size, OnSaved);
 	}
 
+
 	/** Load game from a slot Id */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	bool LoadSlotFromId(int32 SlotId = 0);
+	bool LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded = {});
 
 	/** Load game from a SlotInfo */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	FORCEINLINE bool LoadSlot(const USlotInfo* SlotInfo) {
-		return SlotInfo ? LoadSlotFromId(SlotInfo->Id) : false;
+	FORCEINLINE bool LoadSlot(const USlotInfo* SlotInfo, FOnGameLoaded OnLoaded = {}) {
+		return SlotInfo ? LoadSlot(SlotInfo->Id, MoveTemp(OnLoaded)) : false;
 	}
 
 	/** Reload the currently loaded slot if any */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading")
-	FORCEINLINE bool ReloadCurrentSlot() {
-		return LoadSlot(CurrentInfo);
+	FORCEINLINE bool ReloadCurrentSlot(FOnGameLoaded OnLoaded = {}) {
+		return LoadSlot(CurrentInfo, MoveTemp(OnLoaded));
 	}
+
+
+	/**
+	 * Find all saved games and return their SlotInfos
+	 * @param bSortByRecent Should slots be ordered by save date?
+	 * @param SaveInfos All saved games found on disk
+	 */
+	void LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate);
+
+
+private:
+
+	/** BLUEPRINT ONLY API */
+
+	// NOTE: This functions are mostly made to accommodate better Blueprint nodes and directly communicate with the normal C++ API
+
+	/** Save the Game into an specified Slot */
+	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot to Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
+
+	/** Save the Game to a Slot */
+	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPSaveSlot(const USlotInfo* SlotInfo, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true) {
+		if (!SlotInfo)
+		{
+			Result = ESaveGameResult::Failed;
+			return;
+		}
+		BPSaveSlotToId(SlotInfo->Id, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
+	}
+
+	/** Save the currently loaded Slot */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Saving", meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Current Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPSaveCurrentSlot(bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo) {
+		BPSaveSlot(CurrentInfo, bScreenshot, Size, Result, MoveTemp(LatentInfo), true);
+	}
+
+
+	/** Load game from a slot Id */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading", meta = (DisplayName = "Load Slot from Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPLoadSlotFromId(int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo);
+
+	/** Load game from a SlotInfo */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading", meta = (DisplayName = "Load Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPLoadSlot(const USlotInfo* SlotInfo, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo) {
+		if (!SlotInfo)
+		{
+			Result = ELoadGameResult::Failed;
+			return;
+		}
+		BPLoadSlotFromId(SlotInfo->Id, Result, MoveTemp(LatentInfo));
+	}
+
+	/** Reload the currently loaded slot if any */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading", meta = (DisplayName = "Reload Current Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPReloadCurrentSlot(ELoadGameResult& Result, struct FLatentActionInfo LatentInfo) {
+		BPLoadSlot(CurrentInfo, Result, MoveTemp(LatentInfo));
+	}
+
+
+	/**
+	 * Find all saved games and return their SlotInfos
+	 * @param bSortByRecent Should slots be ordered by save date?
+	 * @param SaveInfos All saved games found on disk
+	 */
+	UFUNCTION(BlueprintCallable, Category = Dialogue, meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", Duration = "-1.0", DisplayName = "Load All Slot Infos"))
+	void BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo);
+
+
+public:
+
+	/** BLUEPRINTS & C++ API */
 
 	/** Delete a saved game on an specified slot Id
 	 * Performance: Interacts with disk, can be slow
@@ -141,32 +232,12 @@ public:
 
 	/**
 	 * Load and return an SlotInfo by Id if it exists
-	 * Performance: Interacts with disk, can be slow
+	 * Performance: Interacts with disk, could be slow if called frequently
 	 * @param SlotId Id of the SlotInfo to be loaded
 	 * @return the SlotInfo associated with an Id
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
 	FORCEINLINE USlotInfo* GetSlotInfo(int32 SlotId) { return LoadInfo(SlotId); }
-
-
-	/**
-	 * Find all saved games and return their SlotInfos
-	 * @param bSortByRecent Should slots be ordered by save date?
-	 * @param SaveInfos All saved games found on disk
-	 */
-	void LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate);
-
-private:
-
-	/**
-	 * Find all saved games and return their SlotInfos
-	 * @param bSortByRecent Should slots be ordered by save date?
-	 * @param SaveInfos All saved games found on disk
-	 */
-	UFUNCTION(BlueprintCallable, Category = Dialogue, meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", Duration = "-1.0", DisplayName = "Load All Slot Infos"))
-	void BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo);
-
-public:
 
 	/** Check if an slot exists on disk
 	 * @return true if the slot exists
@@ -234,6 +305,7 @@ private:
 	void DeserializeStreamingLevel(ULevelStreaming* LevelStreaming);
 	//~ End LevelStreaming
 
+
 	USlotInfo* LoadInfo(uint32 Slot) const;
 	USlotData* LoadData(const USlotInfo* Info) const;
 
@@ -282,10 +354,10 @@ private:
 public:
 
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
-	FOnGameSaved OnGameSaved;
+	FOnGameSavedMC OnGameSaved;
 
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
-	FOnGameLoaded OnGameLoaded;
+	FOnGameLoadedMC OnGameLoaded;
 
 
 	/** Subscribe to receive save and load events on an Interface */

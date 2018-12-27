@@ -21,9 +21,7 @@ enum class ELoadInfoResult : uint8
 	Completed
 };
 
-/** FLoadInfosction
- * A say quote action; counts down and triggers it's output link when the time remaining falls to zero
- */
+/** FLoadInfosction */
 class FLoadInfosAction : public FPendingLatentAction
 {
 

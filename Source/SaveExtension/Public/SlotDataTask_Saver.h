@@ -20,6 +20,12 @@
 #include "SlotDataTask_Saver.generated.h"
 
 
+/** Called when game has been saved
+ * @param SlotInfo the saved slot. Null if save failed
+ */
+DECLARE_DELEGATE_OneParam(FOnGameSaved, USlotInfo*);
+
+
 /////////////////////////////////////////////////////
 // FSerializeActorsTask
 // Async task to serialize actors from a level.
@@ -108,6 +114,8 @@ class USlotDataTask_Saver : public USlotDataTask
 	int32 Width;
 	int32 Height;
 
+	FOnGameSaved Delegate;
+
 protected:
 
 	// Async variables
@@ -117,7 +125,7 @@ protected:
 	int32 CurrentActorIndex;
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
 
-	/** Start AsyncTasks */
+	/** Begin AsyncTasks */
 	TArray<FAsyncTask<FSerializeActorsTask>> Tasks;
 	FAsyncTask<FSaveFileTask>* SaveInfoTask;
 	FAsyncTask<FSaveFileTask>* SaveDataTask;
@@ -135,6 +143,8 @@ public:
 		Height = InHeight;
 		return this;
 	}
+
+	auto Bind(const FOnGameSaved& OnSaved) { Delegate = OnSaved; return this; }
 
 	virtual void OnStart() override;
 	virtual void Tick(float DeltaTime) override

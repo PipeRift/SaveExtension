@@ -53,7 +53,7 @@ void USaveManager::Shutdown()
 	MarkPendingKill();
 }
 
-bool USaveManager::SaveSlotToId(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
+bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	if (!CanLoadOrSave())
 		return false;
@@ -72,11 +72,15 @@ bool USaveManager::SaveSlotToId(int32 SlotId, bool bOverrideIfNeeded, bool bScre
 	check(World);
 
 	//Launch task, always fail if it didn't finish or wasn't scheduled
-	const auto* Task = CreateTask<USlotDataTask_Saver>()->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Width, Height)->Start();
+	auto* Task = CreateTask<USlotDataTask_Saver>()
+		->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+		->Bind(OnSaved)
+		->Start();
+
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
-bool USaveManager::LoadSlotFromId(int32 SlotId)
+bool USaveManager::LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded)
 {
 	if (!CanLoadOrSave())
 		return false;
@@ -86,7 +90,11 @@ bool USaveManager::LoadSlotFromId(int32 SlotId)
 
 	TryInstantiateInfo();
 
-	auto* Task = CreateTask<USlotDataTask_Loader>()->Setup(SlotId)->Start();
+	auto* Task = CreateTask<USlotDataTask_Loader>()
+		->Setup(SlotId)
+		->Bind(OnLoaded)
+		->Start();
+
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
@@ -109,6 +117,39 @@ void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delega
 	LoadInfosTasks.Add(LoadTask);
 }
 
+
+void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
+{
+	if (UWorld* World = GetWorld())
+	{
+		Result = ESaveGameResult::Saving;
+
+		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
+		if (LatentActionManager.FindExistingAction<FSaveGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		{
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FSaveGameAction(this, SlotId, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
+		}
+		return;
+	}
+	Result = ESaveGameResult::Failed;
+}
+
+void USaveManager::BPLoadSlotFromId(int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
+{
+	if (UWorld* World = GetWorld())
+	{
+		Result = ELoadGameResult::Loading;
+
+		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
+		if (LatentActionManager.FindExistingAction<FLoadGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		{
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FLoadGameAction(this, SlotId, Result, LatentInfo));
+		}
+		return;
+	}
+	Result = ELoadGameResult::Failed;
+}
+
 void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
@@ -120,6 +161,7 @@ void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo
 		}
 	}
 }
+
 
 bool USaveManager::IsSlotSaved(int32 SlotId) const
 {

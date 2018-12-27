@@ -20,6 +20,12 @@
 #include "SlotDataTask_Loader.generated.h"
 
 
+/** Called when game has been loaded
+ * @param SlotInfo the loaded slot. Null if load failed
+ */
+DECLARE_DELEGATE_OneParam(FOnGameLoaded, USlotInfo*);
+
+
 /**
 * Manages the loading process of a SaveData file
 */
@@ -32,6 +38,8 @@ class USlotDataTask_Loader : public USlotDataTask
 
 	UPROPERTY()
 	USlotInfo* NewSlotInfo;
+
+	FOnGameLoaded Delegate;
 
 protected:
 
@@ -66,6 +74,8 @@ public:
 		Slot = InSlot;
 		return this;
 	}
+
+	auto Bind(const FOnGameLoaded& OnLoaded) { Delegate = OnLoaded; return this; }
 
 	void OnMapLoaded();
 
