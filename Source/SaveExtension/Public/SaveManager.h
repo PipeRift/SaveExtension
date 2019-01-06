@@ -36,9 +36,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC,  USlotInfo*, SlotInf
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USlotInfo*, SlotInfo);
 
 
-/**
- * Comment
- */
 USTRUCT(BlueprintType)
 struct FScreenshotSize
 {
@@ -56,7 +53,7 @@ public:
 
 
 /**
- *
+ * Controls the complete saving and loading process
  */
 UCLASS(ClassGroup = SaveExtension, Config = Game)
 class SAVEEXTENSION_API USaveManager : public UObject, public FTickableGameObject
@@ -127,7 +124,6 @@ public:
 		return SaveSlot(CurrentInfo, true, bScreenshot, Size, OnSaved);
 	}
 
-
 	/** Load game from a slot Id */
 	bool LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded = {});
 
@@ -141,7 +137,6 @@ public:
 		return LoadSlot(CurrentInfo, MoveTemp(OnLoaded));
 	}
 
-
 	/**
 	 * Find all saved games and return their SlotInfos
 	 * @param bSortByRecent Should slots be ordered by save date?
@@ -154,9 +149,7 @@ public:
 	 */
 	bool DeleteSlot(int32 SlotId);
 
-	/** Delete a saved game on an specified slot Id
-	 * Performance: Interacts with disk, can be slow
-	 */
+	/** Delete all saved slots from disk, loaded or not */
 	void DeleteAllSlots(FOnSlotsDeleted Delegate);
 
 
@@ -164,7 +157,7 @@ private:
 
 	/** BLUEPRINT ONLY API */
 
-	// NOTE: This functions are mostly made to accommodate better Blueprint nodes and directly communicate with the normal C++ API
+	// NOTE: This functions are mostly made to accommodate better Blueprint nodes that directly communicate with the normal C++ API
 
 	/** Save the Game into an specified Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot to Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
@@ -225,11 +218,7 @@ private:
 		return DeleteSlot(SlotId);
 	}
 
-	/**
-	 * Find all saved games and return their SlotInfos
-	 * @param bSortByRecent Should slots be ordered by save date?
-	 * @param SaveInfos All saved games found on disk
-	 */
+	/** Delete all saved slots from disk, loaded or not */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension", meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", DisplayName = "Delete All Slots"))
 	void BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentActionInfo LatentInfo);
 
@@ -238,8 +227,7 @@ public:
 
 	/** BLUEPRINTS & C++ API */
 
-
-	/** Delete a saved game on an specified slot Id
+	/** Delete a saved game on an specified slot
 	 * Performance: Interacts with disk, can be slow
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
@@ -350,7 +338,7 @@ private:
 	void OnLevelLoaded(ULevelStreaming* StreamingLevel) {}
 
 
-	//~ Begin Tasks
+	//~ Begin Save Tasks
 	UPROPERTY(Transient)
 	TArray<USlotDataTask*> Tasks;
 
@@ -367,7 +355,7 @@ private:
 	/** @return true when saving or loading anything, including levels */
 	UFUNCTION(BlueprintPure, Category = SaveExtension)
 	FORCEINLINE bool IsSavingOrLoading() const { return HasTasks(); }
-	//~ End Tasks
+	//~ End Save Tasks
 
 
 	//~ Begin Tickable Object Interface

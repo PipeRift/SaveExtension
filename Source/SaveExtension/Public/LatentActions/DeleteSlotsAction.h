@@ -43,9 +43,9 @@ public:
 
 #if WITH_EDITOR
 	// Returns a human readable description of the latent operation's current state
-	/*virtual FString GetDescription() const override
+	virtual FString GetDescription() const override
 	{
-		return FString::Printf(TEXT("Loading Info %i of %i"), loadedInfos, infosCount);
-	}*/
+		return TEXT("Deleting all slots...");
+	}
 #endif
 };
