@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -52,7 +52,6 @@ public:
 
 	static bool DeleteFile(const FString& SlotName);
 	static bool DoesFileExist(const FString& SlotName);
-
 
 	static bool LoadFileBytes(const FString& SlotName, FSaveFileHeader& OutFileHeader, TArray<uint8>& OutBytes);
 

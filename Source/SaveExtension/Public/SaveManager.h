@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -20,9 +20,14 @@
 #include "SlotDataTask_Loader.h"
 #include "SlotDataTask_LevelSaver.h"
 #include "SlotDataTask_LevelLoader.h"
+
 #include "Multithreading/LoadAllSlotInfosTask.h"
+#include "Multithreading/DeleteSlotsTask.h"
+#include "ScopedTaskManager.h"
+
 #include "LatentActions/LoadGameAction.h"
 #include "LatentActions/SaveGameAction.h"
+#include "LatentActions/DeleteSlotsAction.h"
 
 #include "SaveManager.generated.h"
 
@@ -84,8 +89,7 @@ private:
 	/** The game instance to which this save manager is owned. */
 	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
-
-	TArray<FAsyncTask<FLoadAllSlotInfosTask>*> LoadInfosTasks;
+	TScopedTaskList<FLoadAllSlotInfosTask, FDeleteSlotsTask> TaskManager;
 
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;
@@ -145,6 +149,16 @@ public:
 	 */
 	void LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate);
 
+	/** Delete a saved game on an specified slot Id
+	 * Performance: Interacts with disk, can be slow
+	 */
+	bool DeleteSlot(int32 SlotId);
+
+	/** Delete a saved game on an specified slot Id
+	 * Performance: Interacts with disk, can be slow
+	 */
+	void DeleteAllSlots(FOnSlotsDeleted Delegate);
+
 
 private:
 
@@ -195,26 +209,45 @@ private:
 		BPLoadSlot(CurrentInfo, Result, MoveTemp(LatentInfo));
 	}
 
+	/**
+	 * Find all saved games and return their SlotInfos
+	 * @param bSortByRecent Should slots be ordered by save date?
+	 * @param SaveInfos All saved games found on disk
+	 */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension", meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", DisplayName = "Load All Slot Infos"))
+	void BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo);
+
+	/** Delete a saved game on an specified slot Id
+	 * Performance: Interacts with disk, can be slow
+	 */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
+	FORCEINLINE bool DeleteSlotFromId(int32 SlotId) {
+		return DeleteSlot(SlotId);
+	}
 
 	/**
 	 * Find all saved games and return their SlotInfos
 	 * @param bSortByRecent Should slots be ordered by save date?
 	 * @param SaveInfos All saved games found on disk
 	 */
-	UFUNCTION(BlueprintCallable, Category = Dialogue, meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", Duration = "-1.0", DisplayName = "Load All Slot Infos"))
-	void BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo);
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension", meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", DisplayName = "Delete All Slots"))
+	void BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentActionInfo LatentInfo);
 
 
 public:
 
 	/** BLUEPRINTS & C++ API */
 
+
 	/** Delete a saved game on an specified slot Id
 	 * Performance: Interacts with disk, can be slow
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
-	bool DeleteSlot(int32 SlotId);
-
+	bool DeleteSlot(USlotInfo* Slot) {
+		if (!Slot)
+			return false;
+		return DeleteSlot(Slot->Id);
+	}
 
 	/** Get the currently loaded SlotInfo. If game was never loaded returns a new SlotInfo */
 	UFUNCTION(BlueprintPure, Category = "SaveExtension")
@@ -290,6 +323,11 @@ public:
 		return GenerateSlotInfoName(SlotId).Append(TEXT("_data"));
 	}
 
+	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
+		const int32 MaxSlots = GetPreset()->GetMaxSlots();
+		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
+	}
+
 protected:
 
 	bool CanLoadOrSave();
@@ -308,11 +346,6 @@ private:
 
 	USlotInfo* LoadInfo(uint32 Slot) const;
 	USlotData* LoadData(const USlotInfo* Info) const;
-
-	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
-		const int32 MaxSlots = GetPreset()->GetMaxSlots();
-		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
-	}
 
 	void OnLevelLoaded(ULevelStreaming* StreamingLevel) {}
 

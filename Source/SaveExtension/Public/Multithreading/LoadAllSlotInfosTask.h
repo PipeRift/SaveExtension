@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -52,23 +52,5 @@ public:
 
 private:
 
-	void GetSlotFileNames(TArray<FString>& FoundFiles) const;
-
 	USlotInfo* LoadInfoFromFile(const FString Name) const;
-
-
-	/** Used to find next available slot id */
-	class FFindSlotVisitor : public IPlatformFile::FDirectoryVisitor
-	{
-	public:
-		bool bOnlyInfos = false;
-		bool bOnlyDatas = false;
-		TArray<FString>& FilesFound;
-
-		FFindSlotVisitor(TArray<FString>& Files)
-			: FilesFound(Files)
-		{}
-
-		virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override;
-	};
 };

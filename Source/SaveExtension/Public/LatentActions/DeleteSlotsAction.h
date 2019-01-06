@@ -16,19 +16,17 @@ class USlotInfo;
  * Enum used to indicate quote execution results
  */
 UENUM()
-enum class ELoadInfoResult : uint8
+enum class EDeleteSlotsResult : uint8
 {
 	Completed
 };
 
 /** FLoadInfosction */
-class FLoadInfosAction : public FPendingLatentAction
+class FDeleteSlotsAction : public FPendingLatentAction
 {
-
 public:
-	ELoadInfoResult& Result;
+	EDeleteSlotsResult& Result;
 
-	TArray<USlotInfo*>& SlotInfos;
 	bool bFinished;
 
 	FName ExecutionFunction;
@@ -39,7 +37,7 @@ public:
 	/**
 	 * @param SlotId will load that Saved Game if Id > 0, otherwise it will load all infos
 	 */
-	FLoadInfosAction(USaveManager* Manager, const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& OutResult, const FLatentActionInfo& LatentInfo);
+	FDeleteSlotsAction(USaveManager* Manager, EDeleteSlotsResult& OutResult, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 
