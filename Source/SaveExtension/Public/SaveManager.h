@@ -69,7 +69,7 @@ class SAVEEXTENSION_API USaveManager : public UObject, public FTickableGameObjec
 	/************************************************************************/
 public:
 
-	/** Settings Preset to be used while loading and saving. None is Default (Check Save Extension in Settings) */
+	/** Which save preset to use. Will use Default preset if none */
 	UPROPERTY(EditAnywhere, Category = "Save Extension", Config, meta = (DisplayName = "Preset"))
 	TAssetPtr<USavePreset> PresetAsset;
 
@@ -86,7 +86,7 @@ private:
 	/** The game instance to which this save manager is owned. */
 	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
-	TScopedTaskList<FLoadAllSlotInfosTask, FDeleteSlotsTask> TaskManager;
+	TScopedTaskList<FLoadAllSlotInfosTask, FDeleteSlotsTask> MTTasks;
 
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;

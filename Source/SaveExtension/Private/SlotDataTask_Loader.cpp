@@ -397,7 +397,7 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, co
 	for (const auto& Record : Records)
 	{
 		SpawnInfo.Name = Record.Name;
-		World->SpawnActor(Record.Class.Get(), &Record.Transform, SpawnInfo);
+		World->SpawnActor(Record.Class, &Record.Transform, SpawnInfo);
 	}
 }
 
@@ -562,7 +562,7 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 	Actor->Tags = Record.Tags;
 
 	const bool bSavesPhysics = SavesPhysics(Actor);
-	if (SavesTransform(Actor) || bSavesPhysics)
+	if (SavesTransform(Actor))
 	{
 		Actor->SetActorTransform(Record.Transform);
 
@@ -574,13 +574,10 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 				Capsule->SetWorldRotation(SlotData->PlayerPawn.Transform.GetRotation());
 			}
 		}
-	}
 
-	if (bSavesPhysics)
-	{
-		USceneComponent* Root = Actor->GetRootComponent();
-		if (Root && Root->Mobility == EComponentMobility::Movable)
+		if (SavesPhysics(Actor))
 		{
+			USceneComponent* Root = Actor->GetRootComponent();
 			if (auto* Primitive = Cast<UPrimitiveComponent>(Root))
 			{
 				Primitive->SetPhysicsLinearVelocity(Record.LinearVelocity);
@@ -594,21 +591,6 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 	}
 
 	Actor->SetActorHiddenInGame(Record.bHiddenInGame);
-
-	if (SavesPhysics(Actor))
-	{
-		auto* Root = Actor->GetRootComponent();
-		if (Root)
-		{
-			Root->ComponentVelocity = Record.LinearVelocity;
-
-			auto* Primitive = Cast<UPrimitiveComponent>(Root);
-			if (Primitive && Primitive->Mobility == EComponentMobility::Movable)
-			{
-				Primitive->SetPhysicsAngularVelocityInDegrees(Record.AngularVelocity);
-			}
-		}
-	}
 
 	DeserializeActorComponents(Actor, Record, 2);
 

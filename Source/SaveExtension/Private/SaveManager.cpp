@@ -21,6 +21,7 @@
 
 USaveManager::USaveManager()
 	: Super()
+	, MTTasks{}
 {}
 
 void USaveManager::Init()
@@ -105,7 +106,7 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 
 	bool bSuccess = false;
 
-	TaskManager.CreateTask<FDeleteSlotsTask>(this, SlotId)
+	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotId)
 	.OnFinished([bSuccess](auto& Task) mutable {
 		bSuccess = Task->bSuccess;
 	})
@@ -116,7 +117,7 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 
 void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate)
 {
-	TaskManager.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
 	.OnFinished([](auto& Task) {
 		Task->CallDelegate();
 	})
@@ -125,7 +126,7 @@ void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delega
 
 void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 {
-	TaskManager.CreateTask<FDeleteSlotsTask>(this)
+	MTTasks.CreateTask<FDeleteSlotsTask>(this)
 	.OnFinished([Delegate](auto& Task) {
 		Delegate.ExecuteIfBound();
 	})
@@ -315,7 +316,7 @@ void USaveManager::Tick(float DeltaTime)
 		}
 	}
 
-	TaskManager.Tick();
+	MTTasks.Tick();
 }
 
 void USaveManager::SubscribeForEvents(const TScriptInterface<ISaveExtensionInterface>& Interface)
@@ -427,7 +428,7 @@ void USaveManager::BeginDestroy()
 {
 	// Remove this manager from the static list
 	GlobalManagers.Remove(OwningGameInstance);
-	TaskManager.CancelAll();
+	MTTasks.CancelAll();
 
 	Super::BeginDestroy();
 }

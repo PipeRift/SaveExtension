@@ -180,25 +180,24 @@ bool FSerializeActorsTask::SerializeActor(const AActor* Actor, FActorRecord& Rec
 		}
 	}
 
-	const bool bSavesPhysics = SavesPhysics(Actor);
-	if (SavesTransform(Actor) || bSavesPhysics)
+	if (SavesTransform(Actor))
 	{
 		Record.Transform = Actor->GetTransform();
-	}
 
-	if (bSavesPhysics)
-	{
-		USceneComponent* const Root = Actor->GetRootComponent();
-		if (Root && Root->Mobility == EComponentMobility::Movable)
+		if (SavesPhysics(Actor))
 		{
-			if (auto* const Primitive = Cast<UPrimitiveComponent>(Root))
+			USceneComponent* const Root = Actor->GetRootComponent();
+			if (Root && Root->Mobility == EComponentMobility::Movable)
 			{
-				Record.LinearVelocity = Primitive->GetPhysicsLinearVelocity();
-				Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInRadians();
-			}
-			else
-			{
-				Record.LinearVelocity = Root->GetComponentVelocity();
+				if (auto* const Primitive = Cast<UPrimitiveComponent>(Root))
+				{
+					Record.LinearVelocity = Primitive->GetPhysicsLinearVelocity();
+					Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInRadians();
+				}
+				else
+				{
+					Record.LinearVelocity = Root->GetComponentVelocity();
+				}
 			}
 		}
 	}

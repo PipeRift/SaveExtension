@@ -21,10 +21,9 @@ struct FBaseRecord {
 	GENERATED_USTRUCT_BODY()
 
 	FName Name;
-	TWeakObjectPtr<UClass> Class;
 
 
-	FBaseRecord() : Name(), Class(nullptr) {}
+	FBaseRecord() : Name() {}
 
 	virtual bool Serialize(FArchive& Ar);
 	friend FArchive& operator<<(FArchive& Ar, FBaseRecord& Record)
@@ -48,17 +47,20 @@ USTRUCT()
 struct FObjectRecord : public FBaseRecord {
 	GENERATED_USTRUCT_BODY()
 
+	UPROPERTY()
+	UClass* Class;
+
 	TArray<uint8> Data;
 	TArray<FName> Tags;
 
 
-	FObjectRecord() : Super() {}
+	FObjectRecord() : Super(), Class(nullptr) {}
 	FObjectRecord(const UObject* Object);
 
 	virtual bool Serialize(FArchive& Ar) override;
 
 	bool IsValid() const {
-		return !Name.IsNone() && Class.IsValid() && Data.Num() > 0;
+		return !Name.IsNone() && Class && Data.Num() > 0;
 	}
 
 	FORCEINLINE bool operator== (const UObject* Other) const { return Name == Other->GetFName() && Class == Other->GetClass(); }
@@ -161,7 +163,6 @@ struct FStreamingLevelRecord : public FLevelRecord {
 	FStreamingLevelRecord() : Super() {}
 	FStreamingLevelRecord(const ULevelStreaming* Level) : Super()
 	{
-		Class = ULevelStreaming::StaticClass();
 		if (Level)
 			Name = Level->GetWorldAssetPackageFName();
 	}
