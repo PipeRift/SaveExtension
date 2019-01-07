@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -47,8 +47,14 @@ public:
 
 	static bool SaveFile(USaveGame* SaveGameObject, const FString& SlotName, const bool bUseCompression);
 
+	// Not safe for Multi-threading
 	static USaveGame* LoadFile(const FString& SlotName);
 
 	static bool DeleteFile(const FString& SlotName);
 	static bool DoesFileExist(const FString& SlotName);
+
+	static bool LoadFileBytes(const FString& SlotName, FSaveFileHeader& OutFileHeader, TArray<uint8>& OutBytes);
+
+	// Create a SaveGame object from bytes. Not safe for Multi-threading
+	static USaveGame* CreateFromBytes(const FSaveFileHeader& FileHeader, const TArray<uint8>& Bytes);
 };

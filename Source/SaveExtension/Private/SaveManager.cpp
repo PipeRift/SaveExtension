@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "SaveManager.h"
 
@@ -21,6 +21,7 @@
 
 USaveManager::USaveManager()
 	: Super()
+	, MTTasks{}
 {}
 
 void USaveManager::Init()
@@ -53,7 +54,7 @@ void USaveManager::Shutdown()
 	MarkPendingKill();
 }
 
-bool USaveManager::SaveSlotToId(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
+bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	if (!CanLoadOrSave())
 		return false;
@@ -72,11 +73,15 @@ bool USaveManager::SaveSlotToId(int32 SlotId, bool bOverrideIfNeeded, bool bScre
 	check(World);
 
 	//Launch task, always fail if it didn't finish or wasn't scheduled
-	const auto* Task = CreateTask<USlotDataTask_Saver>()->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Width, Height)->Start();
+	auto* Task = CreateTask<USlotDataTask_Saver>()
+		->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+		->Bind(OnSaved)
+		->Start();
+
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
-bool USaveManager::LoadSlotFromId(int32 SlotId)
+bool USaveManager::LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded)
 {
 	if (!CanLoadOrSave())
 		return false;
@@ -86,7 +91,11 @@ bool USaveManager::LoadSlotFromId(int32 SlotId)
 
 	TryInstantiateInfo();
 
-	auto* Task = CreateTask<USlotDataTask_Loader>()->Setup(SlotId)->Start();
+	auto* Task = CreateTask<USlotDataTask_Loader>()
+		->Setup(SlotId)
+		->Bind(OnLoaded)
+		->Start();
+
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
@@ -95,18 +104,65 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 	if (!IsValidSlot(SlotId))
 		return false;
 
-	const FString InfoSlot = GenerateSaveSlotName(SlotId);
-	const FString DataSlot = GenerateSaveDataSlotName(SlotId);
-	return FFileAdapter::DeleteFile(InfoSlot) ||
-		   FFileAdapter::DeleteFile(DataSlot);
+	bool bSuccess = false;
+
+	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotId)
+	.OnFinished([bSuccess](auto& Task) mutable {
+		bSuccess = Task->bSuccess;
+	})
+	.StartSynchronousTask();
+
+	return bSuccess;
 }
 
 void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate)
 {
-	auto* LoadTask = new FAsyncTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate));
-	LoadTask->StartBackgroundTask();
+	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	.OnFinished([](auto& Task) {
+		Task->CallDelegate();
+	})
+	.StartBackgroundTask();
+}
 
-	LoadInfosTasks.Add(LoadTask);
+void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
+{
+	MTTasks.CreateTask<FDeleteSlotsTask>(this)
+	.OnFinished([Delegate](auto& Task) {
+		Delegate.ExecuteIfBound();
+	})
+	.StartBackgroundTask();
+}
+
+void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
+{
+	if (UWorld* World = GetWorld())
+	{
+		Result = ESaveGameResult::Saving;
+
+		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
+		if (LatentActionManager.FindExistingAction<FSaveGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		{
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FSaveGameAction(this, SlotId, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
+		}
+		return;
+	}
+	Result = ESaveGameResult::Failed;
+}
+
+void USaveManager::BPLoadSlotFromId(int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
+{
+	if (UWorld* World = GetWorld())
+	{
+		Result = ELoadGameResult::Loading;
+
+		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
+		if (LatentActionManager.FindExistingAction<FLoadGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		{
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FLoadGameAction(this, SlotId, Result, LatentInfo));
+		}
+		return;
+	}
+	Result = ELoadGameResult::Failed;
 }
 
 void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
@@ -121,24 +177,28 @@ void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo
 	}
 }
 
+
+void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentActionInfo LatentInfo)
+{
+	if (UWorld* World = GetWorld())
+	{
+		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
+		if (LatentActionManager.FindExistingAction<FDeleteSlotsAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		{
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FDeleteSlotsAction(this, Result, LatentInfo));
+		}
+	}
+}
+
 bool USaveManager::IsSlotSaved(int32 SlotId) const
 {
 	if (!IsValidSlot(SlotId))
 		return false;
 
-	const FString InfoSlot = GenerateSaveSlotName(SlotId);
-	const FString DataSlot = GenerateSaveDataSlotName(SlotId);
+	const FString InfoSlot = GenerateSlotInfoName(SlotId);
+	const FString DataSlot = GenerateSlotDataName(SlotId);
 	return FFileAdapter::DoesFileExist(InfoSlot) &&
 		   FFileAdapter::DoesFileExist(DataSlot);
-}
-
-FString USaveManager::EventGenerateSaveSlot_Implementation(const int32 SlotId) const
-{
-	if(!IsValidSlot(SlotId)) {
-		return FString();
-	}
-
-	return FString::FromInt(SlotId);
 }
 
 bool USaveManager::CanLoadOrSave()
@@ -222,7 +282,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 	if (!InSaveInfo)
 		return nullptr;
 
-	const FString Card = GenerateSaveDataSlotName(InSaveInfo->Id);
+	const FString Card = GenerateSlotDataName(InSaveInfo->Id);
 
 	return Cast<USlotData>(FFileAdapter::LoadFile(Card));
 }
@@ -256,16 +316,7 @@ void USaveManager::Tick(float DeltaTime)
 		}
 	}
 
-	// Finish loading info tasks
-	LoadInfosTasks.RemoveAllSwap([](auto* Task) {
-		if (Task->IsDone())
-		{
-			Task->GetTask().CallDelegate();
-			delete Task;
-			return true;
-		}
-		return false;
-	});
+	MTTasks.Tick();
 }
 
 void USaveManager::SubscribeForEvents(const TScriptInterface<ISaveExtensionInterface>& Interface)
@@ -377,13 +428,7 @@ void USaveManager::BeginDestroy()
 {
 	// Remove this manager from the static list
 	GlobalManagers.Remove(OwningGameInstance);
-
-	for (auto* LoadInfoTask : LoadInfosTasks)
-	{
-		if (!LoadInfoTask->IsIdle())
-			LoadInfoTask->EnsureCompletion(false);
-		delete LoadInfoTask;
-	}
+	MTTasks.CancelAll();
 
 	Super::BeginDestroy();
 }

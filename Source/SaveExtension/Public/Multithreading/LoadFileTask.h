@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -12,21 +12,34 @@
 class FLoadFileTask : public FNonAbandonableTask {
 protected:
 
-	USaveGame* SaveGame;
 	const FString SlotName;
+
+	bool bSucceededLoad;
+	FSaveFileHeader FileHeader;
+	TArray<uint8> DataBytes;
 
 public:
 
-	explicit FLoadFileTask(const FString& SlotName) :
-		SaveGame(nullptr),
-		SlotName(SlotName)
+	explicit FLoadFileTask(const FString& SlotName)
+		: SlotName(SlotName)
+		, bSucceededLoad{false}
+		, FileHeader{}
+		, DataBytes{}
 	{}
 
 	void DoWork() {
-		SaveGame = FFileAdapter::LoadFile(SlotName);
+		// This task splits FFileAdapter::LoadFile for multithreading compatibility
+		bSucceededLoad = FFileAdapter::LoadFileBytes(SlotName, FileHeader, DataBytes);
 	}
 
-	USaveGame* GetSaveGame() { return SaveGame; }
+	// Create and return the resulting loaded SaveGame object. Call when task from Gamethread when task is finished
+	USaveGame* GetSaveGame() {
+		if (bSucceededLoad)
+		{
+			return FFileAdapter::CreateFromBytes(FileHeader, DataBytes);
+		}
+		return nullptr;
+	}
 
 	FORCEINLINE TStatId GetStatId() const
 	{

@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "SlotDataTask_Saver.h"
 
@@ -180,25 +180,24 @@ bool FSerializeActorsTask::SerializeActor(const AActor* Actor, FActorRecord& Rec
 		}
 	}
 
-	const bool bSavesPhysics = SavesPhysics(Actor);
-	if (SavesTransform(Actor) || bSavesPhysics)
+	if (SavesTransform(Actor))
 	{
 		Record.Transform = Actor->GetTransform();
-	}
 
-	if (bSavesPhysics)
-	{
-		USceneComponent* const Root = Actor->GetRootComponent();
-		if (Root && Root->Mobility == EComponentMobility::Movable)
+		if (SavesPhysics(Actor))
 		{
-			if (auto* const Primitive = Cast<UPrimitiveComponent>(Root))
+			USceneComponent* const Root = Actor->GetRootComponent();
+			if (Root && Root->Mobility == EComponentMobility::Movable)
 			{
-				Record.LinearVelocity = Primitive->GetPhysicsLinearVelocity();
-				Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInRadians();
-			}
-			else
-			{
-				Record.LinearVelocity = Root->GetComponentVelocity();
+				if (auto* const Primitive = Cast<UPrimitiveComponent>(Root))
+				{
+					Record.LinearVelocity = Primitive->GetPhysicsLinearVelocity();
+					Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInRadians();
+				}
+				else
+				{
+					Record.LinearVelocity = Root->GetComponentVelocity();
+				}
 			}
 		}
 	}
@@ -261,8 +260,8 @@ void USlotDataTask_Saver::OnStart()
 	Manager->TryInstantiateInfo();
 
 	bool bSave = true;
-	const FString InfoCard = Manager->GenerateSaveSlotName(Slot);
-	const FString DataCard = Manager->GenerateSaveDataSlotName(Slot);
+	const FString InfoCard = Manager->GenerateSlotInfoName(Slot);
+	const FString DataCard = Manager->GenerateSlotDataName(Slot);
 
 	//Overriding
 	{
@@ -359,16 +358,25 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 
 		SELog(Preset, "Finished Saving", FColor::Green);
 	}
-	GetManager()->OnSaveFinished(!bSuccess);
+
+	// Execute delegates
+	USaveManager* Manager = GetManager();
+	check(Manager);
+	Delegate.ExecuteIfBound((Manager && bSuccess)? Manager->GetCurrentInfo() : nullptr);
+	Manager->OnSaveFinished(!bSuccess);
 }
 
 void USlotDataTask_Saver::BeginDestroy()
 {
-	if (SaveInfoTask)
+	if (SaveInfoTask) {
+		SaveInfoTask->EnsureCompletion(false);
 		delete SaveInfoTask;
+	}
 
-	if (SaveDataTask)
+	if (SaveDataTask) {
+		SaveDataTask->EnsureCompletion(false);
 		delete SaveDataTask;
+	}
 
 	Super::BeginDestroy();
 }

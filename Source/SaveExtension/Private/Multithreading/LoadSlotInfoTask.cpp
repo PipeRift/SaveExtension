@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "Multithreading/LoadSlotInfoTask.h"
 
@@ -16,7 +16,7 @@ void FLoadSlotInfoTask::DoWork()
 
 	if (SlotId >= 0)
 	{
-		const FString Card = Manager->GenerateSaveSlotName(SlotId);
+		const FString Card = Manager->GenerateSlotInfoName(SlotId);
 		LoadedSlot = Cast<USlotInfo>(FFileAdapter::LoadFile(Card));
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Piperift. All Rights Reserved.
+// Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "SlotData.h"
 #include <TimerManager.h>
@@ -26,7 +26,6 @@ FName FPersistentLevelRecord::PersistentName{ "Persistent" };
 bool FBaseRecord::Serialize(FArchive& Ar)
 {
 	Ar << Name;
-	Ar << Class;
 	return true;
 }
 
@@ -42,6 +41,12 @@ FObjectRecord::FObjectRecord(const UObject* Object) : Super()
 bool FObjectRecord::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);
+
+	if (!Name.IsNone())
+		Ar << Class;
+	else if (Ar.IsLoading())
+		Class = nullptr;
+
 	Ar << Data;
 	Ar << Tags;
 	return true;

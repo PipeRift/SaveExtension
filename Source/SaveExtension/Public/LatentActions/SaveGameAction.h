@@ -11,42 +11,42 @@
 
 class USaveManager;
 class USlotInfo;
+struct FScreenshotSize;
 
 /**
  * Enum used to indicate quote execution results
  */
 UENUM()
-enum class ELoadInfoResult : uint8
+enum class ESaveGameResult : uint8
 {
-	Completed
+	Saving UMETA(Hidden),
+	Continue,
+	Failed
 };
 
-/** FLoadInfosction */
-class FLoadInfosAction : public FPendingLatentAction
+/** FSaveGameAction */
+class FSaveGameAction : public FPendingLatentAction
 {
 
 public:
-	ELoadInfoResult& Result;
-
-	TArray<USlotInfo*>& SlotInfos;
-	bool bFinished;
+	ESaveGameResult& Result;
 
 	FName ExecutionFunction;
 	int32 OutputLink;
 	FWeakObjectPtr CallbackTarget;
 
 
-	/**
-	 * @param SlotId will load that Saved Game if Id > 0, otherwise it will load all infos
-	 */
-	FLoadInfosAction(USaveManager* Manager, const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& OutResult, const FLatentActionInfo& LatentInfo);
+	FSaveGameAction(USaveManager* Manager, int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& OutResult, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 
+	void OnSaveFinished(USlotInfo* SavedSlot);
+
 #if WITH_EDITOR
+	// Returns a human readable description of the latent operation's current state
 	virtual FString GetDescription() const override
 	{
-		return TEXT("Loading all infos...");
+		return TEXT("Saving Game...");
 	}
 #endif
 };

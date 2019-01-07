@@ -17,16 +17,16 @@ Steps to reproduce the behavior:
 3. Scroll down to '....'
 4. See error
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Logs & Screenshots**
-If applicable, add the logs of your project or screenshots to help explain your problem.
+**Logs**
+It's helps us a lot to have a log. If you can, drop the last one here.
 *Logs can be found under "MyProject/Saved/Logs/MyProject.log"*
+
+**[Optional] Screenshots if any**
+If applicable, add screenshots or videos to help explain your problem.
 
 **Environment (please complete the following information):**
  - Engine Version: [e.g. 4.21.1]
- - Plugin Version: [e.g. 1.1]
+ - Plugin Version: [e.g. 1.0]
  - OS: [e.g. Windows]
 
 **[Optional] Additional context**
