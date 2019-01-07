@@ -7,7 +7,7 @@
 #include "FileAdapter.h"
 #include "SavePreset.h"
 #include "SaveManager.h"
-#include "SlotHelpers.h"
+#include "Misc/SlotHelpers.h"
 
 
 void FLoadAllSlotInfosTask::DoWork()

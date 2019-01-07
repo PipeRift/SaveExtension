@@ -1,8 +1,7 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "SlotHelpers.h"
-#include <Paths.h>
-#include <PlatformFilemanager.h>
+#include "Misc/SlotHelpers.h"
+#include <Misc/Paths.h>
 
 
 void FSlotHelpers::GetSlotFileNames(TArray<FString>& FoundFiles, bool bOnlyInfos, bool bOnlyDatas)

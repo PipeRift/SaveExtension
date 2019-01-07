@@ -23,7 +23,7 @@
 
 #include "Multithreading/LoadAllSlotInfosTask.h"
 #include "Multithreading/DeleteSlotsTask.h"
-#include "ScopedTaskManager.h"
+#include "Multithreading/ScopedTaskManager.h"
 
 #include "LatentActions/LoadGameAction.h"
 #include "LatentActions/SaveGameAction.h"

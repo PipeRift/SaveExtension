@@ -1,13 +1,13 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "DeleteSlotsTask.h"
+#include "Multithreading/DeleteSlotsTask.h"
 
 #include <HAL/PlatformFilemanager.h>
 
 #include "FileAdapter.h"
 #include "SavePreset.h"
 #include "SaveManager.h"
-#include "SlotHelpers.h"
+#include "Misc/SlotHelpers.h"
 
 
 void FDeleteSlotsTask::DoWork()
