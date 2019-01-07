@@ -335,7 +335,11 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 				const bool bFoundAIRecord = AIsToSpawn.RemoveSingleSwap(Actor, false) > 0;
 				const bool bFoundActorRecord = !bFoundAIRecord && ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
 
-				if (!bFoundAIRecord && !bFoundActorRecord && ShouldSaveAsWorld(Actor, bIsAIController, bIsLevelScript))
+				bIsLevelScript = false;
+				if (!bFoundAIRecord &&
+					!bFoundActorRecord &&
+					ShouldSaveAsWorld(Actor, bIsAIController, bIsLevelScript)
+					&& !bIsLevelScript) // Don't destroy level actors
 				{
 					// If the actor wasn't found, mark it for destruction
 					Actor->Destroy();
