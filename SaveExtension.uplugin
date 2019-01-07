@@ -1,7 +1,7 @@
 {
 	"FileVersion" : 3,
-	"Version" : 4,
-	"VersionName" : "1.0d",
+	"Version" : 5,
+	"VersionName" : "1.1",
 	"FriendlyName" : "Save Extension",
 	"Description" : "Provides UE4 with a save-game system with support for savegame tags, level streaming and more",
     "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/91084f43b68047ac8da6fc88a7467936",

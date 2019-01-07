@@ -1,7 +1,7 @@
 # Save Extension
 Save Extension allows your projects to be saved and loaded.
 
-This plugin is for Unreal Engine 4 and has support for versions **4.20** and **4.19**
+This plugin is for Unreal Engine 4 and actively supports the last 2 versions of the engine.
 
 ## Introduction
 
