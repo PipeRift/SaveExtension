@@ -7,8 +7,8 @@
 #include "SlotDataTask_Loader.h"
 
 
-FLoadGameAction::FLoadGameAction(USaveManager* Manager, int32 SlotId, ELoadGameResult& Result, const FLatentActionInfo& LatentInfo)
-	: Result(Result)
+FLoadGameAction::FLoadGameAction(USaveManager* Manager, int32 SlotId, ELoadGameResult& OutResult, const FLatentActionInfo& LatentInfo)
+	: Result(OutResult)
 	, ExecutionFunction(LatentInfo.ExecutionFunction)
 	, OutputLink(LatentInfo.Linkage)
 	, CallbackTarget(LatentInfo.CallbackTarget)
