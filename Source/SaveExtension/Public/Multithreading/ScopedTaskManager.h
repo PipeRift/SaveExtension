@@ -6,24 +6,49 @@
 #include "Misc/TypeTraits.h"
 
 
+class ITaskHolder {
+public:
+	virtual bool Tick() = 0;
+	virtual void Cancel(bool bFinishSynchronously) = 0;
+	virtual ~ITaskHolder() {}
+};
+
 template<class TaskType>
-class FTaskHolder : public FAsyncTask<TaskType> {
+class FTaskHolder : public FAsyncTask<TaskType>, public ITaskHolder {
 	using Super = FAsyncTask<TaskType>;
 
 public:
-	using Callback = TFunction<void(FTaskHolder<TaskType>&)>;
+	DECLARE_EVENT_OneParam(FTaskHolder<TaskType>, FFinishedEvent, FTaskHolder<TaskType>&);
 
-	Callback _OnFinished;
+	FFinishedEvent _OnFinished;
 
 
-	FTaskHolder() : Super() {}
+	FTaskHolder() : ITaskHolder(), Super() {}
+	virtual ~FTaskHolder() {}
 
 	template <typename... ArgTypes>
-	FTaskHolder(ArgTypes&&... CtrArgs) : Super(Forward<ArgTypes>(CtrArgs)...) {}
+	FTaskHolder(ArgTypes&&... CtrArgs) : ITaskHolder(), Super(Forward<ArgTypes>(CtrArgs)...) {}
 
-	auto& OnFinished(Callback&& Delegate) {
-		_OnFinished = Delegate;
+	auto& OnFinished(TFunction<void(FTaskHolder<TaskType>&)> Delegate) {
+		_OnFinished.AddLambda(Delegate);
 		return *this;
+	}
+
+	virtual bool Tick() override {
+		if (Super::IsDone())
+		{
+			_OnFinished.Broadcast(*this);
+			return true;
+		}
+		return false;
+	}
+
+	virtual void Cancel(bool bFinishSynchronously) override {
+		if (!Super::IsIdle())
+		{
+			Super::EnsureCompletion(bFinishSynchronously);
+			_OnFinished.Broadcast(*this);
+		}
 	}
 
 	TaskType* operator->() {
@@ -32,112 +57,40 @@ public:
 };
 
 
-/** Use TScopedTaskList. Manages the lifetime of an array of multi-threaded tasks */
-template<class TaskType>
-struct TScopedTaskListType {
+/** Manages the lifetime of many multi-threaded tasks */
+class FScopedTaskList {
 
-	using Callback = TFunction<void(FTaskHolder<TaskType>&)>;
+	TArray<ITaskHolder*> Tasks;
 
-private:
-
-	TArray<FTaskHolder<TaskType>*> Tasks;
 
 public:
 
-	TScopedTaskListType() : Tasks{} {}
+	FScopedTaskList() {}
+	FScopedTaskList(FScopedTaskList&& other) {}
 
-	TScopedTaskListType(TScopedTaskListType&& other) {
-		Tasks = MoveTemp(other.Tasks);
-	}
-
-	template <typename... ArgTypes>
-	FTaskHolder<TaskType>& CreateTask(ArgTypes&&... CtrArgs)
-	{
+	template<class TaskType, typename... ArgTypes>
+	inline FTaskHolder<TaskType>& CreateTask(ArgTypes&&... CtrArgs) {
 		auto* NewTask = new FTaskHolder<TaskType>(Forward<ArgTypes>(CtrArgs)...);
 		Tasks.Add(NewTask);
 		return *NewTask;
 	}
 
 	void Tick() {
-		Tasks.RemoveAllSwap([this](auto* Task) {
-			if (Task->IsDone())
-			{
-				Task->_OnFinished(*Task);
+		// Tick all running tasks and remove the ones that finished
+		Tasks.RemoveAllSwap([](auto* Task) {
+			bool bFinished = Task->Tick();
+			if (bFinished)
 				delete Task;
-				return true;
-			}
-			return false;
+			return bFinished;
 		});
 	}
 
-	void CancelAll()
-	{
+	void CancelAll() {
 		for (auto* Task : Tasks)
 		{
-			if (!Task->IsIdle())
-			{
-				Task->EnsureCompletion(false);
-				Task->_OnFinished(*Task);
-			}
-
+			Task->Cancel(false);
 			delete Task;
 		}
 		Tasks.Empty();
 	}
-
-	~TScopedTaskListType() {
-		CancelAll();
-	}
-};
-
-
-/** Manages the lifetime of an array of multi-threaded tasks */
-template<class ...Args>
-struct TScopedTaskList {
-	static constexpr uint32 TypesCount = sizeof...(Args);
-
-	TTuple<TScopedTaskListType<Args>...> SingleManagers;
-
-
-public:
-
-	TScopedTaskList() {}
-	TScopedTaskList(TScopedTaskList&& other) {}
-
-	template<class Type, typename... ArgTypes>
-	inline FTaskHolder<Type>& CreateTask(ArgTypes&&... CtrArgs) {
-		static_assert(VariadicContainsType<Type, Args...>(), "Can't create a task of this type");
-
-		constexpr uint32 I = GetVariadicTypeIndex<0, Type, Args...>();
-
-		return SingleManagers.Get<I>().CreateTask(Forward<ArgTypes>(CtrArgs)...);
-	}
-
-	void Tick() {
-		TickForEachId();
-	}
-
-	void CancelAll() {
-		CancelForEachId();
-	}
-
-private:
-
-	template<uint32 I = 0>
-	void TickForEachId() {
-		SingleManagers.Get<I>().Tick();
-		TickForEachId<I + 1>();
-	}
-
-	template<>
-	void TickForEachId<TypesCount>() {}
-
-	template<uint32 I = 0>
-	void CancelForEachId() {
-		SingleManagers.Get<I>().CancelAll();
-		CancelForEachId<I + 1>();
-	}
-
-	template<>
-	void CancelForEachId<TypesCount>() {}
 };
