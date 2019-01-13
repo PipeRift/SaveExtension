@@ -86,7 +86,7 @@ private:
 	/** The game instance to which this save manager is owned. */
 	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
-	TScopedTaskList<FLoadAllSlotInfosTask, FDeleteSlotsTask> MTTasks;
+	FScopedTaskList MTTasks;
 
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;
