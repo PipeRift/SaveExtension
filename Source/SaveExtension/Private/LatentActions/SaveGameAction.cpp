@@ -5,8 +5,8 @@
 #include "SlotInfo.h"
 
 
-FSaveGameAction::FSaveGameAction(USaveManager* Manager, int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, const FLatentActionInfo& LatentInfo)
-	: Result(Result)
+FSaveGameAction::FSaveGameAction(USaveManager* Manager, int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& OutResult, const FLatentActionInfo& LatentInfo)
+	: Result(OutResult)
 	, ExecutionFunction(LatentInfo.ExecutionFunction)
 	, OutputLink(LatentInfo.Linkage)
 	, CallbackTarget(LatentInfo.CallbackTarget)
