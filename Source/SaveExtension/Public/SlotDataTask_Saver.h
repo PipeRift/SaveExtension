@@ -45,12 +45,12 @@ class FSerializeActorsTask : public FSlotDataActorsTask
 
 public:
 
-	explicit FSerializeActorsTask(const bool bIsSync, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 StartIndex, const int32 Num, FLevelRecord* LevelRecord, const USavePreset* Preset) :
+	explicit FSerializeActorsTask(const bool bIsSync, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, FLevelRecord* InLevelRecord, const USavePreset* Preset) :
 		FSlotDataActorsTask(bIsSync, World, SlotData, Preset),
 		LevelActors(InLevelActors),
-		StartIndex(StartIndex),
-		Num(FMath::Min(Num, LevelActors->Num() - StartIndex)),
-		LevelRecord(LevelRecord),
+		StartIndex(InStartIndex),
+		Num(FMath::Min(InNum, LevelActors->Num() - StartIndex)),
+		LevelRecord(InLevelRecord),
 		LevelScriptRecord{}, ActorRecords{}, AIControllerRecords{}
 	{
 		// No apparent performance benefit
@@ -131,8 +131,14 @@ protected:
 	FAsyncTask<FSaveFileTask>* SaveDataTask;
 	/** End AsyncTasks */
 
+
 public:
-	USlotDataTask_Saver() : USlotDataTask(), SaveInfoTask(nullptr), SaveDataTask(nullptr) {}
+
+	USlotDataTask_Saver()
+		: USlotDataTask()
+		, SaveInfoTask(nullptr)
+		, SaveDataTask(nullptr)
+	{}
 
 	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
 	{

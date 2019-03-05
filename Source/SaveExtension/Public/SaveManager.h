@@ -43,7 +43,7 @@ struct FScreenshotSize
 
 public:
 	FScreenshotSize() : Width(640), Height(360) {}
-	FScreenshotSize(int32 Width, int32 Height) : Width(Width), Height(Height) {}
+	FScreenshotSize(int32 InWidth, int32 InHeight) : Width(InWidth), Height(InHeight) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Screenshot)
 	int32 Width;
@@ -153,7 +153,7 @@ public:
 	void DeleteAllSlots(FOnSlotsDeleted Delegate);
 
 
-private:
+public:
 
 	/** BLUEPRINT ONLY API */
 

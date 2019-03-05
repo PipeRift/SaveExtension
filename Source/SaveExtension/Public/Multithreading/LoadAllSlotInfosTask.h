@@ -31,11 +31,11 @@ protected:
 public:
 
 	/** All infos Constructor */
-	explicit FLoadAllSlotInfosTask(const USaveManager* Manager, bool bSortByRecent, const FOnAllInfosLoaded& Delegate)
-		: Manager(Manager)
+	explicit FLoadAllSlotInfosTask(const USaveManager* InManager, bool bInSortByRecent, const FOnAllInfosLoaded& InDelegate)
+		: Manager(InManager)
 		, SlotId(-1)
-		, bSortByRecent(bSortByRecent)
-		, Delegate(Delegate)
+		, bSortByRecent(bInSortByRecent)
+		, Delegate(InDelegate)
 	{}
 
 	void DoWork();

@@ -167,10 +167,10 @@ protected:
 	const bool bStoreControlRotation;
 
 
-	FSlotDataActorsTask(const bool bIsSync, const UWorld* World, USlotData* SlotData, const USavePreset* Preset) :
-		bIsSync(bIsSync),
-		World(World),
-		SlotData(SlotData),
+	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const USavePreset* Preset) :
+		bIsSync(bInIsSync),
+		World(InWorld),
+		SlotData(InSlotData),
 		bStoreGameMode(Preset->bStoreGameMode),
 		bStoreGameInstance(Preset->bStoreGameInstance),
 		bStoreLevelBlueprints(Preset->bStoreLevelBlueprints),
