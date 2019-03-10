@@ -12,23 +12,44 @@ class SAVEEXTENSION_API USaveExtensionInterface : public UInterface {
 
 class SAVEEXTENSION_API ISaveExtensionInterface {
 
-	GENERATED_IINTERFACE_BODY()
+	GENERATED_BODY()
 
 public:
 
+
+
+
+	/** BP API **/
+
 	// Event called when Save process starts
-	UFUNCTION(Category = Save, BlueprintImplementableEvent)
-	void OnSaveBegan();
+	UFUNCTION(Category = Save, BlueprintImplementableEvent, meta = (DisplayName = "On Save Began"))
+	void ReceiveOnSaveBegan();
 
 	// Event called when Save process ends
-	UFUNCTION(Category = Save, BlueprintImplementableEvent)
-	void OnSaveFinished(bool bError);
+	UFUNCTION(Category = Save, BlueprintImplementableEvent, meta = (DisplayName = "On Save Finished"))
+	void ReceiveOnSaveFinished(bool bError);
 
 	// Event called when Load process starts
-	UFUNCTION(Category = Save, BlueprintImplementableEvent)
-	void OnLoadBegan();
+	UFUNCTION(Category = Save, BlueprintImplementableEvent, meta = (DisplayName = "On Load Began"))
+	void ReceiveOnLoadBegan();
 
 	// Event called when Load process ends
-	UFUNCTION(Category = Save, BlueprintImplementableEvent)
-	void OnLoadFinished(bool bError);
+	UFUNCTION(Category = Save, BlueprintImplementableEvent, meta = (DisplayName = "On Load Finished"))
+	void ReceiveOnLoadFinished(bool bError);
+
+
+	/** C++ API **/
+
+	// Event called when Save process starts
+	virtual void OnSaveBegan() {
+	}
+
+	// Event called when Save process ends
+	virtual void OnSaveFinished(bool bError) {}
+
+	// Event called when Load process starts
+	virtual void OnLoadBegan() {}
+
+	// Event called when Load process ends
+	virtual void OnLoadFinished(bool bError) {}
 };

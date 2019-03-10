@@ -332,31 +332,33 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 
 void USaveManager::OnSaveBegan()
 {
-	IterateSubscribedInterfaces([](auto* Object) {
-		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
-		if (Interface)
+	IterateSubscribedInterfaces([](auto* Object)
+	{
+		check(Object->Implements<USaveExtensionInterface>());
+
+		// C++ event
+		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->Execute_OnSaveBegan(Object);
+			Interface->OnSaveBegan();
 		}
-		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass()))
-		{
-			ISaveExtensionInterface::Execute_OnSaveBegan(Object);
-		}
+
+		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object);
 	});
 }
 
 void USaveManager::OnSaveFinished(const bool bError)
 {
-	IterateSubscribedInterfaces([bError](auto* Object) {
-		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
-		if (Interface)
+	IterateSubscribedInterfaces([bError](auto* Object)
+	{
+		check(Object->Implements<USaveExtensionInterface>());
+
+		// C++ event
+		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->Execute_OnSaveFinished(Object, bError);
+			Interface->OnSaveFinished(bError);
 		}
-		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass()))
-		{
-			ISaveExtensionInterface::Execute_OnSaveFinished(Object, bError);
-		}
+
+		ISaveExtensionInterface::Execute_ReceiveOnSaveFinished(Object, bError);
 	});
 
 	if (!bError)
@@ -367,29 +369,33 @@ void USaveManager::OnSaveFinished(const bool bError)
 
 void USaveManager::OnLoadBegan()
 {
-	IterateSubscribedInterfaces([](auto* Object) {
-		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
-		if (Interface)
+	IterateSubscribedInterfaces([](auto* Object)
+	{
+		check(Object->Implements<USaveExtensionInterface>());
+
+		// C++ event
+		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->Execute_OnLoadBegan(Object);
+			Interface->OnLoadBegan();
 		}
-		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass()))
-		{
-			ISaveExtensionInterface::Execute_OnLoadBegan(Object);
-		}
+
+		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object);
 	});
 }
 
 void USaveManager::OnLoadFinished(const bool bError)
 {
-	IterateSubscribedInterfaces([bError](auto* Object) {
-		ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object);
-		if (Interface) {
-			Interface->Execute_OnLoadFinished(Object, bError);
+	IterateSubscribedInterfaces([bError](auto* Object)
+	{
+		check(Object->Implements<USaveExtensionInterface>());
+
+		// C++ event
+		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
+		{
+			Interface->OnLoadFinished(bError);
 		}
-		else if (Object->GetClass()->ImplementsInterface(USaveExtensionInterface::StaticClass())) {
-			ISaveExtensionInterface::Execute_OnLoadFinished(Object, bError);
-		}
+
+		ISaveExtensionInterface::Execute_ReceiveOnLoadFinished(Object, bError);
 	});
 
 	if (!bError)
