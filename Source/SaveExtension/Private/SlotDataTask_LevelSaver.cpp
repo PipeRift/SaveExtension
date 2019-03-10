@@ -12,6 +12,9 @@ void USlotDataTask_LevelSaver::OnStart()
 	{
 		const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn());
 		SerializeLevelSync(StreamingLevel->GetLoadedLevel(), NumberOfThreads, StreamingLevel);
+
+		RunScheduledTasks();
+
 		Finish(true);
 		return;
 	}

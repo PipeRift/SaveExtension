@@ -296,7 +296,7 @@ void USlotDataTask_Saver::OnStart()
 
 		USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 		SlotData = Manager->GetCurrentData();
-		SlotData->Clean(false);
+		SlotData->Clean(true);
 
 
 		check(CurrentInfo && SlotData);
@@ -414,36 +414,14 @@ void USlotDataTask_Saver::SerializeWorld()
 		}
 	}
 
-	// Start all serialization tasks
-	if (Tasks.Num() > 0)
-	{
-		Tasks[0].StartSynchronousTask();
-		for (int32 I = 1; I < Tasks.Num(); ++I)
-		{
-			if(Preset->IsMTSerializationSave())
-				Tasks[I].StartBackgroundTask();
-			else
-				Tasks[I].StartSynchronousTask();
-		}
-	}
-	// Wait until all tasks have finished
-	for (auto& AsyncTask : Tasks)
-	{
-		AsyncTask.EnsureCompletion();
-	}
-	// All tasks finished, sync data
-	for (auto& AsyncTask : Tasks)
-	{
-		AsyncTask.GetTask().DumpData();
-	}
-	Tasks.Empty();
+	RunScheduledTasks();
 }
 
 void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
 {
 	check(IsValid(Level));
 
-	if (Preset->IsMTSerializationSave())
+	if (!Preset->IsMTSerializationSave())
 		AssignedTasks = 1;
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
@@ -475,6 +453,33 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 		Tasks.Emplace(IsFirstTask, GetWorld(), SlotData, &Level->Actors, Index, ObjectsPerTask, LevelRecord, Preset);
 		Index += ObjectsPerTask;
 	}
+}
+
+void USlotDataTask_Saver::RunScheduledTasks()
+{
+	// Start all serialization tasks
+	if (Tasks.Num() > 0)
+	{
+		Tasks[0].StartSynchronousTask();
+		for (int32 I = 1; I < Tasks.Num(); ++I)
+		{
+			if (Preset->IsMTSerializationSave())
+				Tasks[I].StartBackgroundTask();
+			else
+				Tasks[I].StartSynchronousTask();
+		}
+	}
+	// Wait until all tasks have finished
+	for (auto& AsyncTask : Tasks)
+	{
+		AsyncTask.EnsureCompletion();
+	}
+	// All tasks finished, sync data
+	for (auto& AsyncTask : Tasks)
+	{
+		AsyncTask.GetTask().DumpData();
+	}
+	Tasks.Empty();
 }
 
 void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataName)

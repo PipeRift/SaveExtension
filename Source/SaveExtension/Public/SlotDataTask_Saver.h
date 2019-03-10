@@ -175,6 +175,8 @@ protected:
 	void SerializeWorld();
 	/** END Serialization */
 
+	void RunScheduledTasks();
+
 private:
 
 	/** BEGIN FileSaving */
