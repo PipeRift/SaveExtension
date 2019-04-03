@@ -41,8 +41,7 @@ public:
 	/** C++ API **/
 
 	// Event called when Save process starts
-	virtual void OnSaveBegan() {
-	}
+	virtual void OnSaveBegan() {}
 
 	// Event called when Save process ends
 	virtual void OnSaveFinished(bool bError) {}

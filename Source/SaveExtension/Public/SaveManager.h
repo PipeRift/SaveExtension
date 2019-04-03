@@ -94,6 +94,9 @@ private:
 	UPROPERTY(Transient)
 	TArray<TScriptInterface<ISaveExtensionInterface>> SubscribedInterfaces;
 
+	UPROPERTY(Transient)
+	TArray<USlotDataTask*> Tasks;
+
 
 	/************************************************************************/
 	/* METHODS											     			    */
@@ -331,32 +334,37 @@ private:
 	void DeserializeStreamingLevel(ULevelStreaming* LevelStreaming);
 	//~ End LevelStreaming
 
-
 	USlotInfo* LoadInfo(uint32 Slot) const;
 	USlotData* LoadData(const USlotInfo* Info) const;
 
 	void OnLevelLoaded(ULevelStreaming* StreamingLevel) {}
 
-
-	//~ Begin Save Tasks
-	UPROPERTY(Transient)
-	TArray<USlotDataTask*> Tasks;
-
-	template<class TaskType>
-	TaskType* CreateTask() {
-		return Cast<TaskType>(CreateTask(TaskType::StaticClass()));
-	}
 	USlotDataTask* CreateTask(TSubclassOf<USlotDataTask> TaskType);
 
+	template<class TaskType>
+	TaskType* CreateTask()
+	{
+		return Cast<TaskType>(CreateTask(TaskType::StaticClass()));
+	}
+
 	void FinishTask(USlotDataTask* Task);
+
+public:
 
 	bool HasTasks() const { return Tasks.Num() > 0; }
 
 	/** @return true when saving or loading anything, including levels */
 	UFUNCTION(BlueprintPure, Category = SaveExtension)
 	FORCEINLINE bool IsSavingOrLoading() const { return HasTasks(); }
-	//~ End Save Tasks
 
+	FORCEINLINE bool IsLoading() const {
+		return HasTasks() && (
+			Tasks[0]->IsA<USlotDataTask_Loader>() ||
+			Tasks[0]->IsA<USlotDataTask_LevelLoader>()
+		);
+	}
+
+protected:
 
 	//~ Begin Tickable Object Interface
 	virtual void Tick(float DeltaTime) override;

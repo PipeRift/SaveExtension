@@ -40,6 +40,22 @@ public:
 
 	static bool IsSaveTag(const FName& Tag);
 
+	//Actor Tags
+	static FORCEINLINE bool ShouldSave(const AActor* Actor)     { return IsValid(Actor) && !HasTag(Actor, TagNoSave); }
+	static FORCEINLINE bool SavesTransform(const AActor* Actor) { return Actor && Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform); }
+	static FORCEINLINE bool SavesPhysics(const AActor* Actor)   { return Actor && !HasTag(Actor, TagNoPhysics); }
+	static FORCEINLINE bool SavesTags(const AActor* Actor)      { return Actor && !HasTag(Actor, TagNoTags); }
+	static FORCEINLINE bool IsProcedural(const AActor* Actor)   { return Actor && Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
+	FORCEINLINE bool SavesComponents(const AActor* Actor) const { return Preset->bStoreComponents && Actor && !HasTag(Actor, TagNoComponents); }
+
+	static FORCEINLINE bool HasTag(const AActor* Actor, const FName Tag) {
+		return Actor->ActorHasTag(Tag);
+	}
+
+	static FORCEINLINE bool HasTag(const UActorComponent* Component, const FName Tag) {
+		return Component->ComponentHasTag(Tag);
+	}
+
 private:
 
 	uint8 bRunning : 1;
@@ -95,16 +111,6 @@ protected:
 	virtual UWorld* GetWorld() const override;
 	//~ End UObject Interface
 
-
-	//Actor Tags
-	FORCEINLINE bool ShouldSave(const AActor* Actor) const     { return IsValid(Actor) && !HasTag(Actor, TagNoSave); }
-	FORCEINLINE bool SavesTransform(const AActor* Actor) const { return Actor && Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform);  }
-	FORCEINLINE bool SavesPhysics(const AActor* Actor) const   { return Actor && !HasTag(Actor, TagNoPhysics);	}
-	FORCEINLINE bool SavesComponents(const AActor* Actor) const { return Preset->bStoreComponents && Actor && !HasTag(Actor, TagNoComponents); }
-	FORCEINLINE bool SavesTags(const AActor* Actor) const      { return Actor && !HasTag(Actor, TagNoTags);	   }
-	FORCEINLINE bool IsProcedural(const AActor* Actor) const   { return Actor &&  Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
-
-
 	bool ShouldSaveAsWorld(const AActor* Actor, bool& bIsAIController, bool& bIsLevelScript) const;
 
 	//Component Tags
@@ -125,18 +131,6 @@ protected:
 			   HasTag(Component, TagTransform);
 	}
 	FORCEINLINE bool SavesTags(const UActorComponent* Component) const { return Component && !HasTag(Component, TagNoTags); }
-
-private:
-
-	static FORCEINLINE bool HasTag(const AActor* Actor, const FName Tag) {
-		check(Actor);
-		return Actor->ActorHasTag(Tag);
-	}
-
-	static FORCEINLINE bool HasTag(const UActorComponent* Component, const FName Tag) {
-		check(Component);
-		return Component->ComponentHasTag(Tag);
-	}
 
 
 protected:
