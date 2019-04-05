@@ -159,7 +159,7 @@ bool FFileAdapter::SaveFile(USaveGame* SaveGameObject, const FString& SlotName, 
 			if (bUseCompression)
 			{
 				// Compress SaveGame Object
-				FArchiveSaveCompressedProxy Compressor(CompressedBytes, NAME_Zlib);
+				FArchiveSaveCompressedProxy Compressor(CompressedBytes, ECompressionFlags::COMPRESS_ZLIB);
 				Compressor << SaveGameBytes;
 				Compressor.Close();
 			}
@@ -238,7 +238,7 @@ bool FFileAdapter::LoadFileBytes(const FString& SlotName, FSaveFileHeader& FileH
 			// Uncompress if header indicates so
 			if (FileHeader.bIsCompressed)
 			{
-				FArchiveLoadCompressedProxy Decompressor(DataBytes, NAME_Zlib);
+				FArchiveLoadCompressedProxy Decompressor(DataBytes, ECompressionFlags::COMPRESS_ZLIB);
 				if (Decompressor.GetError())
 					return false;
 
