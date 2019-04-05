@@ -27,7 +27,7 @@ public:
 	virtual ~FTaskHolder() {}
 
 	template <typename... ArgTypes>
-	FTaskHolder(ArgTypes&&... CtrArgs) : ITaskHolder(), Super(Forward<ArgTypes>(CtrArgs)...) {}
+	FTaskHolder(ArgTypes&&... CtrArgs) : Super(Forward<ArgTypes>(CtrArgs)...), ITaskHolder() {}
 
 	auto& OnFinished(TFunction<void(FTaskHolder<TaskType>&)> Delegate) {
 		_OnFinished.AddLambda(Delegate);
