@@ -44,4 +44,3 @@ To save a game you can just get the Save Manager and then call *SaveGame to Slot
 
  ![SaveGame from Info](img\save_game_from_info.png) 
 
-## Loading

@@ -4,7 +4,7 @@ Quick Start will show the basic steps to follow to setup the plugin and start us
 
 ## Setting Up the Project
 
-We can start by creating an empty project ([How to create UE4 projects](https://docs.unrealengine.com/en-US/Engine/Basics/Projects/Browser)) or instead using your own. Then installing the plugin from marketplace or inside Plugins folder (See [Installation](http://www.hemingwayapp.com/installation.md)).
+We can start by creating an empty project ([How to create UE4 projects](https://docs.unrealengine.com/en-US/Engine/Basics/Projects/Browser)) or instead using your own. Then installing the plugin from marketplace or inside Plugins folder (See [Installation](installation.md)).
 
 If everything went right, we should see the plugin enabled under *Edit->Plugins->Piperift*
 
@@ -30,7 +30,7 @@ Then we add the following functions:
 
 ### Something to save
 
-Player's rotation and location will always be saved (unless you disable it from [Configuration](documentation/configuration.md)) but we can also add to the scene some actors to be saved. They could save variables, physics, positions, etc.
+Player's rotation and location will always be saved (unless you disable it from [Configuration](docs/configuration.md)) but we can also add to the scene some actors to be saved. They could save variables, physics, positions, etc.
 
 ### Saving a variable
 

@@ -28,8 +28,8 @@ public:
 	bool bSuccess;
 
 	/** All infos Constructor */
-	explicit FDeleteSlotsTask(const USaveManager* Manager, int32 SlotId = -1)
-		: Manager(Manager)
+	explicit FDeleteSlotsTask(const USaveManager* InManager, int32 SlotId = -1)
+		: Manager(InManager)
 		, SpecificSlotId(SlotId)
 		, bSuccess(false)
 	{}

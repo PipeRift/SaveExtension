@@ -18,10 +18,10 @@ protected:
 
 public:
 
-	explicit FSaveFileTask(USaveGame* SaveGame, const FString& SlotName, const bool bUseCompression) :
-		SaveGame(SaveGame),
-		SlotName(SlotName),
-		bUseCompression(bUseCompression)
+	FSaveFileTask(USaveGame* InSaveGame, const FString& InSlotName, const bool bInUseCompression) :
+		SaveGame(InSaveGame),
+		SlotName(InSlotName),
+		bUseCompression(bInUseCompression)
 	{}
 
 	void DoWork() {

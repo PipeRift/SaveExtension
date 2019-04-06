@@ -20,8 +20,8 @@ protected:
 
 public:
 
-	explicit FLoadFileTask(const FString& SlotName)
-		: SlotName(SlotName)
+	explicit FLoadFileTask(const FString& InSlotName)
+		: SlotName(InSlotName)
 		, bSucceededLoad{false}
 		, FileHeader{}
 		, DataBytes{}
