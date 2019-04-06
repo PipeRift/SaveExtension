@@ -3,6 +3,8 @@
 #pragma once
 
 #include <CoreMinimal.h>
+#include <GameInstanceSubsystem.h>
+
 #include <HAL/PlatformFilemanager.h>
 #include <GenericPlatform/GenericPlatformFile.h>
 #include <Async/AsyncWork.h>
@@ -55,8 +57,8 @@ public:
 /**
  * Controls the complete saving and loading process
  */
-UCLASS(ClassGroup = SaveExtension, Config = Game)
-class SAVEEXTENSION_API USaveManager : public UObject, public FTickableGameObject
+UCLASS(ClassGroup = SaveExtension, Config = Game, meta = (DisplayName = "SaveManager"))
+class SAVEEXTENSION_API USaveManager : public UGameInstanceSubsystem, public FTickableGameObject
 {
 	GENERATED_BODY()
 
@@ -105,8 +107,12 @@ public:
 
 	USaveManager();
 
-	void Init();
-	void Shutdown();
+
+	/** Begin USubsystem */
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
+	virtual void Deinitialize() override;
+	/** End USubsystem */
 
 	void SetGameInstance(UGameInstance* GameInstance) { OwningGameInstance = GameInstance; }
 
@@ -418,19 +424,19 @@ private:
 
 	//~ Begin UObject Interface
 	virtual UWorld* GetWorld() const override;
-	virtual void BeginDestroy() override;
 	//~ End UObject Interface
 
 
-	/**
-	* STATIC
-	*/
-
-	static TMap<TWeakObjectPtr<UGameInstance>, TWeakObjectPtr<USaveManager>> GlobalManagers;
-
+	/** STATIC */
 public:
 
 	/** Get the global save manager */
-	UFUNCTION(BlueprintPure, Category = SaveExtension, meta = (WorldContext = "ContextObject"))
-	static USaveManager* GetSaveManager(const UObject* ContextObject);
+	UFUNCTION(BlueprintPure, Category = SaveExtension, meta = (WorldContext = "ContextObject", DeprecatedFunction, DeprecationMessage = "Use 'Get Save Manager' instead"))
+	static USaveManager* GetSaveManager(const UObject* ContextObject)
+	{
+		UWorld* World = GEngine->GetWorldFromContextObject(ContextObject, EGetWorldErrorMode::LogAndReturnNull);
+
+		const UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+		return UGameInstance::GetSubsystem<USaveManager>(GI);
+	}
 };

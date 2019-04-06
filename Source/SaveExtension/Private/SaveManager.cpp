@@ -24,11 +24,12 @@ USaveManager::USaveManager()
 	, MTTasks{}
 {}
 
-void USaveManager::Init()
+void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Super::Initialize(Collection);
+
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
-	FGameDelegates::Get().GetEndPlayMapDelegate().AddUObject(this, &USaveManager::Shutdown);
 
 	//AutoLoad
 	if (GetPreset()->bAutoLoad)
@@ -40,8 +41,12 @@ void USaveManager::Init()
 	AddToRoot();
 }
 
-void USaveManager::Shutdown()
+void USaveManager::Deinitialize()
 {
+	Super::Deinitialize();
+
+	MTTasks.CancelAll();
+
 	if (GetPreset()->bSaveOnExit)
 		SaveCurrentSlot();
 
@@ -422,43 +427,11 @@ void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)
 
 UWorld* USaveManager::GetWorld() const
 {
-	// If we are a CDO, we must return nullptr instead of calling Outer->GetWorld() to fool UObject::ImplementsGetWorld.
-	if (HasAllFlags(RF_ClassDefaultObject) || !GetOuter())
+	check(GetGameInstance());
+
+	// If we are a CDO, we must return nullptr instead to fool UObject::ImplementsGetWorld.
+	if (HasAllFlags(RF_ClassDefaultObject))
 		return nullptr;
 
-	// Our outer should be the GameInstance
-	return GetOuter()->GetWorld();
+	return GetGameInstance()->GetWorld();
 }
-
-void USaveManager::BeginDestroy()
-{
-	// Remove this manager from the static list
-	GlobalManagers.Remove(OwningGameInstance);
-	MTTasks.CancelAll();
-
-	Super::BeginDestroy();
-}
-
-
-TMap<TWeakObjectPtr<UGameInstance>, TWeakObjectPtr<USaveManager>> USaveManager::GlobalManagers {};
-
-USaveManager* USaveManager::GetSaveManager(const UObject* ContextObject)
-{
-	UWorld* World = GEngine->GetWorldFromContextObject(ContextObject, EGetWorldErrorMode::LogAndReturnNull);
-
-	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-	if (GI)
-	{
-		TWeakObjectPtr<USaveManager>& Manager = GlobalManagers.FindOrAdd(GI);
-		if (!Manager.IsValid())
-		{
-			Manager = NewObject<USaveManager>(GI);
-			Manager->SetGameInstance(GI);
-			Manager->Init();
-		}
-		return Manager.Get();
-	}
-	return nullptr;
-}
-
-
