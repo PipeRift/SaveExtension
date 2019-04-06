@@ -334,8 +334,6 @@ void USaveManager::OnSaveBegan()
 {
 	IterateSubscribedInterfaces([](auto* Object)
 	{
-		check(Object->Implements<USaveExtensionInterface>());
-
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
@@ -350,8 +348,6 @@ void USaveManager::OnSaveFinished(const bool bError)
 {
 	IterateSubscribedInterfaces([bError](auto* Object)
 	{
-		check(Object->Implements<USaveExtensionInterface>());
-
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
@@ -371,8 +367,6 @@ void USaveManager::OnLoadBegan()
 {
 	IterateSubscribedInterfaces([](auto* Object)
 	{
-		check(Object->Implements<USaveExtensionInterface>());
-
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
@@ -387,8 +381,6 @@ void USaveManager::OnLoadFinished(const bool bError)
 {
 	IterateSubscribedInterfaces([bError](auto* Object)
 	{
-		check(Object->Implements<USaveExtensionInterface>());
-
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
