@@ -3,7 +3,7 @@
 #pragma once
 
 #include <CoreMinimal.h>
-#include <GameInstanceSubsystem.h>
+#include <Subsystems/GameInstanceSubsystem.h>
 
 #include <HAL/PlatformFilemanager.h>
 #include <GenericPlatform/GenericPlatformFile.h>
