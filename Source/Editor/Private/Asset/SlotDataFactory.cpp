@@ -15,7 +15,7 @@ UObject* USlotDataFactory::FactoryCreateNew(UClass* Class, UObject* InParent, FN
 
 	if (!FKismetEditorUtilities::CanCreateBlueprintOfClass(Class))
 	{
-		return NULL;
+		return nullptr;
 	}
 	return FKismetEditorUtilities::CreateBlueprint(Class,InParent,Name,BPTYPE_Const,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass(),TEXT("AssetTypeActions"));
 }

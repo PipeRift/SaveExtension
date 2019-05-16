@@ -145,7 +145,7 @@ void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreens
 		Result = ESaveGameResult::Saving;
 
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FSaveGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		if (LatentActionManager.FindExistingAction<FSaveGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FSaveGameAction(this, SlotId, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
 		}
@@ -161,7 +161,7 @@ void USaveManager::BPLoadSlotFromId(int32 SlotId, ELoadGameResult& Result, struc
 		Result = ELoadGameResult::Loading;
 
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		if (LatentActionManager.FindExistingAction<FLoadGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FLoadGameAction(this, SlotId, Result, LatentInfo));
 		}
@@ -175,7 +175,7 @@ void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FLoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
 		}
@@ -188,7 +188,7 @@ void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentAc
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FDeleteSlotsAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == NULL)
+		if (LatentActionManager.FindExistingAction<FDeleteSlotsAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FDeleteSlotsAction(this, Result, LatentInfo));
 		}
