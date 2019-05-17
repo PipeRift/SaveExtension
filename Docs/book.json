@@ -22,7 +22,10 @@
         "-highlight",
         "collapsible-chapters",
         "hide-published-with",
-        "hints"
+        "hints",
+        "-lunr",
+        "-search",
+        "search-plus"
     ],
     "pluginsConfig": {
         "favicon": "./assets/favicon.ico",
