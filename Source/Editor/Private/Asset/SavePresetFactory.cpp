@@ -7,12 +7,12 @@
 USavePresetFactory::USavePresetFactory() : Super() {
 	bCreateNew = true;
 	bEditAfterNew = true;
-	SupportedClass = USavePreset::StaticClass();
+	SupportedClass = UDEPRECATED_SavePreset::StaticClass();
 }
 
 UObject* USavePresetFactory::FactoryCreateNew(UClass* Class, UObject* InParent, FName Name, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
 	// if we have no asset class, use the passed-in class instead
-	check(Class == USavePreset::StaticClass() || Class->IsChildOf(USavePreset::StaticClass()));
-	return NewObject<USavePreset>(InParent, Class, Name, Flags);
+	check(Class == UDEPRECATED_SavePreset::StaticClass() || Class->IsChildOf(UDEPRECATED_SavePreset::StaticClass()));
+	return NewObject<UDEPRECATED_SavePreset>(InParent, Class, Name, Flags);
 }

@@ -34,6 +34,6 @@ private:
 
 	virtual void OnStart() override;
 	virtual void OnFinish(bool bSuccess) override  {
-		SELog(Preset, "Finished Serializing level", FColor::Green);
+		SELog(*Settings, "Finished Serializing level", FColor::Green);
 	}
 };

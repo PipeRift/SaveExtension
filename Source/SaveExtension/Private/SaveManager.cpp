@@ -31,32 +31,25 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
-	//AutoLoad
-	if (GetPreset()->bAutoLoad)
-		ReloadCurrentSlot();
+	PipelineInstance = NewObject<USavePipeline>(this, Pipeline);
 
 	TryInstantiateInfo();
 	UpdateLevelStreamings();
 
-	AddToRoot();
+	PipelineInstance->DoBeginPlay();
 }
 
 void USaveManager::Deinitialize()
 {
-	Super::Deinitialize();
+	PipelineInstance->DoEndPlay();
+	PipelineInstance->MarkPendingKill();
 
 	MTTasks.CancelAll();
 
-	if (GetPreset()->bSaveOnExit)
-		SaveCurrentSlot();
-
 	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
-	FGameDelegates::Get().GetEndPlayMapDelegate().RemoveAll(this);
 
-	// Destroy
-	RemoveFromRoot();
-	MarkPendingKill();
+	Super::Deinitialize();
 }
 
 bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
@@ -64,15 +57,15 @@ bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreensh
 	if (!CanLoadOrSave())
 		return false;
 
-	const USavePreset* Preset = GetPreset();
+	const FPipelineSettings& Settings = GetPipeline()->GetSettings();
 	if (!IsValidSlot(SlotId))
 	{
-		SELog(Preset, "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
+		SELog(Settings, "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
 		return false;
 	}
 
 	//Saving
-	SELog(Preset, "Saving to Slot " + FString::FromInt(SlotId));
+	SELog(Settings, "Saving to Slot " + FString::FromInt(SlotId));
 
 	UWorld* World = GetWorld();
 	check(World);
@@ -223,13 +216,13 @@ void USaveManager::TryInstantiateInfo(bool bForced)
 	if (IsInSlot() && !bForced)
 		return;
 
-	const USavePreset* Preset = GetPreset();
+	const FPipelineSettings& Settings = GetPipeline()->GetSettings();
 
-	UClass* InfoTemplate = Preset->SlotInfoTemplate.Get();
+	UClass* InfoTemplate = Settings.SlotInfoTemplate.Get();
 	if (!InfoTemplate)
 		InfoTemplate = USlotInfo::StaticClass();
 
-	UClass* DataTemplate = Preset->SlotDataTemplate.Get();
+	UClass* DataTemplate = Settings.SlotDataTemplate.Get();
 	if (!DataTemplate)
 		DataTemplate = USlotData::StaticClass();
 
@@ -270,7 +263,7 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 {
 	if (!IsValidSlot(SlotId))
 	{
-		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
+		SELog(GetPipeline()->GetSettings(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
@@ -295,7 +288,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
 {
 	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentData, GetPreset());
+	Task->Prepare(CurrentData, GetPipeline());
 	Tasks.Add(Task);
 	return Task;
 }
@@ -411,7 +404,7 @@ void USaveManager::OnLoadFinished(const bool bError)
 
 void USaveManager::OnMapLoadStarted(const FString& MapName)
 {
-	SELog(GetPreset(), "Loading Map '" + MapName + "'", FColor::Purple);
+	SELog(GetPipeline()->GetSettings(), "Loading Map '" + MapName + "'", FColor::Purple);
 }
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)

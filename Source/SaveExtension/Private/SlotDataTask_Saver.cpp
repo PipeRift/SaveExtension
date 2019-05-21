@@ -356,7 +356,7 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 		// Clean serialization data
 		SlotData->Clean(true);
 
-		SELog(Preset, "Finished Saving", FColor::Green);
+		SELog(*Settings, "Finished Saving", FColor::Green);
 	}
 
 	// Execute delegates
@@ -395,7 +395,7 @@ void USlotDataTask_Saver::SerializeWorld()
 {
 	const UWorld* World = GetWorld();
 
-	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+	SELog(*Settings, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 
@@ -421,11 +421,11 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 {
 	check(IsValid(Level));
 
-	if (!Preset->IsMTSerializationSave())
+	if (!Settings->IsMTSerializationSave())
 		AssignedTasks = 1;
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(*Settings, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 
 	// Find level record. By default, main level
@@ -450,7 +450,7 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 	{
 		// Add new Task
 		const bool IsFirstTask = Index <= 0;
-		Tasks.Emplace(IsFirstTask, GetWorld(), SlotData, &Level->Actors, Index, ObjectsPerTask, LevelRecord, Preset);
+		Tasks.Emplace(IsFirstTask, GetWorld(), SlotData, &Level->Actors, Index, ObjectsPerTask, LevelRecord, *Settings);
 		Index += ObjectsPerTask;
 	}
 }
@@ -463,7 +463,7 @@ void USlotDataTask_Saver::RunScheduledTasks()
 		Tasks[0].StartSynchronousTask();
 		for (int32 I = 1; I < Tasks.Num(); ++I)
 		{
-			if (Preset->IsMTSerializationSave())
+			if (Settings->IsMTSerializationSave())
 				Tasks[I].StartBackgroundTask();
 			else
 				Tasks[I].StartSynchronousTask();
@@ -490,9 +490,9 @@ void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataN
 	USlotData* CurrentData = Manager->GetCurrentData();
 
 	SaveInfoTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, InfoName, false /* Infos don't use compression to be loaded faster */);
-	SaveDataTask = new FAsyncTask<FSaveFileTask>(CurrentData, DataName, Preset->bUseCompression);
+	SaveDataTask = new FAsyncTask<FSaveFileTask>(CurrentData, DataName, Settings->bUseCompression);
 
-	if (Preset->IsMTFilesSave())
+	if (Settings->IsMTFilesSave())
 	{
 		SaveInfoTask->StartBackgroundTask();
 		SaveDataTask->StartBackgroundTask();

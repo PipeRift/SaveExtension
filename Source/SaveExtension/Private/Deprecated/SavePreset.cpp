@@ -5,7 +5,7 @@
 #include "SlotData.h"
 
 
-USavePreset::USavePreset()
+UDEPRECATED_SavePreset::UDEPRECATED_SavePreset()
 	: Super()
 	, SlotInfoTemplate(USlotInfo::StaticClass())
 	, SlotDataTemplate(USlotData::StaticClass())

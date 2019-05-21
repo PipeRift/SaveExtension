@@ -13,7 +13,7 @@
 
 class IDetailsView;
 class IDetailLayoutBuilder;
-class USavePreset;
+class UDEPRECATED_SavePreset;
 
 
 class FSavePresetDetails : public IDetailCustomization
@@ -33,5 +33,5 @@ private:
 	bool CanEditAsynchronous() const;
 
 
-	TWeakObjectPtr<USavePreset> Settings;
+	TWeakObjectPtr<UDEPRECATED_SavePreset> Settings;
 };

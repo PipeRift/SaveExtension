@@ -4,36 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-
 #include "Engine/DataAsset.h"
+
+#include "PipelineSettings.h"
 #include "SavePreset.generated.h"
 
 
 /**
-* Specifies the behavior while saving or loading
-*/
-UENUM()
-enum class ESaveASyncMode : uint8 {
-	OnlySync,
-	LoadAsync,
-	SaveAsync,
-	SaveAndLoadAsync
-};
-
-class USlotInfo;
-class USlotData;
-
-/**
  * What to save, how to save it, when, every x minutes, what info file, what data file, save by level streaming?
  */
-UCLASS(ClassGroup = SaveExtension, BlueprintType, Config = Game)
-class SAVEEXTENSION_API USavePreset : public UDataAsset
+UCLASS(ClassGroup = SaveExtension, BlueprintType, Config = Game, Deprecated)
+class SAVEEXTENSION_API UDEPRECATED_SavePreset : public UDataAsset
 {
 	GENERATED_BODY()
 
 public:
 
-	USavePreset();
+	UDEPRECATED_SavePreset();
 
 
 	/**
@@ -185,5 +172,4 @@ public:
 	FORCEINLINE bool IsMTFilesSave() const {
 		return MultithreadedFiles == ESaveASyncMode::SaveAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
 	}
-
 };

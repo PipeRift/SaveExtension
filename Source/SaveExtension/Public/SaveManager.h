@@ -30,6 +30,7 @@
 #include "LatentActions/LoadGameAction.h"
 #include "LatentActions/SaveGameAction.h"
 #include "LatentActions/DeleteSlotsAction.h"
+#include "SavePipeline.h"
 
 #include "SaveManager.generated.h"
 
@@ -73,9 +74,13 @@ public:
 
 	/** Which save preset to use. Will use Default preset if none */
 	UPROPERTY(EditAnywhere, Category = "Save Extension", Config, meta = (DisplayName = "Preset"))
-	TAssetPtr<USavePreset> PresetAsset;
+	TSubclassOf<USavePipeline> Pipeline;
 
 private:
+
+	/** Which save preset to use. Will use Default preset if none */
+	UPROPERTY(SaveGame)
+	USavePipeline* PipelineInstance;
 
 	/** Currently loaded SaveInfo. SaveInfo stores basic information about a saved game. Played time, levels, progress, etc. */
 	UPROPERTY()
@@ -84,9 +89,6 @@ private:
 	/** Currently loaded SaveData. SaveData stores all serialized info about the world. */
 	UPROPERTY()
 	USlotData* CurrentData;
-
-	/** The game instance to which this save manager is owned. */
-	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
 	FScopedTaskList MTTasks;
 
@@ -114,7 +116,6 @@ public:
 	virtual void Deinitialize() override;
 	/** End USubsystem */
 
-	void SetGameInstance(UGameInstance* GameInstance) { OwningGameInstance = GameInstance; }
 
 	/** BLUEPRINTS */
 
@@ -281,28 +282,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
 
-	/**
-	 * Set the preset to be used for saving and loading
-	 * @return true if the preset was set successfully
-	 */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
-	bool SetActivePreset(TAssetPtr<USavePreset> ActivePreset)
-	{
-		// We can only change a preset if we have no tasks running
-		if (!HasTasks())
+	const USavePipeline* GetPipeline() const {
+		if (Pipeline.Get() && PipelineInstance)
 		{
-			PresetAsset = ActivePreset;
-			return true;
+			return PipelineInstance;
 		}
-		return false;
-	}
-
-	const USavePreset* GetPreset() const {
-		if (!PresetAsset.IsNull())
-		{
-			return PresetAsset.LoadSynchronous();
-		}
-		return GetDefault<USavePreset>();
+		return nullptr;
 	}
 
 
@@ -321,7 +306,7 @@ public:
 	}
 
 	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
-		const int32 MaxSlots = GetPreset()->GetMaxSlots();
+		const int32 MaxSlots = GetPipeline()->GetSettings().GetMaxSlots();
 		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
 	}
 

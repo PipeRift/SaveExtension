@@ -13,7 +13,7 @@
 #include <Components/StaticMeshComponent.h>
 #include <Components/SkeletalMeshComponent.h>
 
-#include "SavePreset.h"
+#include "SavePipeline.h"
 #include "SlotData.h"
 
 #include "SlotDataTask.generated.h"
@@ -46,7 +46,7 @@ public:
 	static FORCEINLINE bool SavesPhysics(const AActor* Actor)   { return Actor && !HasTag(Actor, TagNoPhysics); }
 	static FORCEINLINE bool SavesTags(const AActor* Actor)      { return Actor && !HasTag(Actor, TagNoTags); }
 	static FORCEINLINE bool IsProcedural(const AActor* Actor)   { return Actor && Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
-	FORCEINLINE bool SavesComponents(const AActor* Actor) const { return Preset->bStoreComponents && Actor && !HasTag(Actor, TagNoComponents); }
+	FORCEINLINE bool SavesComponents(const AActor* Actor) const { return Settings->bStoreComponents && Actor && !HasTag(Actor, TagNoComponents); }
 
 	static FORCEINLINE bool HasTag(const AActor* Actor, const FName Tag) {
 		return Actor->ActorHasTag(Tag);
@@ -64,11 +64,8 @@ private:
 
 protected:
 
-	UPROPERTY()
 	USlotData* SlotData;
-
-	UPROPERTY()
-	const USavePreset* Preset;
+	const FPipelineSettings* Settings;
 
 	// Cached value from preset to avoid cache misses
 	float MaxFrameMs;
@@ -78,11 +75,11 @@ public:
 
 	USlotDataTask() : Super(), bRunning(false), bFinished(false) {}
 
-	void Prepare(USlotData* InSaveData, const USavePreset* InPreset)
+	void Prepare(USlotData* InSaveData, const USavePipeline* Pipeline)
 	{
 		SlotData = InSaveData;
-		Preset = InPreset;
-		MaxFrameMs = Preset? Preset->GetMaxFrameMs() : 5.f;
+		Settings = &Pipeline->GetSettings();
+		MaxFrameMs = Settings->GetMaxFrameMs();
 	}
 
 	USlotDataTask* Start();
@@ -161,25 +158,25 @@ protected:
 	const bool bStoreControlRotation;
 
 
-	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const USavePreset* Preset) :
+	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const FPipelineSettings& Settings) :
 		bIsSync(bInIsSync),
 		World(InWorld),
 		SlotData(InSlotData),
-		bStoreGameMode(Preset->bStoreGameMode),
-		bStoreGameInstance(Preset->bStoreGameInstance),
-		bStoreLevelBlueprints(Preset->bStoreLevelBlueprints),
-		bStoreAIControllers(Preset->bStoreAIControllers),
-		bStoreComponents(Preset->bStoreComponents),
-		bStoreControlRotation(Preset->bStoreControlRotation)
+		bStoreGameMode(Settings.bStoreGameMode),
+		bStoreGameInstance(Settings.bStoreGameInstance),
+		bStoreLevelBlueprints(Settings.bStoreLevelBlueprints),
+		bStoreAIControllers(Settings.bStoreAIControllers),
+		bStoreComponents(Settings.bStoreComponents),
+		bStoreControlRotation(Settings.bStoreControlRotation)
 	{}
 
 	//Actor Tags
-	FORCEINLINE bool ShouldSave(const AActor* Actor) const { return IsValid(Actor) && !HasTag(Actor, USlotDataTask::TagNoSave); }
-	FORCEINLINE bool SavesTransform(const AActor* Actor) const { return Actor && Actor->IsRootComponentMovable() && !HasTag(Actor, USlotDataTask::TagNoTransform); }
-	FORCEINLINE bool SavesPhysics(const AActor* Actor) const { return Actor && !HasTag(Actor, USlotDataTask::TagNoPhysics); }
+	FORCEINLINE bool ShouldSave(const AActor* Actor) const      { return IsValid(Actor) && !HasTag(Actor, USlotDataTask::TagNoSave); }
+	FORCEINLINE bool SavesTransform(const AActor* Actor) const  { return Actor && Actor->IsRootComponentMovable() && !HasTag(Actor, USlotDataTask::TagNoTransform); }
+	FORCEINLINE bool SavesPhysics(const AActor* Actor) const    { return Actor && !HasTag(Actor, USlotDataTask::TagNoPhysics); }
 	FORCEINLINE bool SavesComponents(const AActor* Actor) const { return bStoreComponents && Actor && !HasTag(Actor, USlotDataTask::TagNoComponents); }
-	FORCEINLINE bool SavesTags(const AActor* Actor) const { return Actor && !HasTag(Actor, USlotDataTask::TagNoTags); }
-	FORCEINLINE bool IsProcedural(const AActor* Actor) const { return Actor && Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
+	FORCEINLINE bool SavesTags(const AActor* Actor) const       { return Actor && !HasTag(Actor, USlotDataTask::TagNoTags); }
+	FORCEINLINE bool IsProcedural(const AActor* Actor) const    { return Actor && Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
 
 	bool ShouldSaveAsWorld(const AActor* Actor, bool& bIsAIController, bool& bIsLevelScript) const;
 

@@ -23,7 +23,7 @@ private:
 #if WITH_EDITORONLY_DATA
 	bool HandleSettingsSaved()
 	{
-		USavePreset* Settings = GetMutableDefault<USavePreset>();
+		UDEPRECATED_SavePreset* Settings = GetMutableDefault<UDEPRECATED_SavePreset>();
 		bool ResaveSettings = false;
 
 		// You can put any validation code in here and resave the settings in case an invalid
@@ -55,7 +55,7 @@ private:
 			ISettingsSectionPtr PresetSettingsSection = SettingsModule->RegisterSettings("Project", "Game", "SaveExtensionPreset",
 				LOCTEXT("SaveExtensionPresetName", "Save Extension: Default Preset"),
 				LOCTEXT("SaveExtensionPresetDescription", "Default Save Extension preset values"),
-				GetMutableDefault<USavePreset>());
+				GetMutableDefault<UDEPRECATED_SavePreset>());
 
 			if (PresetSettingsSection.IsValid()) {
 				PresetSettingsSection->OnModified().BindRaw(this, &FSaveExtension::HandleSettingsSaved);

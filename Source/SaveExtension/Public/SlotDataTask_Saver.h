@@ -45,8 +45,8 @@ class FSerializeActorsTask : public FSlotDataActorsTask
 
 public:
 
-	explicit FSerializeActorsTask(const bool bIsSync, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, FLevelRecord* InLevelRecord, const USavePreset* Preset) :
-		FSlotDataActorsTask(bIsSync, World, SlotData, Preset),
+	explicit FSerializeActorsTask(const bool bIsSync, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, FLevelRecord* InLevelRecord, const FPipelineSettings& Settings) :
+		FSlotDataActorsTask(bIsSync, World, SlotData, Settings),
 		LevelActors(InLevelActors),
 		StartIndex(InStartIndex),
 		Num(FMath::Min(InNum, LevelActors->Num() - StartIndex)),

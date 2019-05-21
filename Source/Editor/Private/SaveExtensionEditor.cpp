@@ -10,6 +10,8 @@
 //#include "Customizations/SavePresetCustomization.h"
 #include "Customizations/SavePresetDetails.h"
 
+#include "SavePipeline.h"
+
 #define LOCTEXT_NAMESPACE "SaveExtensionEditor"
 
 
@@ -32,6 +34,10 @@ void FSaveExtensionEditor::StartupModule()
 	RegisterPropertyTypeCustomizations();
 
 	BlueprintEditorTabBinding = MakeShared<FSaveActorEditorTabBinding>();
+
+	RegisterDefaultEvent(USavePipeline, EventBeginPlay);
+	RegisterDefaultEvent(USavePipeline, EventSerializeSlot);
+	RegisterDefaultEvent(USavePipeline, EventEndPlay);
 }
 
 void FSaveExtensionEditor::ShutdownModule()
