@@ -544,7 +544,7 @@ void USlotDataTask_Loader::DeserializeGameInstance()
 	{
 		//Serialize from Record Data
 		FMemoryReader MemoryReader(Record.Data, true);
-		FSaveExtensionArchive Archive(MemoryReader, false);
+		FSEArchive Archive(MemoryReader, false);
 		GameInstance->Serialize(Archive);
 	}
 
@@ -601,7 +601,7 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 		QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DataReader);
 		//Serialize from Record Data
 		FMemoryReader MemoryReader(Record.Data, true);
-		FSaveExtensionArchive Archive(MemoryReader, false);
+		FSEArchive Archive(MemoryReader, false);
 		Actor->Serialize(Archive);
 	}
 
@@ -655,7 +655,7 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 				if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
 				{
 					FMemoryReader MemoryReader(Record->Data, true);
-					FSaveExtensionArchive Archive(MemoryReader, false);
+					FSEArchive Archive(MemoryReader, false);
 					Component->Serialize(Archive);
 				}
 			}

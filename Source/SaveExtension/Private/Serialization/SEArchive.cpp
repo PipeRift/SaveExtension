@@ -7,7 +7,7 @@
 /////////////////////////////////////////////////////
 // FSaveExtensionArchive
 
-FArchive& FSaveExtensionArchive::operator<<(UObject*& Obj)
+FArchive& FSEArchive::operator<<(UObject*& Obj)
 {
 	if (IsLoading())
 	{
@@ -67,7 +67,7 @@ FArchive& FSaveExtensionArchive::operator<<(UObject*& Obj)
 	return *this;
 }
 
-bool FSaveExtensionArchive::IsObjectOwned(const UObject* Obj) const
+bool FSEArchive::IsObjectOwned(const UObject* Obj) const
 {
 	// Find if this object is (directly or indirectly) owned by the rootOuter
 	const UObject* Outer = Obj->GetOuter();

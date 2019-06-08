@@ -6,7 +6,7 @@
 
 
 /** Serializes world data */
-struct FSaveExtensionArchive : public FObjectAndNameAsStringProxyArchive
+struct FSEArchive : public FObjectAndNameAsStringProxyArchive
 {
 private:
 	UObject* rootOuter;
@@ -14,7 +14,7 @@ private:
 
 public:
 
-	FSaveExtensionArchive(FArchive &InInnerArchive, bool bInLoadIfFindFails)
+	FSEArchive(FArchive &InInnerArchive, bool bInLoadIfFindFails)
 		: FObjectAndNameAsStringProxyArchive(InInnerArchive,bInLoadIfFindFails)
 	{
 		ArIsSaveGame = true;

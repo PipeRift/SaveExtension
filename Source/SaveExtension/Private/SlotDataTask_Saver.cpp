@@ -148,7 +148,7 @@ void FSerializeActorsTask::SerializeGameInstance()
 
 		//Serialize into Record Data
 		FMemoryWriter MemoryWriter(Record.Data, true);
-		FSaveExtensionArchive Archive(MemoryWriter, false);
+		FSEArchive Archive(MemoryWriter, false);
 		GameInstance->Serialize(Archive);
 
 		SlotData->GameInstance = MoveTemp(Record);
@@ -208,7 +208,7 @@ bool FSerializeActorsTask::SerializeActor(const AActor* Actor, FActorRecord& Rec
 	}
 
 	FMemoryWriter MemoryWriter(Record.Data, true);
-	FSaveExtensionArchive Archive(MemoryWriter, false);
+	FSEArchive Archive(MemoryWriter, false);
 	const_cast<AActor*>(Actor)->Serialize(Archive);
 
 	return true;
@@ -242,7 +242,7 @@ void FSerializeActorsTask::SerializeActorComponents(const AActor* Actor, FActorR
 			if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
 			{
 				FMemoryWriter MemoryWriter(ComponentRecord.Data, true);
-				FSaveExtensionArchive Archive(MemoryWriter, false);
+				FSEArchive Archive(MemoryWriter, false);
 				Component->Serialize(Archive);
 			}
 			ActorRecord.ComponentRecords.Add(ComponentRecord);
