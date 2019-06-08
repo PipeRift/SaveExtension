@@ -31,7 +31,7 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
-	PipelineInstance = NewObject<USavePipeline>(this, Pipeline);
+	PipelineInstance = NewObject<USaveGraph>(this, Pipeline);
 
 	TryInstantiateInfo();
 	UpdateLevelStreamings();

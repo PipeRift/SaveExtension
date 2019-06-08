@@ -13,7 +13,7 @@
 #include <Components/StaticMeshComponent.h>
 #include <Components/SkeletalMeshComponent.h>
 
-#include "SavePipeline.h"
+#include "SaveGraph.h"
 #include "SlotData.h"
 
 #include "SlotDataTask.generated.h"
@@ -75,7 +75,7 @@ public:
 
 	USlotDataTask() : Super(), bRunning(false), bFinished(false) {}
 
-	void Prepare(USlotData* InSaveData, const USavePipeline* Pipeline)
+	void Prepare(USlotData* InSaveData, const USaveGraph* Pipeline)
 	{
 		SlotData = InSaveData;
 		Settings = &Pipeline->GetSettings();

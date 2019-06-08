@@ -1,33 +1,33 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "SavePipeline.h"
+#include "SaveGraph.h"
 #include "SaveManager.h"
 
 #include "SlotInfo.h"
 #include "SlotData.h"
 
 
-void USavePipeline::EventBeginPlay_Implementation()
+void USaveGraph::EventBeginPlay_Implementation()
 {
 	BeginPlay();
 }
 
-void USavePipeline::EventSerializeSlot_Implementation()
+void USaveGraph::EventSerializeSlot_Implementation()
 {
 	SerializeSlot();
 }
 
-void USavePipeline::EventTick_Implementation(float DeltaTime)
+void USaveGraph::EventTick_Implementation(float DeltaTime)
 {
 	Tick(DeltaTime);
 }
 
-void USavePipeline::EventEndPlay_Implementation()
+void USaveGraph::EventEndPlay_Implementation()
 {
 	EndPlay();
 }
 
-void USavePipeline::BeginPlay()
+void USaveGraph::BeginPlay()
 {
 	//AutoLoad
 	if (Settings.bAutoLoad)
@@ -36,7 +36,7 @@ void USavePipeline::BeginPlay()
 	}
 }
 
-void USavePipeline::EndPlay()
+void USaveGraph::EndPlay()
 {
 	if (Settings.bSaveOnExit)
 	{
@@ -44,7 +44,7 @@ void USavePipeline::EndPlay()
 	}
 }
 
-UWorld* USavePipeline::GetWorld() const
+UWorld* USaveGraph::GetWorld() const
 {
 	// If we are a CDO, we must return nullptr instead of calling Outer->GetWorld() to fool UObject::ImplementsGetWorld.
 	if (HasAllFlags(RF_ClassDefaultObject))
@@ -53,7 +53,7 @@ UWorld* USavePipeline::GetWorld() const
 	return GetOuter()->GetWorld();
 }
 
-class USaveManager* USavePipeline::GetManager() const
+class USaveManager* USaveGraph::GetManager() const
 {
 	return Cast<USaveManager>(GetOuter());
 }

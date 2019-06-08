@@ -7,23 +7,23 @@
 
 #include "Engine/DataAsset.h"
 #include "PipelineSettings.h"
-#include "SavePipeline.generated.h"
+#include "SaveGraph.generated.h"
 
 UENUM(BlueprintType)
-enum class EPipelineActorFilterMode : uint8 {
+enum class ESaveActorFilterMode : uint8 {
 	RootLevel,
 	SubLevels,
 	AllLevels
 };
 
 USTRUCT(BlueprintType)
-struct FPipelineActorFilter
+struct FSaveActorFilter
 {
 	GENERATED_BODY()
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
-	EPipelineActorFilterMode LevelMode = EPipelineActorFilterMode::AllLevels;
+	ESaveActorFilterMode LevelMode = ESaveActorFilterMode::AllLevels;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
 	TArray<FName> LevelNames;
@@ -46,7 +46,7 @@ class UPipelineTask : public UObject
  * What to save, how to save it, when, every x minutes, what info file, what data file, save by level streaming?
  */
 UCLASS(Blueprintable, ClassGroup = SaveExtension, Config = Game)
-class SAVEEXTENSION_API USavePipeline : public UObject
+class SAVEEXTENSION_API USaveGraph : public UObject
 {
 	GENERATED_BODY()
 
@@ -60,7 +60,7 @@ private:
 
 public:
 
-	USavePipeline() : Super() {}
+	USaveGraph() : Super() {}
 
 	void DoBeginPlay()           { EventBeginPlay(); }
 	void DoTick(float DeltaTime) { EventTick(DeltaTime); }
@@ -112,7 +112,7 @@ protected:
 
 	/** Serializes all currently loaded sub-levels on the world */
 	UFUNCTION(BlueprintCallable, Category = "Pipeline")
-	void SerializeActors(FPipelineActorFilter Filter) {}
+	void SerializeActors(FSaveActorFilter Filter) {}
 
 	virtual void Store(const TArray<uint8>& Bytes) {}
 

@@ -60,7 +60,7 @@ void FSerializeActorsTask::DoWork()
 			{
 				if (bIsAIController)
 				{
-					if (const AAIController* const AI = Cast<AAIController>(Actor))
+					if (const auto* const AI = Cast<AAIController>(Actor))
 					{
 						FControllerRecord Record;
 						SerializeController(AI, Record);
@@ -69,7 +69,7 @@ void FSerializeActorsTask::DoWork()
 				}
 				else if (bIsLevelScript)
 				{
-					if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
+					if (const auto* const LevelScript = Cast<ALevelScriptActor>(Actor))
 					{
 						SerializeActor(LevelScript, LevelScriptRecord);
 					}

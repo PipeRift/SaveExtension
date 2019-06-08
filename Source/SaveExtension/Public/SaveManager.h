@@ -30,7 +30,7 @@
 #include "LatentActions/LoadGameAction.h"
 #include "LatentActions/SaveGameAction.h"
 #include "LatentActions/DeleteSlotsAction.h"
-#include "SavePipeline.h"
+#include "SaveGraph.h"
 
 #include "SaveManager.generated.h"
 
@@ -74,13 +74,13 @@ public:
 
 	/** Which save preset to use. Will use Default preset if none */
 	UPROPERTY(EditAnywhere, Category = "Save Extension", Config, meta = (DisplayName = "Preset"))
-	TSubclassOf<USavePipeline> Pipeline;
+	TSubclassOf<USaveGraph> Pipeline;
 
 private:
 
 	/** Which save preset to use. Will use Default preset if none */
 	UPROPERTY(SaveGame)
-	USavePipeline* PipelineInstance;
+	USaveGraph* PipelineInstance;
 
 	/** Currently loaded SaveInfo. SaveInfo stores basic information about a saved game. Played time, levels, progress, etc. */
 	UPROPERTY()
@@ -282,7 +282,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
 
-	const USavePipeline* GetPipeline() const {
+	const USaveGraph* GetPipeline() const {
 		if (Pipeline.Get() && PipelineInstance)
 		{
 			return PipelineInstance;

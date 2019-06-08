@@ -1,0 +1,181 @@
+// Copyright 2015-2019 Piperift. All Rights Reserved.
+
+
+#pragma once
+
+#include <CoreMinimal.h>
+#include <Engine/LevelStreaming.h>
+#include <Engine/LevelScriptActor.h>
+
+#include "Records.generated.h"
+
+class USlotData;
+
+
+USTRUCT()
+struct FBaseRecord {
+	GENERATED_USTRUCT_BODY()
+
+	FName Name;
+
+
+	FBaseRecord() : Name() {}
+
+	virtual bool Serialize(FArchive& Ar);
+	friend FArchive& operator<<(FArchive& Ar, FBaseRecord& Record)
+	{
+		Record.Serialize(Ar);
+		return Ar;
+	}
+	virtual ~FBaseRecord() {}
+};
+
+template<>
+struct TStructOpsTypeTraits<FBaseRecord> : public TStructOpsTypeTraitsBase2<FBaseRecord>
+{ enum { WithSerializer = true }; };
+
+FORCEINLINE bool operator==(const FBaseRecord& A, const FBaseRecord& B) { return A.Name == B.Name; }
+
+
+/** Represents a serialized Object */
+USTRUCT()
+struct FObjectRecord : public FBaseRecord
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	UClass* Class;
+
+	TArray<uint8> Data;
+	TArray<FName> Tags;
+
+
+	FObjectRecord() : Super(), Class(nullptr) {}
+	FObjectRecord(const UObject* Object);
+
+	virtual bool Serialize(FArchive& Ar) override;
+
+	bool IsValid() const
+	{
+		return !Name.IsNone() && Class && Data.Num() > 0;
+	}
+
+	FORCEINLINE bool operator== (const UObject* Other) const
+	{
+		return Name == Other->GetFName() && Class == Other->GetClass();
+	}
+};
+
+
+/** Represents a serialized Component */
+USTRUCT()
+struct FComponentRecord : public FObjectRecord
+{
+	GENERATED_BODY()
+
+	FTransform Transform;
+
+
+	virtual bool Serialize(FArchive& Ar) override;
+};
+
+
+/** Represents a serialized Actor */
+USTRUCT()
+struct FActorRecord : public FObjectRecord
+{
+	GENERATED_BODY()
+
+	bool bHiddenInGame;
+	/** Whether or not this actor was spawned in runtime */
+	bool bIsProcedural;
+	FTransform Transform;
+	FVector LinearVelocity;
+	FVector AngularVelocity;
+	TArray<FComponentRecord> ComponentRecords;
+
+
+	FActorRecord() : Super() {}
+	FActorRecord(const AActor* Actor) : Super(Actor) {}
+
+	virtual bool Serialize(FArchive& Ar) override;
+};
+
+
+/** Represents a serialized Controller */
+USTRUCT()
+struct FControllerRecord : public FActorRecord
+{
+	GENERATED_BODY()
+
+	FRotator ControlRotation;
+
+
+	FControllerRecord() : Super() {}
+	FControllerRecord(const AActor* Actor) : Super(Actor) {}
+
+	virtual bool Serialize(FArchive& Ar) override;
+};
+
+
+/** Represents a level in the world (streaming or persistent) */
+USTRUCT()
+struct FLevelRecord : public FBaseRecord
+{
+	GENERATED_BODY()
+
+	/** Record of the Level Script Actor */
+	FActorRecord LevelScript;
+
+	/** Records of the World Actors */
+	TArray<FActorRecord> Actors;
+
+	/** Records of the AI Controller Actors */
+	TArray<FControllerRecord> AIControllers;
+
+
+	FLevelRecord() : Super() {}
+
+	virtual bool Serialize(FArchive& Ar) override;
+
+	bool IsValid() const {
+		return !Name.IsNone();
+	}
+
+	void Clean();
+};
+
+
+/** Represents a persistent level in the world */
+USTRUCT()
+struct FPersistentLevelRecord : public FLevelRecord
+{
+	GENERATED_BODY()
+
+	static FName PersistentName;
+
+
+	FPersistentLevelRecord() : Super() { Name = PersistentName; }
+};
+
+
+/** Represents a serialized streaming level in the world */
+USTRUCT()
+struct FStreamingLevelRecord : public FLevelRecord
+{
+	GENERATED_BODY()
+
+	FStreamingLevelRecord() : Super() {}
+	FStreamingLevelRecord(const ULevelStreaming* Level) : Super()
+	{
+		if (Level)
+		{
+			Name = Level->GetWorldAssetPackageFName();
+		}
+	}
+
+	FORCEINLINE bool operator== (const ULevelStreaming* Level) const
+	{
+		return Level && Name == Level->GetWorldAssetPackageFName();
+	}
+};
