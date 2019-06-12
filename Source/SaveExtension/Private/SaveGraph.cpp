@@ -7,41 +7,9 @@
 #include "SlotData.h"
 
 
-void USaveGraph::EventBeginPlay_Implementation()
+bool USaveGraph::EventPrepare_Implementation()
 {
-	BeginPlay();
-}
-
-void USaveGraph::EventSerializeSlot_Implementation()
-{
-	SerializeSlot();
-}
-
-void USaveGraph::EventTick_Implementation(float DeltaTime)
-{
-	Tick(DeltaTime);
-}
-
-void USaveGraph::EventEndPlay_Implementation()
-{
-	EndPlay();
-}
-
-void USaveGraph::BeginPlay()
-{
-	//AutoLoad
-	if (Settings.bAutoLoad)
-	{
-		GetManager()->ReloadCurrentSlot();
-	}
-}
-
-void USaveGraph::EndPlay()
-{
-	if (Settings.bSaveOnExit)
-	{
-		GetManager()->SaveCurrentSlot();
-	}
+	return Prepare();
 }
 
 UWorld* USaveGraph::GetWorld() const

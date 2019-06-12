@@ -6,7 +6,7 @@
 #include "UObject/NoExportTypes.h"
 #include "Engine/DataAsset.h"
 
-#include "PipelineSettings.h"
+#include "Settings.h"
 #include "SavePreset.generated.h"
 
 

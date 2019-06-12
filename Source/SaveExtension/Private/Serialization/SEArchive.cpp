@@ -1,11 +1,10 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "SEArchive.h"
-#include <TimerManager.h>
 
 
 /////////////////////////////////////////////////////
-// FSaveExtensionArchive
+// FSEArchive
 
 FArchive& FSEArchive::operator<<(UObject*& Obj)
 {
@@ -22,62 +21,47 @@ FArchive& FSEArchive::operator<<(UObject*& Obj)
 			return *this;
 		}
 
-		// Only serialize owned Objects
-		bool bIsLocallyOwned;
-		InnerArchive << bIsLocallyOwned;
-		if (bIsLocallyOwned)
-		{
-			if (!Obj)
-			{
-				//#TODO: Create Object from Serialized Data
-				//Obj = NewObject<UObject>(FindOwner, ObjectPath);
-			}
-			Obj->Serialize(*this);
-		}
-		else
-		{
-			// If Objects are not owned, maybe they are an asset (or something similar)
+		// #FIX: Deserialize and assign outers
 
-			// Look up the object by fully qualified pathname
-			Obj = FindObject<UObject>(nullptr, *ObjectPath, false);
-			// If we couldn't find it, and we want to load it, do that
-			if (!Obj && bLoadIfFindFails)
-			{
-				Obj = LoadObject<UObject>(nullptr, *ObjectPath);
-			}
+		// Look up the object by fully qualified pathname
+		Obj = FindObject<UObject>(nullptr, *ObjectPath, false);
+		// If we couldn't find it, and we want to load it, do that
+		if (!Obj && bLoadIfFindFails)
+		{
+			Obj = LoadObject<UObject>(nullptr, *ObjectPath);
 		}
+
+		// Only serialize owned Objects
+		/*bool bIsLocallyOwned;
+		InnerArchive << bIsLocallyOwned;
+		if (Obj && bIsLocallyOwned)
+		{
+			Obj->Serialize(*this);
+		}*/
 	}
 	else
 	{
-		// Serialize the fully qualified object name
-		FString SavedString(Obj? Obj->GetPathName() : "");
-		InnerArchive << SavedString;
-
 		if (Obj)
 		{
-			// Only serialize owned Objects
-			bool bIsLocallyOwned = IsObjectOwned(Obj);
+			// Serialize the fully qualified object name
+			FString SavedString{ Obj->GetPathName() };
+			InnerArchive << SavedString;
+
+			/*bool bIsLocallyOwned = IsObjectOwned(Obj);
 			InnerArchive << bIsLocallyOwned;
 			if (bIsLocallyOwned)
 			{
 				Obj->Serialize(*this);
-			}
+			}*/
+		}
+		else
+		{
+			FString SavedString{ "" };
+			InnerArchive << SavedString;
+
+			/*bool bIsLocallyOwned = false;
+			InnerArchive << bIsLocallyOwned;*/
 		}
 	}
 	return *this;
-}
-
-bool FSEArchive::IsObjectOwned(const UObject* Obj) const
-{
-	// Find if this object is (directly or indirectly) owned by the rootOuter
-	const UObject* Outer = Obj->GetOuter();
-	while (Outer)
-	{
-		if (Outer == rootOuter)
-		{
-			return true;
-		}
-		Outer = Outer->GetOuter();
-	}
-	return false;
 }

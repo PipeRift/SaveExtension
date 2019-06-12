@@ -35,9 +35,7 @@ void FSaveExtensionEditor::StartupModule()
 
 	BlueprintEditorTabBinding = MakeShared<FSaveActorEditorTabBinding>();
 
-	RegisterDefaultEvent(USaveGraph, EventBeginPlay);
-	RegisterDefaultEvent(USaveGraph, EventSerializeSlot);
-	RegisterDefaultEvent(USaveGraph, EventEndPlay);
+	//RegisterDefaultEvent(USaveGraph, EventPrepare);
 }
 
 void FSaveExtensionEditor::ShutdownModule()

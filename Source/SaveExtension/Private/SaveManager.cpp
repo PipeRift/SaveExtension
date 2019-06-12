@@ -31,18 +31,22 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
-	PipelineInstance = NewObject<USaveGraph>(this, Pipeline);
-
 	TryInstantiateInfo();
 	UpdateLevelStreamings();
 
-	PipelineInstance->DoBeginPlay();
+	//AutoLoad
+	if (Settings.bAutoLoad)
+	{
+		ReloadCurrentSlot();
+	}
 }
 
 void USaveManager::Deinitialize()
 {
-	PipelineInstance->DoEndPlay();
-	PipelineInstance->MarkPendingKill();
+	if (Settings.bSaveOnExit)
+	{
+		SaveCurrentSlot();
+	}
 
 	MTTasks.CancelAll();
 
@@ -57,7 +61,6 @@ bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreensh
 	if (!CanLoadOrSave())
 		return false;
 
-	const FPipelineSettings& Settings = GetPipeline()->GetSettings();
 	if (!IsValidSlot(SlotId))
 	{
 		SELog(Settings, "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
@@ -216,8 +219,6 @@ void USaveManager::TryInstantiateInfo(bool bForced)
 	if (IsInSlot() && !bForced)
 		return;
 
-	const FPipelineSettings& Settings = GetPipeline()->GetSettings();
-
 	UClass* InfoTemplate = Settings.SlotInfoTemplate.Get();
 	if (!InfoTemplate)
 		InfoTemplate = USlotInfo::StaticClass();
@@ -263,7 +264,7 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 {
 	if (!IsValidSlot(SlotId))
 	{
-		SELog(GetPipeline()->GetSettings(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
+		SELog(Settings, "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
@@ -287,8 +288,8 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
 {
-	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentData, GetPipeline());
+	auto* Task = NewObject<USlotDataTask>(this, TaskType.Get());
+	Task->Prepare(CurrentData, Settings);
 	Tasks.Add(Task);
 	return Task;
 }
@@ -300,6 +301,26 @@ void USaveManager::FinishTask(USlotDataTask* Task)
 	// Start next task
 	if (Tasks.Num() > 0)
 		Tasks[0]->Start();
+}
+
+bool USaveManager::IsLoading() const
+{
+	if (!IsSavingOrLoading())
+		return false;
+
+	const UClass* const TaskClass = Tasks[0]->GetClass();
+	return TaskClass == USlotDataTask_Loader::StaticClass()
+		|| TaskClass == USlotDataTask_LevelLoader::StaticClass();
+}
+
+bool USaveManager::IsSaving() const
+{
+	if (!IsSavingOrLoading())
+		return false;
+
+	const UClass* const TaskClass = Tasks[0]->GetClass();
+	return TaskClass == USlotDataTask_Saver::StaticClass()
+		|| TaskClass == USlotDataTask_LevelSaver::StaticClass();
 }
 
 void USaveManager::Tick(float DeltaTime)
@@ -404,7 +425,7 @@ void USaveManager::OnLoadFinished(const bool bError)
 
 void USaveManager::OnMapLoadStarted(const FString& MapName)
 {
-	SELog(GetPipeline()->GetSettings(), "Loading Map '" + MapName + "'", FColor::Purple);
+	SELog(Settings, "Loading Map '" + MapName + "'", FColor::Purple);
 }
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)

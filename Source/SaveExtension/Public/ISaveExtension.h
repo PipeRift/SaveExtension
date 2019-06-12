@@ -5,7 +5,7 @@
 #include "Modules/ModuleManager.h"
 #include "Engine/Engine.h"
 
-#include "PipelineSettings.h"
+#include "Settings.h"
 
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSaveExtension, All, All);
@@ -19,12 +19,12 @@ public:
 		return FModuleManager::Get().IsModuleLoaded("SaveExtension");
 	}
 
-	static void Log(const FPipelineSettings& Settings, const FString& Message, bool bError)
+	static void Log(const FSESettings& Settings, const FString& Message, bool bError)
 	{
 		Log(Settings, Message, FColor::White, bError, 2.f);
 	}
 
-	static void Log(const FPipelineSettings& Settings, const FString& Message, FColor Color = FColor::White, bool bError = false, const float Duration = 2.f)
+	static void Log(const FSESettings& Settings, const FString& Message, FColor Color = FColor::White, bool bError = false, const float Duration = 2.f)
 	{
 		if (Settings.bDebug)
 		{

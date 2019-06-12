@@ -65,9 +65,8 @@ private:
 protected:
 
 	USlotData* SlotData;
-	const FPipelineSettings* Settings;
+	const FSESettings* Settings;
 
-	// Cached value from preset to avoid cache misses
 	float MaxFrameMs;
 
 
@@ -75,10 +74,10 @@ public:
 
 	USlotDataTask() : Super(), bRunning(false), bFinished(false) {}
 
-	void Prepare(USlotData* InSaveData, const USaveGraph* Pipeline)
+	void Prepare(USlotData* InSaveData, const FSESettings& InSettings)
 	{
 		SlotData = InSaveData;
-		Settings = &Pipeline->GetSettings();
+		Settings = &InSettings;
 		MaxFrameMs = Settings->GetMaxFrameMs();
 	}
 
@@ -158,7 +157,7 @@ protected:
 	const bool bStoreControlRotation;
 
 
-	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const FPipelineSettings& Settings) :
+	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const FSESettings& Settings) :
 		bIsSync(bInIsSync),
 		World(InWorld),
 		SlotData(InSlotData),

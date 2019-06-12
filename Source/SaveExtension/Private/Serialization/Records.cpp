@@ -18,6 +18,7 @@ bool FBaseRecord::Serialize(FArchive& Ar)
 
 FObjectRecord::FObjectRecord(const UObject* Object) : Super()
 {
+	Class = nullptr;
 	if (Object)
 	{
 		Name = Object->GetFName();

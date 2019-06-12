@@ -70,17 +70,12 @@ class SAVEEXTENSION_API USaveManager : public UGameInstanceSubsystem, public FTi
 	/************************************************************************/
 	/* PROPERTIES														    */
 	/************************************************************************/
-public:
+protected:
 
-	/** Which save preset to use. Will use Default preset if none */
-	UPROPERTY(EditAnywhere, Category = "Save Extension", Config, meta = (DisplayName = "Preset"))
-	TSubclassOf<USaveGraph> Pipeline;
+	UPROPERTY(EditAnywhere, Category = "Pipeline", Config)
+	FSESettings Settings;
 
 private:
-
-	/** Which save preset to use. Will use Default preset if none */
-	UPROPERTY(SaveGame)
-	USaveGraph* PipelineInstance;
 
 	/** Currently loaded SaveInfo. SaveInfo stores basic information about a saved game. Played time, levels, progress, etc. */
 	UPROPERTY()
@@ -282,15 +277,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
 
-	const USaveGraph* GetPipeline() const {
-		if (Pipeline.Get() && PipelineInstance)
-		{
-			return PipelineInstance;
-		}
-		return nullptr;
-	}
-
-
 	void TryInstantiateInfo(bool bForced = false);
 
 	virtual FString GenerateBaseSlotName(const int32 SlotId) const {
@@ -306,7 +292,7 @@ public:
 	}
 
 	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
-		const int32 MaxSlots = GetPipeline()->GetSettings().GetMaxSlots();
+		const int32 MaxSlots = GetSettings().GetMaxSlots();
 		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
 	}
 
@@ -348,12 +334,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = SaveExtension)
 	FORCEINLINE bool IsSavingOrLoading() const { return HasTasks(); }
 
-	FORCEINLINE bool IsLoading() const {
-		return HasTasks() && (
-			Tasks[0]->IsA<USlotDataTask_Loader>() ||
-			Tasks[0]->IsA<USlotDataTask_LevelLoader>()
-		);
-	}
+	UFUNCTION(BlueprintPure, Category = SaveExtension)
+	bool IsLoading() const;
+
+	UFUNCTION(BlueprintPure, Category = SaveExtension)
+	bool IsSaving() const;
+
+	UFUNCTION(BlueprintPure, Category = "Pipeline")
+	const FSESettings& GetSettings() const { return Settings; }
 
 protected:
 

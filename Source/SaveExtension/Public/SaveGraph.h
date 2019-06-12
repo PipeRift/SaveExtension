@@ -6,7 +6,7 @@
 #include "UObject/NoExportTypes.h"
 
 #include "Engine/DataAsset.h"
-#include "PipelineSettings.h"
+#include "Settings.h"
 #include "SaveGraph.generated.h"
 
 UENUM(BlueprintType)
@@ -14,31 +14,6 @@ enum class ESaveActorFilterMode : uint8 {
 	RootLevel,
 	SubLevels,
 	AllLevels
-};
-
-USTRUCT(BlueprintType)
-struct FSaveActorFilter
-{
-	GENERATED_BODY()
-
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
-	ESaveActorFilterMode LevelMode = ESaveActorFilterMode::AllLevels;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
-	TArray<FName> LevelNames;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
-	FSettingsActorFilter ClassFilter;
-};
-
-
-
-UCLASS()
-class UPipelineTask : public UObject
-{
-	GENERATED_BODY()
-
 };
 
 
@@ -50,80 +25,76 @@ class SAVEEXTENSION_API USaveGraph : public UObject
 {
 	GENERATED_BODY()
 
-private:
-
-	UPROPERTY(EditAnywhere, Category = "Pipeline")
-	FPipelineSettings Settings;
-
-	UPROPERTY(Transient)
-	TArray<UPipelineTask*> TaskQueue;
-
 public:
 
 	USaveGraph() : Super() {}
 
-	void DoBeginPlay()           { EventBeginPlay(); }
-	void DoTick(float DeltaTime) { EventTick(DeltaTime); }
-	void DoSerializeSlot()       { EventSerializeSlot(); }
-	void DoEndPlay()             { EventEndPlay(); }
+	bool DoPrepare() { return EventPrepare(); }
 
 protected:
 
-	virtual void BeginPlay();
-	UFUNCTION(BlueprintNativeEvent, Category = "Pipeline", meta = (DisplayName = "Begin Play"))
-	void EventBeginPlay();
+	virtual bool Prepare() { return true; }
 
-	virtual void Tick(float DeltaTime) {}
-	UFUNCTION(BlueprintNativeEvent, Category = "Pipeline", meta=(DisplayName = "Tick"))
-	void EventTick(float DeltaTime);
+	/**
+	 * Prepares Packets for serialization, specifying what and in which conditions to save
+	 * @returns true to continue saving and false to fail
+	 */
+	UFUNCTION(BlueprintNativeEvent, Category = "SaveExtension|Graph", meta = (DisplayName = "Prepare"))
+	bool EventPrepare();
 
-	virtual void SerializeSlot() {}
-	UFUNCTION(BlueprintNativeEvent, Category = "Pipeline", meta = (DisplayName = "Serialize Slot"))
-	void EventSerializeSlot();
 
-	virtual void EndPlay();
-	UFUNCTION(BlueprintNativeEvent, Category = "Pipeline", meta = (DisplayName = "End Play"))
-	void EventEndPlay();
+	/************************************************************************/
+	/* Packets                                                              */
+	/************************************************************************/
 
+	/** Serializes all actors allowed by the filter */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Packets")
+	void AddActorPacket(const FActorClassFilter& Filter/*, const FActorPacketSettings& Settings, TSubclassOf<UActorSerializer> CustomSerializer*/) {}
+
+	/** Serializes all components allowed by the filter */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Packets")
+	void AddComponentPacket(const FComponentClassFilter& Filter/*, const FComponentPacketSettings& Settings, TSubclassOf<UComponentSerializer> CustomSerializer*/) {}
+
+	/** Serializes all components allowed by the filter */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Packets")
+	void AddObjectPacket(const FClassFilter& Filter/*, const FComponentPacketSettings& Settings, TSubclassOf<UComponentSerializer> CustomSerializer*/) {}
+
+
+	/************************************************************************/
+	/* Levels                                                               */
+	/************************************************************************/
 
 	/** Serializes root level */
-	UFUNCTION(BlueprintCallable, Category = "Pipeline")
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Levels")
 	void SerializeRootLevel() {}
 
 	/** Serializes a sub-level if loaded */
-	UFUNCTION(BlueprintCallable, Category = "Pipeline")
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Levels")
 	void SerializeSubLevel(const FName& Level) { SerializeSubLevels({Level}); }
 
 	/** Serializes a list of currently loaded sub-levels on the world */
-	UFUNCTION(BlueprintCallable, Category = "Pipeline")
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Levels")
 	void SerializeSubLevels(const TArray<FName>& Levels) {}
 
 	/** Serializes all currently loaded sub-levels on the world */
-	UFUNCTION(BlueprintCallable, Category = "Pipeline")
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Levels")
 	void SerializeAllSubLevels() {}
 
-	/** Serializes all currently loaded sub-levels on the world */
-	UFUNCTION(BlueprintCallable, Category = "Pipeline")
-	void SerializeAIs() {}
 
-	/** Serializes all currently loaded sub-levels on the world */
-	UFUNCTION(BlueprintCallable, Category = "Pipeline")
-	void SerializePlayers() {}
+	/************************************************************************/
+	/* Serialized File/Data storing                                         */
+	/************************************************************************/
 
-	/** Serializes all currently loaded sub-levels on the world */
-	UFUNCTION(BlueprintCallable, Category = "Pipeline")
-	void SerializeActors(FSaveActorFilter Filter) {}
-
-	virtual void Store(const TArray<uint8>& Bytes) {}
-
-	void SaveToFile(const FString& FileName, const TArray<uint8>& Bytes) {}
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Storing")
+	void SaveToFile(const FString& FileName) {}
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Storing")
+	void KeepInMemory() {}
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Storing")
+	virtual void CustomSave() {}
 
 
 public:
 
 	virtual UWorld* GetWorld() const override;
 	class USaveManager* GetManager() const;
-
-	UFUNCTION(BlueprintPure, Category = "Pipeline")
-	const FPipelineSettings& GetSettings() const { return Settings; }
 };

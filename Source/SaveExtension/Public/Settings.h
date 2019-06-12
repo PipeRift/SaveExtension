@@ -4,15 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "ClassFilter.h"
 
-#include "PipelineSettings.generated.h"
+#include "Settings.generated.h"
 
 class USlotInfo;
 class USlotData;
 
 
 /**
-* Specifies the multithreading behavior while saving or loading
+* Specifies the multi-threading behavior while saving or loading
 */
 UENUM()
 enum class ESaveASyncMode : uint8 {
@@ -23,40 +24,11 @@ enum class ESaveASyncMode : uint8 {
 };
 
 
-USTRUCT(BlueprintType)
-struct SAVEEXTENSION_API FSettingsActorFilter
-{
-	GENERATED_BODY()
-
-	/** This classes are allowed (and their children) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization")
-	TSet<TSubclassOf<AActor>> AllowedChildren;
-
-	/** This classes are ignored (and their children) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization")
-	TSet<TSubclassOf<AActor>> IgnoredChildren;
-
-	UPROPERTY(Transient)
-	TSet<const UClass*> BakedAllowedClasses;
-
-
-	FSettingsActorFilter();
-
-	/** Bakes a set of allowed classes based on the current settings */
-	void BuildTree();
-
-	bool IsClassAllowed(const UClass* Class) const {
-		// Check is a single O(1) pointer hash comparison
-		return BakedAllowedClasses.Contains(Class);
-	}
-};
-
-
 /**
  * What to save, how to save it, when, every x minutes, what info file, what data file, save by level streaming?
  */
 USTRUCT(BlueprintType)
-struct SAVEEXTENSION_API FPipelineSettings
+struct SAVEEXTENSION_API FSESettings
 {
 	GENERATED_BODY()
 
@@ -110,7 +82,7 @@ struct SAVEEXTENSION_API FPipelineSettings
 
 	/* This Actor classes and their childs will be ignored while saving or loading */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Serialization")
-	FSettingsActorFilter ActorFilter;
+	FClassFilter ActorFilter;
 
 	/** If true will store the current gamemode  */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization", Config)
@@ -174,7 +146,7 @@ struct SAVEEXTENSION_API FPipelineSettings
 	bool bSaveAndLoadSublevels;
 
 
-	FPipelineSettings();
+	FSESettings();
 
 	/** HELPERS */
 
