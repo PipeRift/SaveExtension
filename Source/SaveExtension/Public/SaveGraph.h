@@ -87,8 +87,10 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Storing")
 	void SaveToFile(const FString& FileName) {}
+
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Storing")
 	void KeepInMemory() {}
+
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Storing")
 	virtual void CustomSave() {}
 

@@ -2,12 +2,26 @@
 #pragma once
 
 #include <IPropertyTypeCustomization.h>
+#include "ClassFilter/SClassFilter.h"
+
 
 class IPropertyHandle;
 
-class FActorFilterCustomization : public IPropertyTypeCustomization
+class FClassFilterCustomization : public IPropertyTypeCustomization
 {
+protected:
+
+	/** Filters this customization edits */
+	TArray<SClassFilter::FEditableClassFilterDatum> EditableFilters;
+
+	TSharedPtr<IPropertyHandle> StructHandle;
+
+	TSharedPtr<class SComboButton> EditButton;
+
+	TWeakPtr<SClassFilter> LastFilterPopup;
+
 public:
+
 	/**
 	* Creates a new instance.
 	*
@@ -15,9 +29,8 @@ public:
 	*/
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance()
 	{
-		return MakeShared<FActorFilterCustomization>();
+		return MakeShared<FClassFilterCustomization>();
 	}
-
 
 protected:
 
@@ -26,11 +39,14 @@ protected:
 	virtual void CustomizeChildren(TSharedRef<class IPropertyHandle> StructPropertyHandle, class IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils) override;
 
 
-	TSharedPtr<IPropertyHandle> StructHandle;
+	/** Updates the list of classes */
+	void RefreshClassesList();
 
-	TSharedPtr<class SComboButton> EditButton;
+	/** Build List of Editable Containers */
+	void BuildEditableFilterList();
 
-	TSharedPtr<SWidget> GetListContent();
-	void OnListMenuOpenStateChanged(bool bIsOpened);
+	TSharedRef<SWidget> GetListContent();
+
+	void OnPopupStateChanged(bool bIsOpened);
 };
 

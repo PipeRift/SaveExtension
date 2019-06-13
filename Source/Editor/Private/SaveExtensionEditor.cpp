@@ -7,8 +7,9 @@
 #include "Asset/AssetTypeAction_SlotInfo.h"
 #include "Asset/AssetTypeAction_SlotData.h"
 #include "Asset/AssetTypeAction_SavePreset.h"
-//#include "Customizations/SavePresetCustomization.h"
+
 #include "Customizations/SavePresetDetails.h"
+#include "Customizations/ClassFilterCustomization.h"
 
 #include "SaveGraph.h"
 
@@ -47,6 +48,7 @@ void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 {
 	RegisterCustomClassLayout("SavePreset", FOnGetDetailCustomizationInstance::CreateStatic(&FSavePresetDetails::MakeInstance));
 
+	RegisterCustomPropertyTypeLayout("ClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FClassFilterCustomization::MakeInstance));
 	//RegisterCustomPropertyTypeLayout("SavePreset", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSavePresetCustomization::MakeInstance));
 }
 
