@@ -28,12 +28,18 @@
 #include "Framework/Commands/UIAction.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 
+#include "ClassFilterHelpers.h"
+#include <ClassViewerProjectSettings.h>
+
 #define LOCTEXT_NAMESPACE "GameplayTagWidget"
+
 
 const FString SClassFilter::SettingsIniSection = TEXT("GameplayTagWidget");
 
 void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableClassFilterDatum>& EditableFilters)
 {
+	bNeedsRefresh = true;
+
 	// If we're in management mode, we don't need to have editable tag containers.
 	ensure(EditableFilters.Num() > 0);
 	Filters = EditableFilters;
@@ -141,8 +147,13 @@ void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableCla
 		]
 	];
 
+	// Construct the class hierarchy.
+	ClassFilter::Helpers::ConstructClassHierarchy();
+
 	// Force the entire tree collapsed to start
 	SetTreeItemExpansion(false);
+
+	ClassFilter::Helpers::PopulateClassFilterDelegate.AddSP(this, &SClassFilter::Refresh);
 }
 
 FVector2D SClassFilter::ComputeDesiredSize(float LayoutScaleMultiplier) const
@@ -169,7 +180,8 @@ void SClassFilter::OnSearchTextChanged( const FText& SearchText )
 
 bool SClassFilter::FilterChildrenCheck(const FClassFilterNodePtr& Class)
 {
-	check(!Class);
+	check(Class.IsValid());
+
 	// Return true if checked
 
 	for (const auto& ChildClass : Class->GetChildrenList())
@@ -185,7 +197,7 @@ bool SClassFilter::FilterChildrenCheck(const FClassFilterNodePtr& Class)
 TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	return SNew(STableRow<FClassFilterNodePtr>, OwnerTable)
-		.Style(FEditorStyle::Get(), "ClassFilterTreeView")
+		.Style(FEditorStyle::Get(), "GameplayTagTreeView")
 		[
 			SNew( SHorizontalBox )
 
@@ -356,6 +368,91 @@ void SClassFilter::SetFilter(FClassFilter* OriginalFilter, FClassFilter* EditedF
 	{
 		OnFilterChanged.ExecuteIfBound();
 	}
+}
+
+void SClassFilter::Refresh()
+{
+	bNeedsRefresh = true;
+}
+
+void SClassFilter::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+{
+	// Will populate the class hierarchy if needed
+	ClassFilter::Helpers::PopulateClassHierarchy();
+
+	if (bNeedsRefresh)
+	{
+		bNeedsRefresh = false;
+		Populate();
+	}
+}
+
+int32 SClassFilter::CountTreeItems(FClassFilterNode* Node)
+{
+	if (Node == nullptr)
+		return 0;
+	int32 Count = 1;
+	TArray<FClassFilterNodePtr> & ChildArray = Node->GetChildrenList();
+	for (int i = 0; i < ChildArray.Num(); i++)
+	{
+		Count += CountTreeItems(ChildArray[i].Get());
+	}
+	return Count;
+}
+
+void SClassFilter::Populate()
+{
+	// Empty the tree out so it can be redone.
+	RootClasses.Empty();
+
+	TArray<FSoftClassPath> InternalClassNames;
+	TArray<UClass*> InternalClasses;
+	TArray<FDirectoryPath> InternalPaths;
+
+	// We aren't showing the internal classes, then we need to know what classes to consider Internal Only, so let's gather them up from the settings object.
+	GetInternalOnlyPaths(InternalPaths);
+	GetInternalOnlyClasses(InternalClassNames);
+
+	// Take the package names for the internal only classes and convert them into their UClass
+	for (int i = 0; i < InternalClassNames.Num(); i++)
+	{
+		FString PackageClassName = InternalClassNames[i].ToString();
+		const FClassFilterNodePtr ClassNode = ClassFilter::Helpers::ClassHierarchy->FindNodeByClassName(
+			ClassFilter::Helpers::ClassHierarchy->GetObjectRootNode(), PackageClassName
+		);
+
+		if (ClassNode.IsValid())
+		{
+			InternalClasses.Add(ClassNode->Class.Get());
+		}
+	}
+
+
+	// The root node for the tree, will be "Object" which we will skip.
+	FClassFilterNodePtr RootNode;
+
+	// Get the class tree, passing in certain filter options.
+	ClassFilter::Helpers::GetClassTree(RootNode, false, true, false, InternalClasses, InternalPaths);
+
+
+	// Add all the children of the "Object" root.
+	for (int32 ChildIndex = 0; ChildIndex < RootNode->GetChildrenList().Num(); ChildIndex++)
+	{
+		RootClasses.Add(RootNode->GetChildrenList()[ChildIndex]);
+	}
+
+	// Now that new items are in the tree, we need to request a refresh.
+	TreeWidget->RequestTreeRefresh();
+}
+
+void SClassFilter::GetInternalOnlyClasses(TArray<FSoftClassPath>& Classes)
+{
+	Classes = GetDefault<UClassViewerProjectSettings>()->InternalOnlyClasses;
+}
+
+void SClassFilter::GetInternalOnlyPaths(TArray<FDirectoryPath>& Paths)
+{
+	Paths = GetDefault<UClassViewerProjectSettings>()->InternalOnlyPaths;
 }
 
 EVisibility SClassFilter::DetermineClearSelectionVisibility() const

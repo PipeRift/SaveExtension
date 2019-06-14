@@ -2,6 +2,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include <Engine/EngineTypes.h>
 #include "SlateFwd.h"
 #include "UObject/Object.h"
 #include "Layout/Visibility.h"
@@ -24,23 +25,23 @@ class SClassFilter : public SCompoundWidget
 public:
 
 	/** Called when the filter is changed */
-	DECLARE_DELEGATE( FOnFilterChanged )
+	DECLARE_DELEGATE(FOnFilterChanged)
 
-	SLATE_BEGIN_ARGS( SClassFilter )
-		: _ReadOnly( false )
-		, _MultiSelect( true )
-		, _PropertyHandle( nullptr )
+	SLATE_BEGIN_ARGS(SClassFilter)
+		: _ReadOnly(false)
+		, _MultiSelect(true)
+		, _PropertyHandle(nullptr)
 		, _MaxHeight(260.0f)
 	{}
-		SLATE_ARGUMENT( bool, ReadOnly ) // Flag to set if the list is read only
-		SLATE_ARGUMENT( bool, MultiSelect ) // If we can select multiple entries
-		SLATE_ARGUMENT( TSharedPtr<IPropertyHandle>, PropertyHandle )
-		SLATE_EVENT( FOnFilterChanged, OnFilterChanged ) // Called when a tag status changes
-		SLATE_ARGUMENT( float, MaxHeight )	// caps the height of the gameplay tag tree
-	SLATE_END_ARGS()
+	SLATE_ARGUMENT(bool, ReadOnly) // Flag to set if the list is read only
+		SLATE_ARGUMENT(bool, MultiSelect) // If we can select multiple entries
+		SLATE_ARGUMENT(TSharedPtr<IPropertyHandle>, PropertyHandle)
+		SLATE_EVENT(FOnFilterChanged, OnFilterChanged) // Called when a tag status changes
+		SLATE_ARGUMENT(float, MaxHeight)	// caps the height of the gameplay tag tree
+		SLATE_END_ARGS()
 
-	/** Simple struct holding a tag container and its owner for generic re-use of the widget */
-	struct FEditableClassFilterDatum
+		/** Simple struct holding a tag container and its owner for generic re-use of the widget */
+		struct FEditableClassFilterDatum
 	{
 		/** Constructor */
 		FEditableClassFilterDatum(class UObject* InOwner, struct FClassFilter* InFilter)
@@ -57,6 +58,8 @@ public:
 
 	/** Construct the actual widget */
 	void Construct(const FArguments& InArgs, const TArray<FEditableClassFilterDatum>& EditableFilters);
+
+	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 
 	/** Ensures that this widget will always account for the MaxHeight if it's specified */
 	virtual FVector2D ComputeDesiredSize(float LayoutScaleMultiplier) const override;
@@ -85,6 +88,9 @@ private:
 	/** The maximum height of the gameplay tag tree. If 0, the height is unbound. */
 	float MaxHeight;
 
+	/** True if the Class Filter needs to be repopulated at the next appropriate opportunity, occurs whenever classes are added, removed, renamed, etc. */
+	bool bNeedsRefresh;
+
 	/* Array of tags to be displayed in the TreeView*/
 	TArray<FClassFilterNodePtr> RootClasses;
 
@@ -104,6 +110,7 @@ private:
 	FOnFilterChanged OnFilterChanged;
 
 	TSharedPtr<IPropertyHandle> PropertyHandle;
+
 
 	/**
 	 * Generate a row widget for the specified item node and table
@@ -187,17 +194,29 @@ private:
 	 */
 	void SetTreeItemExpansion(bool bExpand);
 
-	/** Load settings for the tags*/
-	void LoadSettings();
-
 	/** Helper function to determine the visibility of the Clear Selection button */
 	EVisibility DetermineClearSelectionVisibility() const;
 
 	/** Expansion changed callback */
-	void OnExpansionChanged(FClassFilterNodePtr Class, bool bIsExpanded );
+	void OnExpansionChanged(FClassFilterNodePtr Class, bool bIsExpanded);
 
 	/** Returns true if the user can select tags from the widget */
 	bool CanSelectClasses() const;
 
 	void SetFilter(FClassFilter* OriginalContainer, FClassFilter* EditedContainer, UObject* OwnerObj);
+
+	/** Sends a requests to the Class Viewer to refresh itself the next chance it gets */
+	void Refresh();
+
+	/** Count the number of tree items in the specified hierarchy*/
+	int32 CountTreeItems(FClassFilterNode* Node);
+
+	/** Populates the tree with items based on the current filter. */
+	void Populate();
+
+	/** Accessor for the class names that have been marked as internal only in settings */
+	void GetInternalOnlyClasses(TArray<FSoftClassPath>& Classes);
+
+	/** Accessor for the class paths that have been marked as internal only in settings */
+	void GetInternalOnlyPaths(TArray<FDirectoryPath>& Paths);
 };

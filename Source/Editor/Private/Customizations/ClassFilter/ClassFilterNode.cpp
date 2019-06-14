@@ -47,6 +47,38 @@ void FClassFilterNode::AddChild(const FClassFilterNodePtr& Child)
 	ChildrenList.Add(Child);
 }
 
+void FClassFilterNode::AddUniqueChild(const FPtr& Child)
+{
+	check(Child.IsValid());
+	const UClass* NewChildClass = Child->Class.Get();
+	if (nullptr != NewChildClass)
+	{
+		for (int ChildIndex = 0; ChildIndex < ChildrenList.Num(); ++ChildIndex)
+		{
+			FClassFilterNodePtr OldChild = ChildrenList[ChildIndex];
+			if (OldChild.IsValid() && OldChild->Class == NewChildClass)
+			{
+				const bool bNewChildHasMoreInfo = Child->UnloadedBlueprintData.IsValid();
+				const bool bOldChildHasMoreInfo = OldChild->UnloadedBlueprintData.IsValid();
+				if (bNewChildHasMoreInfo && !bOldChildHasMoreInfo)
+				{
+					// make sure, that new child has all needed children
+					for (int OldChildIndex = 0; OldChildIndex < OldChild->ChildrenList.Num(); ++OldChildIndex)
+					{
+						Child->AddUniqueChild(OldChild->ChildrenList[OldChildIndex]);
+					}
+
+					// replace child
+					ChildrenList[ChildIndex] = Child;
+				}
+				return;
+			}
+		}
+	}
+
+	AddChild(Child);
+}
+
 FString FClassFilterNode::GetClassName(EClassViewerNameTypeToDisplay NameType) const
 {
 	switch (NameType)

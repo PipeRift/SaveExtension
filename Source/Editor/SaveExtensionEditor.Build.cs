@@ -28,7 +28,8 @@ namespace UnrealBuildTool.Rules
 					"UnrealEd",
 					"SlateCore",
 					"Slate",
-					"EditorStyle"
+					"EditorStyle",
+                    "ClassViewer"
 				}
 			);
 		}

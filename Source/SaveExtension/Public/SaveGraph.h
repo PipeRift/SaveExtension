@@ -16,6 +16,12 @@ enum class ESaveActorFilterMode : uint8 {
 	AllLevels
 };
 
+UENUM(BlueprintType)
+enum class ESaveFormat : uint8 {
+	SaveToFile,
+	KeepInMemory,
+	Custom // Only C++. Allow custom treatment of data
+};
 
 /**
  * What to save, how to save it, when, every x minutes, what info file, what data file, save by level streaming?
@@ -24,6 +30,12 @@ UCLASS(Blueprintable, ClassGroup = SaveExtension, Config = Game)
 class SAVEEXTENSION_API USaveGraph : public UObject
 {
 	GENERATED_BODY()
+
+protected:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Graph)
+	ESaveFormat SaveFormat;
+
 
 public:
 

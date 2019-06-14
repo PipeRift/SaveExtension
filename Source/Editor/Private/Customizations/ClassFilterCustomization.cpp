@@ -12,6 +12,8 @@ void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 {
 	StructHandle = StructPropertyHandle;
 
+	BuildEditableFilterList();
+
 	HeaderRow
 	.NameContent()
 	[
