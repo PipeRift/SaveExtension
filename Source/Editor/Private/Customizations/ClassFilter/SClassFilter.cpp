@@ -237,22 +237,32 @@ TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FClassFilterNodePtr Class, con
 	return SNew(STableRow<FClassFilterNodePtr>, OwnerTable)
 		.Style(FEditorStyle::Get(), "GameplayTagTreeView")
 		[
-			SNew( SHorizontalBox )
+			SNew(SHorizontalBox)
 
+			+ SHorizontalBox::Slot()
+			.HAlign(HAlign_Left)
+			[
+				SNew(SButton)
+				.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+				.OnClicked(this, &SClassFilter::OnClassClicked, Class)
+				.ForegroundColor(this, &SClassFilter::GetClassIconColor, Class)
+				.ContentPadding(0)
+				.IsEnabled(this, &SClassFilter::CanSelectClasses)
+				[
+					SNew(STextBlock)
+					.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.8"))
+					.Text(this, &SClassFilter::GetClassIconText, Class)
+				]
+			]
 			// Tag Selection (selection mode only)
 			+SHorizontalBox::Slot()
 			.FillWidth(1.0f)
 			.HAlign(HAlign_Left)
 			[
-				SNew(SCheckBox)
-				.OnCheckStateChanged(this, &SClassFilter::OnClassCheckChanged, Class)
-				.IsChecked(this, &SClassFilter::IsClassChecked, Class)
+				SNew(STextBlock)
+				.Text(FText::FromString(Class->GetClassName(true)))
 				.ToolTipText(Class->GetClassTooltip())
 				.IsEnabled(this, &SClassFilter::CanSelectClasses)
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString(Class->GetClassName(true)))
-				]
 			]
 		];
 }
@@ -268,66 +278,87 @@ void SClassFilter::OnGetChildren(FClassFilterNodePtr Class, TArray<FClassFilterN
 	}
 }
 
-void SClassFilter::OnClassCheckChanged(ECheckBoxState NewCheckState, FClassFilterNodePtr NodeChanged)
+FReply SClassFilter::OnClassClicked(FClassFilterNodePtr Class)
 {
-	if (NewCheckState == ECheckBoxState::Checked)
+	const EClassFilterState OwnState = Class->GetOwnFilterState();
+	if (OwnState == EClassFilterState::None)
 	{
-		OnClassChecked(NodeChanged);
-	}
-	else if (NewCheckState == ECheckBoxState::Unchecked)
-	{
-		OnClassUnchecked(NodeChanged);
-	}
-}
-
-void SClassFilter::OnClassChecked(const FClassFilterNodePtr& Class)
-{
-	FScopedTransaction Transaction( LOCTEXT("ClassFilter_AllowClass", "Allow Class") );
-	if (Class)
-	{
-	}
-}
-
-void SClassFilter::OnClassUnchecked(const FClassFilterNodePtr& Class)
-{
-	FScopedTransaction Transaction( LOCTEXT("ClassFinder_DeniedClass", "Denied Class"));
-	if (Class)
-	{
-	}
-}
-
-void SClassFilter::UncheckChildren(const FClassFilterNodePtr& Class, FClassFilter& Filter)
-{
-	check(Class);
-
-	// Uncheck Children
-	for (auto& Child : Class->GetChildrenList())
-	{
-		UncheckChildren(Child, Filter);
-	}
-}
-
-ECheckBoxState SClassFilter::IsClassChecked(FClassFilterNodePtr Class) const
-{
-	int32 NumValidAssets = 0;
-	int32 NumAssetsTagIsAppliedTo = 0;
-
-	if (Class)
-	{
-	}
-
-	if (NumAssetsTagIsAppliedTo == 0)
-	{
-		return ECheckBoxState::Unchecked;
-	}
-	else if (NumAssetsTagIsAppliedTo == NumValidAssets)
-	{
-		return ECheckBoxState::Checked;
+		const EClassFilterState ParentState = Class->GetParentFilterState();
+		if (ParentState == EClassFilterState::Allowed)
+		{
+			MarkClass(Class, EClassFilterState::Denied);
+		}
+		else
+		{
+			MarkClass(Class, EClassFilterState::Allowed);
+		}
 	}
 	else
 	{
-		return ECheckBoxState::Undetermined;
+		MarkClass(Class, EClassFilterState::None);
 	}
+	return FReply::Handled();
+}
+
+FText SClassFilter::GetClassIconText(FClassFilterNodePtr Class) const
+{
+	switch (Class->GetOwnFilterState())
+	{
+	case EClassFilterState::Allowed:
+		return FText::FromString(FString(TEXT("\xf00c"))) /*fa-check*/;
+
+	case EClassFilterState::Denied:
+		return FText::FromString(FString(TEXT("\xf00d"))) /*fa-times*/;
+	}
+
+	return FText::FromString(FString(TEXT("\xf096"))) /*fa-square-o*/;
+}
+
+FSlateColor SClassFilter::GetClassIconColor(FClassFilterNodePtr Class) const
+{
+	switch (Class->GetOwnFilterState())
+	{
+	case EClassFilterState::Allowed:
+		return { FLinearColor::Green };
+
+	case EClassFilterState::Denied:
+		return { FLinearColor::Red };
+	}
+
+	return FSlateColor::UseForeground();
+}
+
+void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
+{
+	switch (State)
+	{
+	case EClassFilterState::Allowed:
+	{
+		FScopedTransaction Transaction(LOCTEXT("ClassFilter_AllowClass", "Allow Class"));
+		if (Class)
+		{
+			Class->SetOwnFilterState(State);
+		}
+		break;
+	}
+	case EClassFilterState::Denied:
+	{
+		FScopedTransaction Transaction(LOCTEXT("ClassFilter_DeniedClass", "Deny Class"));
+		if (Class)
+		{
+			Class->SetOwnFilterState(State);
+		}
+		break;
+	}
+	case EClassFilterState::None:
+	{
+		FScopedTransaction Transaction(LOCTEXT("ClassFilter_UnmarkClass", "Unmark Class"));
+		if (Class)
+		{
+			Class->SetOwnFilterState(State);
+		}
+		break;
+	}}
 }
 
 FReply SClassFilter::OnClickedClearAll()
@@ -393,7 +424,7 @@ void SClassFilter::SetDefaultTreeItemExpansion(FClassFilterNodePtr Node)
 	{
 		bool bExpanded = false;
 
-		/*if (IsCLassAllowedOrDenied(Node) == ECheckBoxState::Checked)
+		/*if (IsClassAllowedOrDenied(Node) == ECheckBoxState::Checked)
 		{
 			bExpanded = true;
 		}*/
@@ -462,13 +493,13 @@ void SClassFilter::Tick(const FGeometry& AllottedGeometry, const double InCurren
 
 int32 SClassFilter::CountTreeItems(FClassFilterNode* Node)
 {
-	if (Node == nullptr)
+	if (!Node)
 		return 0;
+
 	int32 Count = 1;
-	TArray<FClassFilterNodePtr> & ChildArray = Node->GetChildrenList();
-	for (int i = 0; i < ChildArray.Num(); i++)
+	for (const auto& Child : Node->GetChildrenList())
 	{
-		Count += CountTreeItems(ChildArray[i].Get());
+		Count += CountTreeItems(Child.Get());
 	}
 	return Count;
 }
@@ -509,9 +540,9 @@ void SClassFilter::Populate()
 
 
 	// Add all the children of the "Object" root.
-	for (int32 ChildIndex = 0; ChildIndex < RootNode->GetChildrenList().Num(); ChildIndex++)
+	for (const auto& Child : RootNode->GetChildrenList())
 	{
-		RootClasses.Add(RootNode->GetChildrenList()[ChildIndex]);
+		RootClasses.Add(Child);
 	}
 
 	// Now that new items are in the tree, we need to request a refresh.

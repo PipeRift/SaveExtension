@@ -1,16 +1,25 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 #pragma once
 
-#include "CoreMinimal.h"
-#include "ClassViewerModule.h"
-#include "UObject/WeakObjectPtr.h"
+#include <CoreMinimal.h>
+#include <ClassViewerModule.h>
+#include <UObject/WeakObjectPtr.h>
+#include <SharedPointer.h>
 
 class IPropertyHandle;
 class IUnloadedBlueprintData;
 class UBlueprint;
 
 
-class FClassFilterNode
+enum class EClassFilterState : uint8
+{
+	Allowed,
+	Denied,
+	None
+};
+
+
+class FClassFilterNode : public TSharedFromThis<FClassFilterNode>
 {
 public:
 
@@ -32,8 +41,8 @@ public:
 	 *
 	 * @param	Child							The child to be added to this node for the tree.
 	 */
-	void AddChild(const FPtr& Child);
-	void AddUniqueChild(const FPtr& Child);
+	void AddChild(FPtr& Child);
+	void AddUniqueChild(FPtr& Child);
 
 	/**
 	 * Retrieves the class name this node is associated with. This is not the literal UClass name as it is missing the _C for blueprints
@@ -62,6 +71,11 @@ public:
 	bool IsBlueprintClass() const;
 
 
+	/** Filter states */
+	void SetOwnFilterState(EClassFilterState State);
+	EClassFilterState GetOwnFilterState() const { return FilterState; }
+	EClassFilterState GetParentFilterState() const;
+
 private:
 
 	/** The non-translated internal name for this class. This is not necessarily the UClass's name, as that may have _C for blueprints */
@@ -72,6 +86,8 @@ private:
 
 	/** List of children. */
 	TArray<FPtr> ChildrenList;
+
+	EClassFilterState FilterState = EClassFilterState::None;
 
 public:
 

@@ -139,38 +139,12 @@ private:
 	 * @param NewCheckState	New check box state
 	 * @param NodeChanged	Node that was checked/unchecked
 	 */
-	void OnClassCheckChanged(ECheckBoxState NewCheckState, FClassFilterNodePtr NodeChanged);
+	FReply OnClassClicked(FClassFilterNodePtr Class);
 
-	/**
-	 * Called via delegate to determine the checkbox state of the specified node
-	 *
-	 * @param Node	Node to find the checkbox state of
-	 *
-	 * @return Checkbox state of the specified node
-	 */
-	ECheckBoxState IsClassChecked(FClassFilterNodePtr Class) const;
+	FText GetClassIconText(FClassFilterNodePtr Class) const;
+	FSlateColor GetClassIconColor(FClassFilterNodePtr Class) const;
 
-	/**
-	 * Helper function called when the specified node is checked
-	 *
-	 * @param NodeChecked	Node that was checked by the user
-	 */
-	void OnClassChecked(const FClassFilterNodePtr& Class);
-
-	/**
-	 * Helper function called when the specified node is unchecked
-	 *
-	 * @param NodeUnchecked	Node that was unchecked by the user
-	 */
-	void OnClassUnchecked(const FClassFilterNodePtr& Class);
-
-	/**
-	 * Recursive function to uncheck all child tags
-	 *
-	 * @param NodeUnchecked	Node that was unchecked by the user
-	 * @param EditableContainer The container we are removing the tags from
-	 */
-	void UncheckChildren(const FClassFilterNodePtr& Class, FClassFilter& Filter);
+	void MarkClass(FClassFilterNodePtr Class, EClassFilterState State);
 
 	/**
 	 * Called via delegate to determine the text colour of the specified node

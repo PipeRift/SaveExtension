@@ -165,21 +165,18 @@ namespace ClassFilter
 
 		}
 
-		FClassFilterNodePtr ReturnNode;
-
 		// Search the children recursively, one of them might have the parent.
-		for (int32 ChildClassIndex = 0; !ReturnNode.IsValid() && ChildClassIndex < InRootNode->GetChildrenList().Num(); ChildClassIndex++)
+		FClassFilterNodePtr ReturnNode;
+		for (const auto& Child : InRootNode->GetChildrenList())
 		{
 			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
-			ReturnNode = FindParent(InRootNode->GetChildrenList()[ChildClassIndex], InParentClassname, InParentClass);
-
+			ReturnNode = FindParent(Child, InParentClassname, InParentClass);
 			if (ReturnNode.IsValid())
 			{
-				break;
+				return ReturnNode;
 			}
 		}
-
-		return ReturnNode;
+		return {};
 	}
 
 	FClassFilterNodePtr FClassHierarchy::FindNodeByClassName(const FClassFilterNodePtr& InRootNode, const FString& InClassName)
@@ -190,21 +187,18 @@ namespace ClassFilter
 			return InRootNode;
 		}
 
-		FClassFilterNodePtr ReturnNode;
-
 		// Search the children recursively, one of them might have the parent.
-		for (int32 ChildClassIndex = 0; !ReturnNode.IsValid() && ChildClassIndex < InRootNode->GetChildrenList().Num(); ChildClassIndex++)
+		FClassFilterNodePtr ReturnNode;
+		for (const auto& Child : InRootNode->GetChildrenList())
 		{
 			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
-			ReturnNode = FindNodeByClassName(InRootNode->GetChildrenList()[ChildClassIndex], InClassName);
-
+			ReturnNode = FindNodeByClassName(Child, InClassName);
 			if (ReturnNode.IsValid())
 			{
-				break;
+				return ReturnNode;
 			}
 		}
-
-		return ReturnNode;
+		return {};
 	}
 
 	FClassFilterNodePtr FClassHierarchy::FindNodeByGeneratedClassPath(const FClassFilterNodePtr& InRootNode, FName InGeneratedClassPath)
@@ -214,21 +208,18 @@ namespace ClassFilter
 			return InRootNode;
 		}
 
-		FClassFilterNodePtr ReturnNode;
-
 		// Search the children recursively, one of them might have the parent.
-		for (int32 ChildClassIndex = 0; !ReturnNode.IsValid() && ChildClassIndex < InRootNode->GetChildrenList().Num(); ChildClassIndex++)
+		FClassFilterNodePtr ReturnNode;
+		for (const auto& Child : InRootNode->GetChildrenList())
 		{
 			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
-			ReturnNode = FindNodeByGeneratedClassPath(InRootNode->GetChildrenList()[ChildClassIndex], InGeneratedClassPath);
-
+			ReturnNode = FindNodeByGeneratedClassPath(Child, InGeneratedClassPath);
 			if (ReturnNode.IsValid())
 			{
-				break;
+				return ReturnNode;
 			}
 		}
-
-		return ReturnNode;
+		return {};
 	}
 
 	void FClassHierarchy::UpdateClassInNode(FName InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint)
@@ -247,16 +238,18 @@ namespace ClassFilter
 		bool bReturnValue = false;
 
 		// Search the children recursively, one of them might have the parent.
-		for (int32 ChildClassIndex = 0; ChildClassIndex < InRootNode->GetChildrenList().Num(); ChildClassIndex++)
+		FClassFilterNodePtr ReturnNode;
+		for (int32 i = 0; i < InRootNode->GetChildrenList().Num(); ++i)
 		{
-			if (InRootNode->GetChildrenList()[ChildClassIndex]->ClassPath == InClassPath)
+			const auto& Child = InRootNode->GetChildrenList()[i];
+			if (Child->ClassPath == InClassPath)
 			{
-				InRootNode->GetChildrenList().RemoveAt(ChildClassIndex);
+				InRootNode->GetChildrenList().RemoveAt(i);
 				return true;
 			}
-			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
-			bReturnValue = FindAndRemoveNodeByClassPath(InRootNode->GetChildrenList()[ChildClassIndex], InClassPath);
 
+			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
+			bReturnValue |= FindAndRemoveNodeByClassPath(Child, InClassPath);
 			if (bReturnValue)
 			{
 				break;
@@ -339,13 +332,13 @@ namespace ClassFilter
 	void FClassHierarchy::SortChildren(FClassFilterNodePtr& InRootNode)
 	{
 		TArray< FClassFilterNodePtr >& ChildList = InRootNode->GetChildrenList();
-		for (int32 ChildIndex = 0; ChildIndex < ChildList.Num(); ChildIndex++)
+		for (auto& Child : InRootNode->GetChildrenList())
 		{
 			// Setup the parent weak pointer, useful for going up the tree for unloaded blueprints.
-			ChildList[ChildIndex]->ParentNode = InRootNode;
+			Child->ParentNode = InRootNode;
 
 			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
-			SortChildren(ChildList[ChildIndex]);
+			SortChildren(Child);
 		}
 
 		// Sort the children.

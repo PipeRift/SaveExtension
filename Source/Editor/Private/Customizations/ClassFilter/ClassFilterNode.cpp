@@ -22,6 +22,7 @@ FClassFilterNode::FClassFilterNode( const FClassFilterNode& InCopyObject)
 	ClassName = InCopyObject.ClassName;
 	ClassDisplayName = InCopyObject.ClassDisplayName;
 	bPassesFilter = InCopyObject.bPassesFilter;
+	FilterState = InCopyObject.FilterState;
 
 	Class = InCopyObject.Class;
 	Blueprint = InCopyObject.Blueprint;
@@ -42,34 +43,34 @@ FClassFilterNode::FClassFilterNode( const FClassFilterNode& InCopyObject)
  *
  * @param	Child							The child to be added to this node for the tree.
  */
-void FClassFilterNode::AddChild(const FClassFilterNodePtr& Child)
+void FClassFilterNode::AddChild(FClassFilterNodePtr& Child)
 {
 	ChildrenList.Add(Child);
+	Child->ParentNode = TSharedRef<FClassFilterNode>{ AsShared() };
 }
 
-void FClassFilterNode::AddUniqueChild(const FPtr& Child)
+void FClassFilterNode::AddUniqueChild(FClassFilterNodePtr& Child)
 {
 	check(Child.IsValid());
-	const UClass* NewChildClass = Child->Class.Get();
-	if (nullptr != NewChildClass)
+
+	if (const UClass* NewChildClass = Child->Class.Get())
 	{
-		for (int ChildIndex = 0; ChildIndex < ChildrenList.Num(); ++ChildIndex)
+		for (auto& CurrentChild : ChildrenList)
 		{
-			FClassFilterNodePtr OldChild = ChildrenList[ChildIndex];
-			if (OldChild.IsValid() && OldChild->Class == NewChildClass)
+			if (CurrentChild.IsValid() && CurrentChild->Class == NewChildClass)
 			{
 				const bool bNewChildHasMoreInfo = Child->UnloadedBlueprintData.IsValid();
-				const bool bOldChildHasMoreInfo = OldChild->UnloadedBlueprintData.IsValid();
+				const bool bOldChildHasMoreInfo = CurrentChild->UnloadedBlueprintData.IsValid();
 				if (bNewChildHasMoreInfo && !bOldChildHasMoreInfo)
 				{
 					// make sure, that new child has all needed children
-					for (int OldChildIndex = 0; OldChildIndex < OldChild->ChildrenList.Num(); ++OldChildIndex)
+					for (int OldChildIndex = 0; OldChildIndex < CurrentChild->ChildrenList.Num(); ++OldChildIndex)
 					{
-						Child->AddUniqueChild(OldChild->ChildrenList[OldChildIndex]);
+						Child->AddUniqueChild(CurrentChild->ChildrenList[OldChildIndex]);
 					}
 
 					// replace child
-					ChildrenList[ChildIndex] = Child;
+					CurrentChild = Child;
 				}
 				return;
 			}
@@ -128,4 +129,23 @@ FText FClassFilterNode::GetClassTooltip(bool bShortTooltip) const
 bool FClassFilterNode::IsBlueprintClass() const
 {
 	return BlueprintAssetPath != NAME_None;
+}
+
+void FClassFilterNode::SetOwnFilterState(EClassFilterState State)
+{
+	FilterState = State;
+}
+
+EClassFilterState FClassFilterNode::GetParentFilterState() const
+{
+	FClassFilterNodePtr Parent = ParentNode.Pin();
+	while (Parent)
+	{
+		// return first parent found filter
+		if (Parent->FilterState != EClassFilterState::None)
+			return Parent->FilterState;
+
+		Parent = Parent->ParentNode.Pin();
+	}
+	return EClassFilterState::None;
 }

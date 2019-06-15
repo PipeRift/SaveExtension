@@ -306,20 +306,17 @@ namespace ClassFilter
 				bReturnPassesFilter = InOutRootNode->bPassesFilter = bPassesBlueprintBaseFilter && bPassesInternalFilter && PassesFilter(*InOriginalRootNode->GetClassName());
 			}
 
-
-			TArray< FClassFilterNodePtr >& ChildList = InOriginalRootNode->GetChildrenList();
-			for(int32 ChildIdx = 0; ChildIdx < ChildList.Num(); ChildIdx++)
+			for(const auto& Child : InOriginalRootNode->GetChildrenList())
 			{
-				FClassFilterNodePtr NewNode = MakeShareable( new FClassFilterNode( *ChildList[ChildIdx].Get() ) );
+				FClassFilterNodePtr NewNode = MakeShareable( new FClassFilterNode( *Child.Get() ) );
 
-				bChildrenPassesFilter = AddChildren_Tree(NewNode, ChildList[ChildIdx], bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
+				bChildrenPassesFilter = AddChildren_Tree(NewNode, Child, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
 				if(bChildrenPassesFilter)
 				{
 					InOutRootNode->AddChild(NewNode);
 				}
 				bReturnPassesFilter |= bChildrenPassesFilter;
 			}
-
 			return bReturnPassesFilter;
 		}
 
@@ -418,11 +415,10 @@ namespace ClassFilter
 			// #TODO: FIX ME
 			//NewNode->PropertyHandle = InInitOptions.PropertyHandle;
 
-			TArray< FClassFilterNodePtr >& ChildList = InOriginalRootNode->GetChildrenList();
-			for(int32 ChildIdx = 0; ChildIdx < ChildList.Num(); ChildIdx++)
+			for (const auto& Child : InOriginalRootNode->GetChildrenList())
 			{
-				AddChildren_List(InOutNodeList, ChildList[ChildIdx],
-					bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
+				AddChildren_List(InOutNodeList, Child, bInOnlyBlueprintBases,
+					bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
 			}
 		}
 
@@ -444,10 +440,9 @@ namespace ClassFilter
 		{
 			const FClassFilterNodePtr ObjectClassRoot = ClassHierarchy->GetObjectRootNode();
 
-			TArray< FClassFilterNodePtr >& ChildList = ObjectClassRoot->GetChildrenList();
-			for(int32 ObjectChildIndex = 0; ObjectChildIndex < ChildList.Num(); ObjectChildIndex++)
+			for (const auto& Child : ObjectClassRoot->GetChildrenList())
 			{
-				AddChildren_List(InOutNodeList, ChildList[ObjectChildIndex], bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
+				AddChildren_List(InOutNodeList, Child, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
 			}
 		}
 
