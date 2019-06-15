@@ -91,8 +91,11 @@ private:
 	/** True if the Class Filter needs to be repopulated at the next appropriate opportunity, occurs whenever classes are added, removed, renamed, etc. */
 	bool bNeedsRefresh;
 
-	/* Array of tags to be displayed in the TreeView*/
+	/* Array of tags to be displayed in the TreeView */
 	TArray<FClassFilterNodePtr> RootClasses;
+
+	/* Array of tags filtered in the TreeView */
+	TArray<FClassFilterNodePtr> FilteredClasses;
 
 	/** Container widget holding the tag tree */
 	TSharedPtr<SBorder> TreeContainerWidget;
@@ -193,6 +196,17 @@ private:
 	 * @param bExpand If true, expand the entire tree; Otherwise, collapse the entire tree
 	 */
 	void SetTreeItemExpansion(bool bExpand);
+
+	/**
+	 * Helper function to set the expansion state of a specific node
+	 *
+	 * @param Node		Node to set the expansion state of
+	 * @param bExapnd	If true, expand the node; Otherwise, collapse the node
+	 */
+	void SetTreeItemExpansion(FClassFilterNodePtr Node, bool bExpand);
+
+	/** Recursive function to go through all tags in the tree and set the expansion to default*/
+	void SetDefaultTreeItemExpansion(FClassFilterNodePtr Node);
 
 	/** Helper function to determine the visibility of the Clear Selection button */
 	EVisibility DetermineClearSelectionVisibility() const;

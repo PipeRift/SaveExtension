@@ -174,7 +174,35 @@ void SClassFilter::OnSearchTextChanged( const FText& SearchText )
 {
 	SearchString = SearchText.ToString();
 
-	// #TODO: Apply filter
+	if (SearchString.IsEmpty())
+	{
+		TreeWidget->SetTreeItemsSource(&RootClasses);
+
+		for (const auto& Class : RootClasses)
+		{
+			SetDefaultTreeItemExpansion(Class);
+		}
+	}
+	else
+	{
+		FilteredClasses.Reset();
+
+		for (const auto& Class : RootClasses)
+		{
+			if (FilterChildrenCheck(Class))
+			{
+				FilteredClasses.Add(Class);
+				SetTreeItemExpansion(Class, true);
+			}
+			else
+			{
+				SetTreeItemExpansion(Class, false);
+			}
+		}
+
+		TreeWidget->SetTreeItemsSource(&FilteredClasses);
+	}
+
 	TreeWidget->RequestTreeRefresh();
 }
 
@@ -183,6 +211,16 @@ bool SClassFilter::FilterChildrenCheck(const FClassFilterNodePtr& Class)
 	check(Class.IsValid());
 
 	// Return true if checked
+
+	if (SearchString.IsEmpty())
+	{
+		return true;
+	}
+
+	if (Class->GetClassName().Contains(SearchString))
+	{
+		return true;
+	}
 
 	for (const auto& ChildClass : Class->GetChildrenList())
 	{
@@ -330,7 +368,42 @@ FReply SClassFilter::OnClickedCollapseAll()
 
 void SClassFilter::SetTreeItemExpansion(bool bExpand)
 {
+	for (const auto& Child : RootClasses)
+	{
+		SetTreeItemExpansion(Child, bExpand);
+	}
+}
 
+void SClassFilter::SetTreeItemExpansion(FClassFilterNodePtr Node, bool bExpand)
+{
+	if (Node.IsValid() && TreeWidget.IsValid())
+	{
+		TreeWidget->SetItemExpansion(Node, bExpand);
+
+		for (const auto& Child : Node->GetChildrenList())
+		{
+			SetTreeItemExpansion(Child, bExpand);
+		}
+	}
+}
+
+void SClassFilter::SetDefaultTreeItemExpansion(FClassFilterNodePtr Node)
+{
+	if (Node.IsValid() && TreeWidget.IsValid())
+	{
+		bool bExpanded = false;
+
+		/*if (IsCLassAllowedOrDenied(Node) == ECheckBoxState::Checked)
+		{
+			bExpanded = true;
+		}*/
+		TreeWidget->SetItemExpansion(Node, bExpanded);
+
+		for (const auto& Child : Node->GetChildrenList())
+		{
+			SetDefaultTreeItemExpansion(Child);
+		}
+	}
 }
 
 void SClassFilter::SetFilter(FClassFilter* OriginalFilter, FClassFilter* EditedFilter, UObject* OwnerObj)
