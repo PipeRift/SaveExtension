@@ -73,10 +73,8 @@ public:
 	/** Gets the widget to focus once the menu opens. */
 	TSharedPtr<SWidget> GetWidgetToFocusOnOpen();
 
-private:
 
-	/* string that sets the section of the ini file to use for this class*/
-	static const FString SettingsIniSection;
+private:
 
 	FString SearchString;
 

@@ -34,8 +34,6 @@
 #define LOCTEXT_NAMESPACE "GameplayTagWidget"
 
 
-const FString SClassFilter::SettingsIniSection = TEXT("GameplayTagWidget");
-
 void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableClassFilterDatum>& EditableFilters)
 {
 	bNeedsRefresh = true;
@@ -60,9 +58,9 @@ void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableCla
 	else
 	{
 		// Otherwise use the owner list
-		for (int32 AssetIdx = 0; AssetIdx < Filters.Num(); ++AssetIdx)
+		for (const auto& Filter : Filters)
 		{
-			ObjectsToMarkTransactional.Add(Filters[AssetIdx].Owner.Get());
+			ObjectsToMarkTransactional.Add(Filter.Owner.Get());
 		}
 	}
 
