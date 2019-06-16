@@ -14,6 +14,7 @@
 #include <InstancedFoliageActor.h>
 #include <Lightmass/LightmassPortal.h>
 #include <NavigationData.h>
+#include <Parse.h>
 
 
 FClassFilter::FClassFilter(const UClass* BaseClass)
@@ -56,6 +57,49 @@ void FClassFilter::BakeAllowedClasses()
 				break;
 			}
 			CurrentClass = CurrentClass->GetSuperClass();
+		}
+	}
+}
+
+FString FClassFilter::ToString()
+{
+	FString ExportString;
+	FClassFilter::StaticStruct()->ExportText(ExportString, this, this, nullptr, 0, nullptr);
+	return ExportString;
+}
+
+void FClassFilter::FromString(FString String)
+{
+	if (String.StartsWith(TEXT("(")) && String.EndsWith(TEXT(")")))
+	{
+		String = String.LeftChop(1);
+		String = String.RightChop(1);
+
+		FString AfterAllowed;
+		if (String.Split("AllowedClasses=", nullptr, &AfterAllowed))
+		{
+			FString AllowedStr;
+			FString IgnoredStr;
+			if (AfterAllowed.Split("IgnoredClasses=", &AllowedStr, &IgnoredStr))
+			{
+				AllowedStr.RemoveFromStart("(");
+				AllowedStr.RemoveFromEnd("),");
+				TArray<FString> AllowedListStr;
+				AllowedStr.ParseIntoArray(AllowedListStr, TEXT(","), true);
+				for (const auto& Str : AllowedListStr)
+				{
+					AllowedClasses.Add(TSoftClassPtr<>{Str});
+				}
+
+				IgnoredStr.RemoveFromStart("(");
+				IgnoredStr.RemoveFromEnd(")");
+				TArray<FString> IgnoredListStr;
+				IgnoredStr.ParseIntoArray(IgnoredListStr, TEXT(","), true);
+				for (const auto& Str : IgnoredListStr)
+				{
+					IgnoredClasses.Add(TSoftClassPtr<>{Str});
+				}
+			}
 		}
 	}
 }

@@ -12,7 +12,7 @@ struct SAVEEXTENSION_API FClassFilter
 	GENERATED_BODY()
 
 	// Used from editor side to limit displayed classes
-	UPROPERTY()
+	UPROPERTY(Transient)
 	const UClass* BaseClass;
 
 	/** This classes are allowed (and their children) */
@@ -37,6 +37,9 @@ struct SAVEEXTENSION_API FClassFilter
 		// Check is a single O(1) pointer hash comparison
 		return BakedAllowedClasses.Contains(Class);
 	}
+
+	FString ToString();
+	void FromString(FString String);
 };
 
 

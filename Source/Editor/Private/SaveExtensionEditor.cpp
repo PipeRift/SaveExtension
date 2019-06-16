@@ -10,6 +10,7 @@
 
 #include "Customizations/SavePresetDetails.h"
 #include "Customizations/ClassFilterCustomization.h"
+#include "Customizations/ClassFilterGraphPanelPinFactory.h"
 
 #include "SaveGraph.h"
 
@@ -42,6 +43,13 @@ void FSaveExtensionEditor::StartupModule()
 void FSaveExtensionEditor::ShutdownModule()
 {
 	BlueprintEditorTabBinding = nullptr;
+
+	// Unregister all pin customizations
+	for (auto& FactoryPtr : CreatedPinFactories)
+	{
+		FEdGraphUtilities::UnregisterVisualPinFactory(FactoryPtr);
+	}
+	CreatedPinFactories.Empty();
 }
 
 void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
@@ -50,6 +58,8 @@ void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 
 	RegisterCustomPropertyTypeLayout("ClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FClassFilterCustomization::MakeInstance));
 	//RegisterCustomPropertyTypeLayout("SavePreset", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSavePresetCustomization::MakeInstance));
+
+	RegisterCustomPinFactory<FClassFilterGraphPanelPinFactory>();
 }
 
 void FSaveExtensionEditor::RegisterCustomClassLayout(FName ClassName, FOnGetDetailCustomizationInstance DetailLayoutDelegate)
@@ -68,6 +78,14 @@ void FSaveExtensionEditor::RegisterCustomPropertyTypeLayout(FName PropertyTypeNa
 	static FName PropertyEditor("PropertyEditor");
 	FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(PropertyEditor);
 	PropertyModule.RegisterCustomPropertyTypeLayout(PropertyTypeName, PropertyTypeLayoutDelegate);
+}
+
+template<class T>
+void FSaveExtensionEditor::RegisterCustomPinFactory()
+{
+	TSharedPtr<T> PinFactory = MakeShareable(new T());
+	FEdGraphUtilities::RegisterVisualPinFactory(PinFactory);
+	CreatedPinFactories.Add(PinFactory);
 }
 
 #undef LOCTEXT_NAMESPACE

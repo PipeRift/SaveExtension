@@ -347,12 +347,13 @@ void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
 		{
 			Class->SetOwnFilterState(State);
 
+			if(PropertyHandle) PropertyHandle->NotifyPreChange();
 			for (const auto& Filter : Filters)
 			{
-				Filter.Owner->Modify();
 				Filter.Filter->AllowedClasses.Add(ClassAsset);
 				Filter.Filter->IgnoredClasses.Remove(ClassAsset);
 			}
+			if (PropertyHandle) PropertyHandle->NotifyPostChange();
 		}
 		break;
 	}
@@ -363,12 +364,13 @@ void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
 		{
 			Class->SetOwnFilterState(State);
 
+			if (PropertyHandle) PropertyHandle->NotifyPreChange();
 			for (const auto& Filter : Filters)
 			{
-				Filter.Owner->Modify();
 				Filter.Filter->IgnoredClasses.Add(ClassAsset);
 				Filter.Filter->AllowedClasses.Remove(ClassAsset);
 			}
+			if (PropertyHandle) PropertyHandle->NotifyPostChange();
 		}
 		break;
 	}
@@ -379,12 +381,13 @@ void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
 		{
 			Class->SetOwnFilterState(State);
 
+			if (PropertyHandle) PropertyHandle->NotifyPreChange();
 			for (const auto& Filter : Filters)
 			{
-				Filter.Owner->Modify();
 				Filter.Filter->IgnoredClasses.Remove(ClassAsset);
 				Filter.Filter->AllowedClasses.Remove(ClassAsset);
 			}
+			if (PropertyHandle) PropertyHandle->NotifyPostChange();
 		}
 		break;
 	}}

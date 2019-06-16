@@ -30,7 +30,7 @@ protected:
 
 	TSharedPtr<class SComboButton> EditButton;
 
-	TSharedPtr<SListView<TSharedPtr<FClassFilterItem>>> ClassList;
+	TSharedPtr<SListView<TSharedPtr<FClassFilterItem>>> PreviewList;
 
 	TWeakPtr<SClassFilter> LastFilterPopup;
 

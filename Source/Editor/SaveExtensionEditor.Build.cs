@@ -10,28 +10,28 @@ namespace UnrealBuildTool.Rules
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 			bEnforceIWYU = true;
 
-			PublicDependencyModuleNames.AddRange(
-				new string[] {
-					"Core",
-					"Engine",
-					"CoreUObject",
-                    "Kismet",
-					"SaveExtension"
-				}
-			);
+			PublicDependencyModuleNames.AddRange( new string[]
+			{
+				"Core",
+				"Engine",
+				"CoreUObject",
+				"Kismet",
+				"SaveExtension"
+			});
 
-			PrivateDependencyModuleNames.AddRange(
-				new string[] {
-					"AssetTools",
-					"Projects",
-					"InputCore",
-					"UnrealEd",
-					"SlateCore",
-					"Slate",
-					"EditorStyle",
-                    "ClassViewer"
-				}
-			);
+			PrivateDependencyModuleNames.AddRange( new string[]
+			{
+				"AssetTools",
+				"Projects",
+				"InputCore",
+				"UnrealEd",
+				"SlateCore",
+				"Slate",
+				"EditorStyle",
+				"ClassViewer",
+				"BlueprintGraph",
+				"GraphEditor"
+			});
 		}
 	}
 }

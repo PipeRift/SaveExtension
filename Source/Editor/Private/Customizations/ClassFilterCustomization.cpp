@@ -85,13 +85,11 @@ void FClassFilterCustomization::BuildEditableFilterList()
 	if (StructHandle.IsValid())
 	{
 		TArray<void*> RawStructData;
-		TArray<UObject*> OuterObjects;
 		StructHandle->AccessRawData(RawStructData);
-		StructHandle->GetOuterObjects(OuterObjects);
 
 		for (int32 ContainerIdx = 0; ContainerIdx < RawStructData.Num(); ++ContainerIdx)
 		{
-			EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(OuterObjects[ContainerIdx], (FClassFilter*)RawStructData[ContainerIdx]));
+			EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(nullptr, (FClassFilter*)RawStructData[ContainerIdx]));
 		}
 	}
 }
@@ -162,7 +160,7 @@ TSharedRef<SWidget> FClassFilterCustomization::GetClassPreview()
 	return SNew(SBox)
 	.MinDesiredWidth(200.f)
 	[
-		SAssignNew(ClassList, SListView<TSharedPtr<FClassFilterItem>>)
+		SAssignNew(PreviewList, SListView<TSharedPtr<FClassFilterItem>>)
 		.SelectionMode(ESelectionMode::None)
 		.ListItemsSource(&PreviewClasses)
 		.OnGenerateRow(this, &FClassFilterCustomization::OnGeneratePreviewRow)
@@ -248,9 +246,9 @@ void FClassFilterCustomization::RefreshClassList()
 	}
 
 	// Refresh the slate list
-	if (ClassList.IsValid())
+	if (PreviewList.IsValid())
 	{
-		ClassList->RequestListRefresh();
+		PreviewList->RequestListRefresh();
 	}
 }
 
