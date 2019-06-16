@@ -254,7 +254,7 @@ namespace ClassFilter
 		 *
 		 *	@return Returns true if the child passed the filter.
 		 */
-		static bool AddChildren_Tree(FClassFilterNodePtr& InOutRootNode,
+		static bool AddChildren_Tree(const FClassFilter& Filter, FClassFilterNodePtr& InOutRootNode,
 			const FClassFilterNodePtr& InOriginalRootNode,
 			bool bInOnlyBlueprintBases, bool bInShowUnloadedBlueprints, bool bInInternalClasses,
 			const TArray<UClass*>& InternalClasses, const TArray<FDirectoryPath>& InternalPaths)
@@ -308,9 +308,11 @@ namespace ClassFilter
 
 			for(const auto& Child : InOriginalRootNode->GetChildrenList())
 			{
-				FClassFilterNodePtr NewNode = MakeShareable( new FClassFilterNode( *Child.Get() ) );
+				FClassFilterNodePtr NewNode = MakeShared<FClassFilterNode>( *Child.Get() );
 
-				bChildrenPassesFilter = AddChildren_Tree(NewNode, Child, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
+				NewNode->SetStateFromFilter(Filter);
+
+				bChildrenPassesFilter = AddChildren_Tree(Filter, NewNode, Child, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
 				if(bChildrenPassesFilter)
 				{
 					InOutRootNode->AddChild(NewNode);
@@ -330,7 +332,7 @@ namespace ClassFilter
 		 *  @param InternalPaths                        The paths that have been marked Internal Only.
 		 *	@return A fully built tree.
 		 */
-		static void GetClassTree(FClassFilterNodePtr& InOutRootNode, bool bInOnlyBlueprintBases,
+		static void GetClassTree(const FClassFilter& Filter, FClassFilterNodePtr& InOutRootNode, bool bInOnlyBlueprintBases,
 			bool bInShowUnloadedBlueprints, bool bInInternalClasses = true,
 			const TArray<UClass*>& InternalClasses = TArray<UClass*>(), const TArray<FDirectoryPath>& InternalPaths = TArray<FDirectoryPath>())
 		{
@@ -340,7 +342,7 @@ namespace ClassFilter
 			// Duplicate the node, it will have no children.
 			InOutRootNode = MakeShared<FClassFilterNode>(*ObjectClassRoot);
 
-			AddChildren_Tree(InOutRootNode, ObjectClassRoot, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
+			AddChildren_Tree(Filter, InOutRootNode, ObjectClassRoot, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
 		}
 
 		/** Recursive function to build the list, filtering out nodes based on the InitOptions and filter search terms.
@@ -411,9 +413,6 @@ namespace ClassFilter
 			{
 				InOutNodeList.Add(NewNode);
 			}
-
-			// #TODO: FIX ME
-			//NewNode->PropertyHandle = InInitOptions.PropertyHandle;
 
 			for (const auto& Child : InOriginalRootNode->GetChildrenList())
 			{
@@ -503,123 +502,6 @@ namespace ClassFilter
 			}
 
 			return false;
-		}
-
-		/**
-		 * Creates a blueprint from a class.
-		 *
-		 * @param	InCreationClass			The class to create the blueprint from.
-		 * @param	InParentContent			The content to parent the STextEntryPopup to.
-		 */
-		static void CreateBlueprint(const FString& InBlueprintName, UClass* InCreationClass)
-		{
-			if(InCreationClass == nullptr || !FKismetEditorUtilities::CanCreateBlueprintOfClass(InCreationClass))
-			{
-				FMessageDialog::Open( EAppMsgType::Ok, NSLOCTEXT("UnrealEd", "InvalidClassToMakeBlueprintFrom", "Invalid class to make a Blueprint of."));
-				return;
-			}
-
-			// Get the full name of where we want to create the physics asset.
-			FString PackageName = InBlueprintName;
-
-			// Then find/create it.
-			UPackage* Package = CreatePackage(nullptr, *PackageName);
-			check(Package);
-
-			// Handle fully loading packages before creating new objects.
-			TArray<UPackage*> TopLevelPackages;
-			TopLevelPackages.Add( Package->GetOutermost() );
-			if( !UPackageTools::HandleFullyLoadingPackages( TopLevelPackages, NSLOCTEXT("UnrealEd", "CreateANewObject", "Create a new object") ) )
-			{
-				// Can't load package
-				return;
-			}
-
-			FName BPName(*FPackageName::GetLongPackageAssetName(PackageName));
-
-			if(PromptUserIfExistingObject(BPName.ToString(), PackageName,FString(), Package))
-			{
-				// Create and init a new Blueprint
-				UBlueprint* NewBP = FKismetEditorUtilities::CreateBlueprint(InCreationClass, Package, BPName, BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass(), FName("ClassFilter"));
-				if(NewBP)
-				{
-					FAssetEditorManager::Get().OpenEditorForAsset(NewBP);
-
-					// Notify the asset registry
-					FAssetRegistryModule::AssetCreated(NewBP);
-
-					// Mark the package dirty...
-					Package->MarkPackageDirty();
-				}
-			}
-
-			// All viewers must refresh.
-			RefreshAll();
-		}
-
-		/**
-		 * Creates a SaveAssetDialog for specifying the path for the new blueprint
-		 */
-		static void OpenCreateBlueprintDialog(UClass* InCreationClass)
-		{
-			// Determine default path for the Save Asset dialog
-			FString DefaultPath;
-			const FString DefaultDirectory = FEditorDirectories::Get().GetLastDirectory(ELastDirectory::NEW_ASSET);
-			FPackageName::TryConvertFilenameToLongPackageName(DefaultDirectory, DefaultPath);
-
-			if (DefaultPath.IsEmpty())
-			{
-				DefaultPath = TEXT("/Game/Blueprints");
-			}
-
-			// Determine default filename for the Save Asset dialog
-			check(InCreationClass != nullptr);
-			const FString ClassName = InCreationClass->ClassGeneratedBy ? InCreationClass->ClassGeneratedBy->GetName() : InCreationClass->GetName();
-			FString DefaultName = LOCTEXT("PrefixNew", "New").ToString() + ClassName;
-
-			FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
-			FString UniquePackageName;
-			FString UniqueAssetName;
-			AssetToolsModule.Get().CreateUniqueAssetName(DefaultPath / DefaultName, TEXT(""), UniquePackageName, UniqueAssetName);
-			DefaultName = FPaths::GetCleanFilename(UniqueAssetName);
-
-			// Initialize SaveAssetDialog config
-			FSaveAssetDialogConfig SaveAssetDialogConfig;
-			SaveAssetDialogConfig.DialogTitleOverride = LOCTEXT("CreateBlueprintDialogTitle", "Create Blueprint Class");
-			SaveAssetDialogConfig.DefaultPath = DefaultPath;
-			SaveAssetDialogConfig.DefaultAssetName = DefaultName;
-			SaveAssetDialogConfig.ExistingAssetPolicy = ESaveAssetDialogExistingAssetPolicy::AllowButWarn;
-
-			FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
-			FString SaveObjectPath = ContentBrowserModule.Get().CreateModalSaveAssetDialog(SaveAssetDialogConfig);
-			if (!SaveObjectPath.IsEmpty())
-			{
-				const FString PackageName = FPackageName::ObjectPathToPackageName(SaveObjectPath);
-				const FString PackageFilename = FPackageName::LongPackageNameToFilename(PackageName);
-				const FString PackagePath = FPaths::GetPath(PackageFilename);
-
-				CreateBlueprint(PackageName, InCreationClass);
-				FEditorDirectories::Get().SetLastDirectory(ELastDirectory::NEW_ASSET, PackagePath);
-			}
-		}
-
-		/** Returns the tooltip to display when attempting to derive a Blueprint */
-		FText GetCreateBlueprintTooltip(UClass* InCreationClass)
-		{
-			if(InCreationClass->HasAnyClassFlags(CLASS_Deprecated))
-			{
-				return LOCTEXT("ClassFilterMenuCreateDeprecatedBlueprint_Tooltip", "Class is deprecated!");
-			}
-			else
-			{
-				return LOCTEXT("ClassFilterMenuCreateBlueprint_Tooltip", "Creates a Blueprint Class using this class as a base.");
-			}
-		}
-
-		/** Returns TRUE if you can derive a Blueprint */
-		bool CanOpenCreateBlueprintDialog(UClass* InCreationClass)
-		{
-			return !InCreationClass->HasAnyClassFlags(CLASS_Deprecated);
 		}
 
 		/**

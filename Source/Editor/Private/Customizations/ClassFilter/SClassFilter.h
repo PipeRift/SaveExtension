@@ -144,14 +144,7 @@ private:
 
 	void MarkClass(FClassFilterNodePtr Class, EClassFilterState State);
 
-	/**
-	 * Called via delegate to determine the text colour of the specified node
-	 *
-	 * @param Node	Node to find the colour of
-	 *
-	 * @return Text colour of the specified node
-	 */
-	FSlateColor GetClassTextColour(const FClassFilterNodePtr& Node) const;
+	FSlateColor GetClassBackgroundColor(FClassFilterNodePtr Class) const;
 
 	/** Called when the user clicks the "Clear All" button; Clears all tags */
 	FReply OnClickedClearAll();

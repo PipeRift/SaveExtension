@@ -73,6 +73,7 @@ public:
 
 	/** Filter states */
 	void SetOwnFilterState(EClassFilterState State);
+	void SetStateFromFilter(const struct FClassFilter& Filter);
 	EClassFilterState GetOwnFilterState() const { return FilterState; }
 	EClassFilterState GetParentFilterState() const;
 
@@ -116,9 +117,6 @@ public:
 
 	/** Data for unloaded blueprints, only valid if the class is unloaded. */
 	TSharedPtr<class IUnloadedBlueprintData> UnloadedBlueprintData;
-
-	/** The property this node will be working on. */
-	TSharedPtr<class IPropertyHandle> PropertyHandle;
 };
 
 using FClassFilterNodePtr = FClassFilterNode::FPtr;

@@ -17,11 +17,11 @@ struct SAVEEXTENSION_API FClassFilter
 
 	/** This classes are allowed (and their children) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization")
-	TSet<const UClass*> AllowedClasses;
+	TSet<TSoftClassPtr<UObject>> AllowedClasses;
 
 	/** This classes are ignored (and their children) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization")
-	TSet<const UClass*> IgnoredClasses;
+	TSet<TSoftClassPtr<UObject>> IgnoredClasses;
 
 	UPROPERTY(Transient)
 	TSet<const UClass*> BakedAllowedClasses;

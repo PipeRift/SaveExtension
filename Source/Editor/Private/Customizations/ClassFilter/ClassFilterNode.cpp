@@ -4,6 +4,7 @@
 #include <Engine/Blueprint.h>
 
 #include "PropertyHandle.h"
+#include "ClassFilter.h"
 
 
 FClassFilterNode::FClassFilterNode(const FString& InClassName, const FString& InClassDisplayName)
@@ -134,6 +135,24 @@ bool FClassFilterNode::IsBlueprintClass() const
 void FClassFilterNode::SetOwnFilterState(EClassFilterState State)
 {
 	FilterState = State;
+}
+
+void FClassFilterNode::SetStateFromFilter(const FClassFilter& Filter)
+{
+	const TSoftClassPtr<> ClassAsset{ ClassPath.ToString() };
+
+	if (Filter.AllowedClasses.Contains(ClassAsset))
+	{
+		FilterState = EClassFilterState::Allowed;
+	}
+	else if (Filter.IgnoredClasses.Contains(ClassAsset))
+	{
+		FilterState = EClassFilterState::Denied;
+	}
+	else
+	{
+		FilterState = EClassFilterState::None;
+	}
 }
 
 EClassFilterState FClassFilterNode::GetParentFilterState() const

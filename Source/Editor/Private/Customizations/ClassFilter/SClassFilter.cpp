@@ -13,12 +13,13 @@
 #include "ScopedTransaction.h"
 #include "Textures/SlateIcon.h"
 #include "PropertyHandle.h"
-#include "Widgets/Input/SSearchBox.h"
-#include "Widgets/Layout/SScaleBox.h"
 #include "Toolkits/AssetEditorManager.h"
-#include "AssetToolsModule.h"
-#include "Widgets/Input/SHyperlink.h"
-#include "Widgets/Notifications/SNotificationList.h"
+#include <AssetToolsModule.h>
+#include <Widgets/Input/SHyperlink.h>
+#include <Widgets/Input/SSearchBox.h>
+#include <Widgets/Layout/SScaleBox.h>
+#include <Widgets/Layout/SBorder.h>
+#include <Widgets/Notifications/SNotificationList.h>
 #include "Framework/Notifications/NotificationManager.h"
 #include "GameplayTagsSettings.h"
 #include "Layout/WidgetPath.h"
@@ -233,11 +234,17 @@ bool SClassFilter::FilterChildrenCheck(const FClassFilterNodePtr& Class)
 TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	return SNew(STableRow<FClassFilterNodePtr>, OwnerTable)
-		.Style(FEditorStyle::Get(), "GameplayTagTreeView")
+	.Style(FEditorStyle::Get(), "GameplayTagTreeView")
+	[
+		SNew(SBorder)
+		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+		.BorderBackgroundColor(this, &SClassFilter::GetClassBackgroundColor, Class)
+		.Padding(0)
+		.Content()
 		[
 			SNew(SHorizontalBox)
-
 			+ SHorizontalBox::Slot()
+			.AutoWidth()
 			.HAlign(HAlign_Left)
 			[
 				SNew(SButton)
@@ -262,7 +269,8 @@ TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FClassFilterNodePtr Class, con
 				.ToolTipText(Class->GetClassTooltip())
 				.IsEnabled(this, &SClassFilter::CanSelectClasses)
 			]
-		];
+		]
+	];
 }
 
 void SClassFilter::OnGetChildren(FClassFilterNodePtr Class, TArray<FClassFilterNodePtr>& OutChildren)
@@ -328,6 +336,8 @@ FSlateColor SClassFilter::GetClassIconColor(FClassFilterNodePtr Class) const
 
 void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
 {
+	const TSoftClassPtr<> ClassAsset{ Class->ClassPath.ToString() };
+
 	switch (State)
 	{
 	case EClassFilterState::Allowed:
@@ -336,6 +346,13 @@ void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
 		if (Class)
 		{
 			Class->SetOwnFilterState(State);
+
+			for (const auto& Filter : Filters)
+			{
+				Filter.Owner->Modify();
+				Filter.Filter->AllowedClasses.Add(ClassAsset);
+				Filter.Filter->IgnoredClasses.Remove(ClassAsset);
+			}
 		}
 		break;
 	}
@@ -345,6 +362,13 @@ void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
 		if (Class)
 		{
 			Class->SetOwnFilterState(State);
+
+			for (const auto& Filter : Filters)
+			{
+				Filter.Owner->Modify();
+				Filter.Filter->IgnoredClasses.Add(ClassAsset);
+				Filter.Filter->AllowedClasses.Remove(ClassAsset);
+			}
 		}
 		break;
 	}
@@ -354,9 +378,17 @@ void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
 		if (Class)
 		{
 			Class->SetOwnFilterState(State);
+
+			for (const auto& Filter : Filters)
+			{
+				Filter.Owner->Modify();
+				Filter.Filter->IgnoredClasses.Remove(ClassAsset);
+				Filter.Filter->AllowedClasses.Remove(ClassAsset);
+			}
 		}
 		break;
 	}}
+	OnFilterChanged.ExecuteIfBound();
 }
 
 FReply SClassFilter::OnClickedClearAll()
@@ -377,10 +409,33 @@ FReply SClassFilter::OnClickedClearAll()
 	return FReply::Handled();
 }
 
-FSlateColor SClassFilter::GetClassTextColour(const FClassFilterNodePtr& Node) const
+FSlateColor SClassFilter::GetClassBackgroundColor(FClassFilterNodePtr Class) const
 {
-	static const FLinearColor DefaultTextColour = FLinearColor::White;
-	return DefaultTextColour;
+	FLinearColor Color;
+	const EClassFilterState OwnState = Class->GetOwnFilterState();
+	const EClassFilterState ParentState = Class->GetParentFilterState();
+	if (OwnState == EClassFilterState::Allowed)
+	{
+		Color = FLinearColor::Green;
+	}
+	else if (OwnState == EClassFilterState::Denied)
+	{
+		Color = FLinearColor::Red;
+	}
+	else if(ParentState == EClassFilterState::Allowed)
+	{
+		Color = FLinearColor::Green;
+	}
+	else if (ParentState == EClassFilterState::Denied)
+	{
+		Color = FLinearColor::Red;
+	}
+	else
+	{
+		return { FLinearColor::Transparent };
+	}
+	Color.A = 0.3f;
+	return { Color };
 }
 
 FReply SClassFilter::OnClickedExpandAll()
@@ -534,8 +589,7 @@ void SClassFilter::Populate()
 	FClassFilterNodePtr RootNode;
 
 	// Get the class tree, passing in certain filter options.
-	ClassFilter::Helpers::GetClassTree(RootNode, false, true, false, InternalClasses, InternalPaths);
-
+	ClassFilter::Helpers::GetClassTree(*Filters[0].Filter, RootNode, false, true, false, InternalClasses, InternalPaths);
 
 	// Add all the children of the "Object" root.
 	for (const auto& Child : RootNode->GetChildrenList())

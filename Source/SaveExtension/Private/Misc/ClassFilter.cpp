@@ -19,7 +19,7 @@
 FClassFilter::FClassFilter(const UClass* BaseClass)
 	: BaseClass{ BaseClass }
 	, IgnoredClasses {
-		AStaticMeshActor::StaticClass(),
+		/*AStaticMeshActor::StaticClass(),
 		AInstancedFoliageActor::StaticClass(),
 		AReflectionCapture::StaticClass(),
 		APlayerController::StaticClass(),
@@ -30,7 +30,7 @@ FClassFilter::FClassFilter(const UClass* BaseClass)
 		AGameMode::StaticClass(),
 		ALODActor::StaticClass(),
 		ABrush::StaticClass(),
-		AHUD::StaticClass()
+		AHUD::StaticClass()*/
 	}
 {}
 
