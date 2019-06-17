@@ -259,94 +259,38 @@ void USlotDataTask_Saver::OnStart()
 	USaveManager* Manager = GetManager();
 	Manager->TryInstantiateInfo();
 
-	bool bSave = true;
 	const FString InfoCard = Manager->GenerateSlotInfoName(Slot);
 	const FString DataCard = Manager->GenerateSlotDataName(Slot);
 
-	//Overriding
+	if (!TryOverridePreviousSlot(InfoCard, DataCard))
 	{
-		const bool bInfoExists = FFileAdapter::DoesFileExist(InfoCard);
-		const bool bDataExists = FFileAdapter::DoesFileExist(DataCard);
-
-		if (bOverride)
-		{
-			// Delete previous save
-			if (bInfoExists)
-			{
-				FFileAdapter::DeleteFile(InfoCard);
-			}
-			if (bDataExists)
-			{
-				FFileAdapter::DeleteFile(DataCard);
-			}
-		}
-		else
-		{
-			//Only save if previous files don't exist
-			//We don't want to serialize since it won't be saved anyway
-			bSave = !bInfoExists && !bDataExists;
-		}
-	}
-
-	if (bSave)
-	{
-		const UWorld* World = GetWorld();
-
-		GetManager()->OnSaveBegan();
-
-		USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
-		SlotData = Manager->GetCurrentData();
-		SlotData->Clean(true);
-
-
-		check(CurrentInfo && SlotData);
-
-		const bool bSlotWasDifferent = CurrentInfo->Id != Slot;
-		CurrentInfo->Id = Slot;
-
-		if (bSaveThumbnail)
-		{
-			CurrentInfo->CaptureThumbnail(Width, Height);
-		}
-
-		// Time stats
-		{
-			CurrentInfo->SaveDate = FDateTime::Now();
-
-			// If this info has been loaded ever
-			const bool bWasLoaded = CurrentInfo->LoadDate.GetTicks() > 0;
-			if (bWasLoaded)
-			{
-				// Now - Loaded
-				const FTimespan SessionTime = CurrentInfo->SaveDate - CurrentInfo->LoadDate;
-
-				CurrentInfo->PlayedTime += SessionTime;
-
-				if (!bSlotWasDifferent)
-					CurrentInfo->SlotPlayedTime += SessionTime;
-				else
-					CurrentInfo->SlotPlayedTime = SessionTime;
-			}
-			else
-			{
-				// Slot is new, played time is world seconds
-				CurrentInfo->PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
-				CurrentInfo->SlotPlayedTime = CurrentInfo->PlayedTime;
-			}
-
-			// Save current game seconds
-			SlotData->TimeSeconds = World->TimeSeconds;
-		}
-
-		//Save Level info in both files
-		CurrentInfo->Map = World->GetFName();
-		SlotData->Map = World->GetFName().ToString();
-
-		SerializeSync();
-		SaveFile(InfoCard, DataCard);
+		Finish(false);
 		return;
 	}
-	Finish(false);
+
+	SlotInfo = Manager->GetCurrentInfo();
+	SlotData = Manager->GetCurrentData();
+	SlotData->Clean(true); // Reset previously stored data but keep level data
+
+	GetManager()->OnSaveBegan();
+
+	Prepare();
+	UpdateInfoStats();
+
+	//Save Level info
+	SlotData->Map = GetWorld()->GetFName().ToString();
+
+	SerializeSync();
+	SaveFile(InfoCard, DataCard);
+}
+
+void USlotDataTask_Saver::Tick(float DeltaTime)
+{
+	// If save file tasks exist and are both done
+	if (SaveInfoTask && SaveDataTask && SaveInfoTask->IsDone() && SaveDataTask->IsDone())
+	{
+		Finish(true);
+	}
 }
 
 void USlotDataTask_Saver::OnFinish(bool bSuccess)
@@ -361,9 +305,10 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 
 	// Execute delegates
 	USaveManager* Manager = GetManager();
-	check(Manager);
-	Delegate.ExecuteIfBound((Manager && bSuccess)? Manager->GetCurrentInfo() : nullptr);
+	Delegate.ExecuteIfBound(bSuccess? Manager->GetCurrentInfo() : nullptr);
 	Manager->OnSaveFinished(!bSuccess);
+
+	Graph->MarkPendingKill();
 }
 
 void USlotDataTask_Saver::BeginDestroy()
@@ -379,6 +324,86 @@ void USlotDataTask_Saver::BeginDestroy()
 	}
 
 	Super::BeginDestroy();
+}
+
+bool USlotDataTask_Saver::TryOverridePreviousSlot(const FString& InfoCard, const FString& DataCard)
+{
+	const bool bInfoExists = FFileAdapter::DoesFileExist(InfoCard);
+	const bool bDataExists = FFileAdapter::DoesFileExist(DataCard);
+
+	if (bOverride)
+	{
+		// Delete previous save
+		if (bInfoExists)
+		{
+			FFileAdapter::DeleteFile(InfoCard);
+		}
+		if (bDataExists)
+		{
+			FFileAdapter::DeleteFile(DataCard);
+		}
+		return true;
+	}
+
+	//Only save if previous files don't exist
+	return !bInfoExists && !bDataExists;
+}
+
+bool USlotDataTask_Saver::Prepare()
+{
+	Graph = NewObject<USaveGraph>(this, GraphClass);
+
+	// Prepare level records before Graph is executed
+	const TArray<ULevelStreaming*>& Levels = GetWorld()->GetStreamingLevels();
+	TArray<FLevelRecord*> SavedSubLevels;
+	for (auto* Level : Levels)
+	{
+		const int32 Index = SlotData->SubLevels.AddUnique({ Level });
+		SavedSubLevels.Add(&SlotData->SubLevels[Index]);
+	}
+
+	return Graph->DoPrepare(SlotInfo, SlotData, MoveTemp(SavedSubLevels));
+}
+
+void USlotDataTask_Saver::UpdateInfoStats()
+{
+	const UWorld* World = GetWorld();
+
+	const bool bSlotWasDifferent = SlotInfo->Id != Slot;
+	SlotInfo->Id = Slot;
+	SlotInfo->Map = World->GetFName();
+
+	if (bSaveThumbnail)
+	{
+		SlotInfo->CaptureThumbnail(Width, Height);
+	}
+
+	// Time Stats
+	SlotInfo->SaveDate = FDateTime::Now();
+
+	// If this info has been loaded ever
+	const bool bWasLoaded = SlotInfo->LoadDate.GetTicks() > 0;
+	if (bWasLoaded)
+	{
+		// Now - Loaded
+		const FTimespan SessionTime = SlotInfo->SaveDate - SlotInfo->LoadDate;
+
+		SlotInfo->PlayedTime += SessionTime;
+
+		if (!bSlotWasDifferent)
+			SlotInfo->SlotPlayedTime += SessionTime;
+		else
+			SlotInfo->SlotPlayedTime = SessionTime;
+	}
+	else
+	{
+		// Slot is new, played time is world seconds
+		SlotInfo->PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
+		SlotInfo->SlotPlayedTime = SlotInfo->PlayedTime;
+	}
+
+	// Save current game seconds
+	SlotData->TimeSeconds = World->TimeSeconds;
 }
 
 void USlotDataTask_Saver::SerializeSync()
@@ -429,13 +454,7 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 
 
 	// Find level record. By default, main level
-	FLevelRecord* LevelRecord = &SlotData->MainLevel;
-	if (StreamingLevel)
-	{
-		// Find or create the sub-level
-		const int32 Index = SlotData->SubLevels.AddUnique({ StreamingLevel });
-		LevelRecord = &SlotData->SubLevels[Index];
-	}
+	FLevelRecord* LevelRecord = SlotData->FindLevelRecord(StreamingLevel);
 	check(LevelRecord);
 
 	// Empty level record before serializing it
@@ -479,7 +498,7 @@ void USlotDataTask_Saver::RunScheduledTasks()
 	{
 		AsyncTask.GetTask().DumpData();
 	}
-	Tasks.Empty();
+	Tasks.Reset();
 }
 
 void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataName)

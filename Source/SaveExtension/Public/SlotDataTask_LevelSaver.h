@@ -18,9 +18,9 @@ class USlotDataTask_LevelSaver : public USlotDataTask_Saver
 {
 	GENERATED_BODY()
 
-
 	UPROPERTY()
 	ULevelStreaming* StreamingLevel;
+
 
 public:
 

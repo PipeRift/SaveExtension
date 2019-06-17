@@ -26,6 +26,14 @@ void USlotData::Serialize(FArchive& Ar)
 	Ar << SubLevels;
 }
 
+FLevelRecord* USlotData::FindLevelRecord(const ULevelStreaming* Level)
+{
+	if (!Level)
+		return &MainLevel;
+	else // Find the Sub-Level
+		return SubLevels.FindByKey(Level);
+}
+
 void USlotData::Clean(bool bKeepLevels)
 {
 	//Clean Up serialization data

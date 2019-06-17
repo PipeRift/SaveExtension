@@ -76,30 +76,41 @@ void FClassFilter::FromString(FString String)
 		String = String.RightChop(1);
 
 		FString AfterAllowed;
-		if (String.Split("AllowedClasses=", nullptr, &AfterAllowed))
+		if (!String.Split("AllowedClasses=", nullptr, &AfterAllowed))
 		{
-			FString AllowedStr;
-			FString IgnoredStr;
-			if (AfterAllowed.Split("IgnoredClasses=", &AllowedStr, &IgnoredStr))
-			{
-				AllowedStr.RemoveFromStart("(");
-				AllowedStr.RemoveFromEnd("),");
-				TArray<FString> AllowedListStr;
-				AllowedStr.ParseIntoArray(AllowedListStr, TEXT(","), true);
-				for (const auto& Str : AllowedListStr)
-				{
-					AllowedClasses.Add(TSoftClassPtr<>{Str});
-				}
+			return;
+		}
 
-				IgnoredStr.RemoveFromStart("(");
-				IgnoredStr.RemoveFromEnd(")");
-				TArray<FString> IgnoredListStr;
-				IgnoredStr.ParseIntoArray(IgnoredListStr, TEXT(","), true);
-				for (const auto& Str : IgnoredListStr)
-				{
-					IgnoredClasses.Add(TSoftClassPtr<>{Str});
-				}
-			}
+		FString AllowedStr;
+		FString IgnoredStr;
+		if (!AfterAllowed.Split("IgnoredClasses=", &AllowedStr, &IgnoredStr))
+		{
+			return;
+		}
+
+		AllowedStr.RemoveFromStart("(");
+		AllowedStr.RemoveFromEnd("),");
+		TArray<FString> AllowedListStr;
+		AllowedStr.ParseIntoArray(AllowedListStr, TEXT(","), true);
+		for (const auto& Str : AllowedListStr)
+		{
+			AllowedClasses.Add(TSoftClassPtr<>{Str});
+		}
+
+		IgnoredStr.RemoveFromStart("(");
+		IgnoredStr.RemoveFromEnd(")");
+		TArray<FString> IgnoredListStr;
+		IgnoredStr.ParseIntoArray(IgnoredListStr, TEXT(","), true);
+		for (const auto& Str : IgnoredListStr)
+		{
+			IgnoredClasses.Add(TSoftClassPtr<>{Str});
 		}
 	}
+}
+
+bool FClassFilter::operator==(const FClassFilter& Other) const
+{
+	// Do all classes match?
+	return AllowedClasses.Difference(Other.AllowedClasses).Num() <= 0 &&
+		IgnoredClasses.Difference(Other.IgnoredClasses).Num() <= 0;
 }

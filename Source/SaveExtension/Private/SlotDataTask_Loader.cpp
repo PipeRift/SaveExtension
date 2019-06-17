@@ -216,7 +216,7 @@ void USlotDataTask_Loader::DeserializeLevelSync(const ULevel* Level, const ULeve
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(*Settings, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
-	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
+	FLevelRecord* LevelRecord = SlotData->FindLevelRecord(StreamingLevel);
 	if (!LevelRecord)
 		return;
 
@@ -245,7 +245,7 @@ void USlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStreaming*
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(*Settings, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
-	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
+	FLevelRecord* LevelRecord = SlotData->FindLevelRecord(StreamingLevel);
 	if (!LevelRecord) {
 		Finish(false);
 		return;
@@ -270,7 +270,7 @@ void USlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStreaming*
 
 void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 {
-	FLevelRecord * LevelRecord = FindLevelRecord(CurrentSLevel.Get());
+	FLevelRecord* LevelRecord = SlotData->FindLevelRecord(CurrentSLevel.Get());
 	if (!LevelRecord)
 		return;
 
@@ -378,7 +378,7 @@ void USlotDataTask_Loader::PrepareAllLevels()
 	{
 		if (Level->IsLevelLoaded())
 		{
-			const FLevelRecord* LevelRecord = FindLevelRecord(Level);
+			const FLevelRecord* LevelRecord = SlotData->FindLevelRecord(Level);
 			if (LevelRecord)
 			{
 				PrepareLevel(Level->GetLoadedLevel(), *LevelRecord);
@@ -661,14 +661,6 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 			}
 		}
 	}
-}
-
-FLevelRecord* USlotDataTask_Loader::FindLevelRecord(const ULevelStreaming* Level) const
-{
-	if (!Level)
-		return &SlotData->MainLevel;
-	else // Find the Sub-Level
-		return SlotData->SubLevels.FindByKey(Level);
 }
 
 void USlotDataTask_Loader::FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const

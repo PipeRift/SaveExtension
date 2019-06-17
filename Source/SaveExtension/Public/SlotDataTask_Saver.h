@@ -118,12 +118,21 @@ class USlotDataTask_Saver : public USlotDataTask
 
 protected:
 
-	// Async variables
+	UPROPERTY()
+	USlotInfo* SlotInfo;
+
+	UPROPERTY()
+	UClass* GraphClass;
+
+	UPROPERTY()
+	USaveGraph* Graph;
+
+	/** Start Async variables */
 	TWeakObjectPtr<ULevel> CurrentLevel;
 	TWeakObjectPtr<ULevelStreaming> CurrentSLevel;
-
 	int32 CurrentActorIndex;
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
+	/** End Async variables */
 
 	/** Begin AsyncTasks */
 	TArray<FAsyncTask<FSerializeActorsTask>> Tasks;
@@ -140,29 +149,34 @@ public:
 		, SaveDataTask(nullptr)
 	{}
 
-	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
+	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight, UClass* InGraphClass)
 	{
 		Slot = InSlot;
 		bOverride = bInOverride;
 		bSaveThumbnail = bInSaveThumbnail;
 		Width = InWidth;
 		Height = InHeight;
+
+		GraphClass = InGraphClass;
 		return this;
 	}
 
 	auto Bind(const FOnGameSaved& OnSaved) { Delegate = OnSaved; return this; }
 
+	// Where all magic happens
 	virtual void OnStart() override;
-	virtual void Tick(float DeltaTime) override
-	{
-		// If save file tasks exist and are both done
-		if (SaveInfoTask && SaveDataTask && SaveInfoTask->IsDone() && SaveDataTask->IsDone())
-			Finish(true);
-	}
+
+	virtual void Tick(float DeltaTime) override;
 	virtual void OnFinish(bool bSuccess) override;
 	virtual void BeginDestroy() override;
 
 protected:
+
+	bool TryOverridePreviousSlot(const FString& InfoCard, const FString& DataCard);
+
+	bool Prepare();
+
+	void UpdateInfoStats();
 
 	/** BEGIN Serialization */
 	void SerializeSync();

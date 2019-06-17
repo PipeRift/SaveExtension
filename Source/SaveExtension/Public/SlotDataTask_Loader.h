@@ -169,6 +169,5 @@ private:
 protected:
 
 	// HELPERS
-	FLevelRecord* FindLevelRecord(const ULevelStreaming* Level) const;
 	void FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const;
 };

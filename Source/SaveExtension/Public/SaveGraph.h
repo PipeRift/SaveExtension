@@ -7,14 +7,11 @@
 
 #include "Engine/DataAsset.h"
 #include "Settings.h"
+#include "LevelRecords.h"
+#include "ActorPacket.h"
+#include "ComponentPacket.h"
 #include "SaveGraph.generated.h"
 
-UENUM(BlueprintType)
-enum class ESaveActorFilterMode : uint8 {
-	RootLevel,
-	SubLevels,
-	AllLevels
-};
 
 UENUM(BlueprintType)
 enum class ESaveFormat : uint8 {
@@ -36,12 +33,23 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Graph)
 	ESaveFormat SaveFormat;
 
+	UPROPERTY(BlueprintReadOnly, Category = Graph)
+	USlotInfo* SlotInfo;
+
+	UPROPERTY(BlueprintReadOnly, Category = Graph)
+	USlotData* SlotData;
+
+private:
+
+	//Levels considered for saving.
+	TArray<FLevelRecord*> SavedSubLevels;
+
 
 public:
 
 	USaveGraph() : Super() {}
 
-	bool DoPrepare() { return EventPrepare(); }
+	bool DoPrepare(USlotInfo* Info, USlotData* Data, TArray<FLevelRecord*>&& InSavedSubLevels);
 
 protected:
 
@@ -61,7 +69,7 @@ protected:
 
 	/** Serializes all actors allowed by the filter */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Packets")
-	void AddActorPacket(const FActorClassFilter& Filter/*, const FActorPacketSettings& Settings, TSubclassOf<UActorSerializer> CustomSerializer*/) {}
+	void AddActorPacket(const FActorClassFilter& Filter, const FActorPacketSettings& Settings/*, TSubclassOf<UActorSerializer> CustomSerializer*/);
 
 	/** Serializes all components allowed by the filter */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Graph|Packets")

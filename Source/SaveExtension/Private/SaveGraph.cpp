@@ -7,9 +7,55 @@
 #include "SlotData.h"
 
 
+bool USaveGraph::DoPrepare(USlotInfo* Info, USlotData* Data, TArray<FLevelRecord*>&& InSavedSubLevels)
+{
+	SlotInfo = Info;
+	SlotData = Data;
+	SavedSubLevels = MoveTemp(InSavedSubLevels);
+	return EventPrepare();
+}
+
 bool USaveGraph::EventPrepare_Implementation()
 {
 	return Prepare();
+}
+
+void USaveGraph::AddActorPacket(const FActorClassFilter& Filter, const FActorPacketSettings& Settings/*, TSubclassOf<UActorSerializer> CustomSerializer*/)
+{
+	// Add packet to each valid level based on settings
+	FActorPacketRecord NewPacket{ Filter };
+
+	switch (Settings.Levels)
+	{
+	case EPacketLevelMode::RootLevelOnly:
+		SlotData->MainLevel.FindOrCreateActorPacket(NewPacket);
+		break;
+
+	case EPacketLevelMode::AllLevels:
+		SlotData->MainLevel.FindOrCreateActorPacket(NewPacket);
+
+	case EPacketLevelMode::SubLevelsOnly:
+		for (auto* SubLevel : SavedSubLevels)
+		{
+			SubLevel->FindOrCreateActorPacket(NewPacket);
+		}
+		break;
+
+	case EPacketLevelMode::SpecifiedLevels:
+		if (Settings.IsLevelAllowed(SlotData->MainLevel.Name))
+		{
+			SlotData->MainLevel.FindOrCreateActorPacket(NewPacket);
+		}
+
+		for (auto* SubLevel : SavedSubLevels)
+		{
+			if (Settings.IsLevelAllowed(SubLevel->Name))
+			{
+				SubLevel->FindOrCreateActorPacket(NewPacket);
+			}
+		}
+		break;
+	}
 }
 
 UWorld* USaveGraph::GetWorld() const

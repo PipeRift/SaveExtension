@@ -40,6 +40,8 @@ struct SAVEEXTENSION_API FClassFilter
 
 	FString ToString();
 	void FromString(FString String);
+
+	bool operator==(const FClassFilter& Other) const;
 };
 
 

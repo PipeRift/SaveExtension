@@ -4,9 +4,6 @@
 #include "SlotData.h"
 
 
-FName FPersistentLevelRecord::PersistentName{ "Persistent" };
-
-
 /////////////////////////////////////////////////////
 // Records
 
@@ -68,23 +65,4 @@ bool FControllerRecord::Serialize(FArchive& Ar)
 	Ar << ControlRotation;
 
 	return true;
-}
-
-
-bool FLevelRecord::Serialize(FArchive& Ar)
-{
-	Super::Serialize(Ar);
-
-	Ar << LevelScript;
-	Ar << Actors;
-	Ar << AIControllers;
-
-	return true;
-}
-
-void FLevelRecord::Clean()
-{
-	LevelScript = {};
-	Actors.Empty();
-	AIControllers.Empty();
 }

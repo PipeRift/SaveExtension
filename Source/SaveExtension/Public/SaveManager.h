@@ -115,13 +115,13 @@ public:
 	/** BLUEPRINTS */
 
 	/** Save the Game into an specified Slot */
-	bool SaveSlot(int32 SlotId, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
+	bool SaveSlot(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
 
 	/** Save the Game to a Slot */
-	bool SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
+	bool SaveSlot(const USlotInfo* SlotInfo, TSubclassOf<USaveGraph> Graph, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
 		if (!SlotInfo)
 			return false;
-		return SaveSlot(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
+		return SaveSlot(SlotInfo->Id, Graph, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
 	}
 
 	/** Save the currently loaded Slot */

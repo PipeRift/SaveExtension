@@ -26,7 +26,7 @@ void USlotDataTask_LevelLoader::OnStart()
 
 void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 {
-	FLevelRecord * LevelRecord = FindLevelRecord(CurrentSLevel.Get());
+	FLevelRecord * LevelRecord = SlotData->FindLevelRecord(CurrentSLevel.Get());
 	if (!LevelRecord)
 	{
 		Finish(false);

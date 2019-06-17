@@ -14,7 +14,7 @@ class USlotData;
 
 USTRUCT()
 struct FBaseRecord {
-	GENERATED_USTRUCT_BODY()
+	GENERATED_BODY()
 
 	FName Name;
 
@@ -115,67 +115,4 @@ struct FControllerRecord : public FActorRecord
 	FControllerRecord(const AActor* Actor) : Super(Actor) {}
 
 	virtual bool Serialize(FArchive& Ar) override;
-};
-
-
-/** Represents a level in the world (streaming or persistent) */
-USTRUCT()
-struct FLevelRecord : public FBaseRecord
-{
-	GENERATED_BODY()
-
-	/** Record of the Level Script Actor */
-	FActorRecord LevelScript;
-
-	/** Records of the World Actors */
-	TArray<FActorRecord> Actors;
-
-	/** Records of the AI Controller Actors */
-	TArray<FControllerRecord> AIControllers;
-
-
-	FLevelRecord() : Super() {}
-
-	virtual bool Serialize(FArchive& Ar) override;
-
-	bool IsValid() const {
-		return !Name.IsNone();
-	}
-
-	void Clean();
-};
-
-
-/** Represents a persistent level in the world */
-USTRUCT()
-struct FPersistentLevelRecord : public FLevelRecord
-{
-	GENERATED_BODY()
-
-	static FName PersistentName;
-
-
-	FPersistentLevelRecord() : Super() { Name = PersistentName; }
-};
-
-
-/** Represents a serialized streaming level in the world */
-USTRUCT()
-struct FStreamingLevelRecord : public FLevelRecord
-{
-	GENERATED_BODY()
-
-	FStreamingLevelRecord() : Super() {}
-	FStreamingLevelRecord(const ULevelStreaming* Level) : Super()
-	{
-		if (Level)
-		{
-			Name = Level->GetWorldAssetPackageFName();
-		}
-	}
-
-	FORCEINLINE bool operator== (const ULevelStreaming* Level) const
-	{
-		return Level && Name == Level->GetWorldAssetPackageFName();
-	}
 };
