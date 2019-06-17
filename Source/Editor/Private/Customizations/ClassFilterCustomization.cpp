@@ -7,6 +7,8 @@
 #include <Widgets/Input/SButton.h>
 #include <ScopedTransaction.h>
 #include <Editor.h>
+#include <Widgets/Images/SImage.h>
+#include <Widgets/Layout/SScaleBox.h>
 
 #define LOCTEXT_NAMESPACE "FClassFilterCustomization"
 
@@ -31,37 +33,7 @@ void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 	.MaxDesiredWidth(512)
 	[
 		SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Center)
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			[
-				SAssignNew(EditButton, SComboButton)
-				.ButtonStyle(FEditorStyle::Get(), "FlatButton")
-				.OnGetMenuContent(this, &FClassFilterCustomization::GetListContent)
-				.OnMenuOpenChanged(this, &FClassFilterCustomization::OnPopupStateChanged)
-				.ContentPadding(FMargin(2.0f, 2.0f))
-				.MenuPlacement(MenuPlacement_BelowAnchor)
-				.ForegroundColor(FSlateColor::UseForeground())
-				.ButtonContent()
-				[
-					SNew(STextBlock)
-					.Text(LOCTEXT("ClassFilterCustomization_Edit", "Edit"))
-				]
-			]
-			+ SVerticalBox::Slot()
-			[
-				SNew(SButton)
-				.ButtonStyle(FEditorStyle::Get(), "FlatButton")
-				.ContentPadding(FMargin(2.0f, 2.0f))
-				.OnClicked(this, &FClassFilterCustomization::OnClearClicked)
-				.ForegroundColor(FSlateColor::UseForeground())
-				.Text(LOCTEXT("ClassFilterCustomization_Clear", "Clear"))
-			]
-		]
-		+ SHorizontalBox::Slot()
+		/*+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
 			SNew(SBorder)
@@ -69,6 +41,46 @@ void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 			.Visibility(this, &FClassFilterCustomization::GetClassPreviewVisibility)
 			[
 				GetClassPreview()
+			]
+		]*/
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			SAssignNew(EditButton, SComboButton)
+			.ButtonStyle(FEditorStyle::Get(), "HoverHintOnly")
+			.OnGetMenuContent(this, &FClassFilterCustomization::GetListContent)
+			.OnMenuOpenChanged(this, &FClassFilterCustomization::OnPopupStateChanged)
+			.ContentPadding(FMargin(2.0f, 2.0f))
+			.MenuPlacement(MenuPlacement_BelowAnchor)
+			.ForegroundColor(FSlateColor::UseForeground())
+			.ButtonContent()
+			[
+				SNew(SBorder)
+				.Padding(4.0f)
+				.Visibility(this, &FClassFilterCustomization::GetClassPreviewVisibility)
+				[
+					GetClassPreview()
+				]
+			]
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SButton)
+			.ButtonStyle(FEditorStyle::Get(), "HoverHintOnly")
+			.ContentPadding(FMargin(2.0f, 2.0f))
+			.OnClicked(this, &FClassFilterCustomization::OnClearClicked)
+			.ForegroundColor(FSlateColor::UseForeground())
+			.Text(LOCTEXT("ClassFilter_Clear", "Clear"))
+			.ToolTipText(LOCTEXT("ClassFilter_ClearTooltip", "Clear all allowed and ignored classes"))
+			[
+				SNew(SScaleBox)
+				[
+					SNew(SImage)
+					.Image(FEditorStyle::GetBrush("PropertyWindow.Button_EmptyArray"))
+					.ColorAndOpacity(FSlateColor::UseForeground())
+				]
 			]
 		]
 	];
@@ -147,10 +159,11 @@ FReply FClassFilterCustomization::OnClearClicked()
 
 EVisibility FClassFilterCustomization::GetClassPreviewVisibility() const
 {
-	const auto* Filter = EditableFilters[0].Filter;
+	return EVisibility::Visible;
+	/*const auto* Filter = EditableFilters[0].Filter;
 	const bool bEmpty = Filter->AllowedClasses.Num() > 0 ||
 		Filter->IgnoredClasses.Num() > 0;
-	return bEmpty ? EVisibility::Visible : EVisibility::Collapsed;
+	return bEmpty ? EVisibility::Visible : EVisibility::Collapsed;*/
 }
 
 TSharedRef<SWidget> FClassFilterCustomization::GetClassPreview()
