@@ -33,16 +33,6 @@ void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 	.MaxDesiredWidth(512)
 	[
 		SNew(SHorizontalBox)
-		/*+ SHorizontalBox::Slot()
-		.AutoWidth()
-		[
-			SNew(SBorder)
-			.Padding(4.0f)
-			.Visibility(this, &FClassFilterCustomization::GetClassPreviewVisibility)
-			[
-				GetClassPreview()
-			]
-		]*/
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
