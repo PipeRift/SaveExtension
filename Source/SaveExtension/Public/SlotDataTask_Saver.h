@@ -149,7 +149,7 @@ public:
 		, SaveDataTask(nullptr)
 	{}
 
-	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight, UClass* InGraphClass)
+	auto Setup(int32 InSlot, UClass* InGraphClass, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
 	{
 		Slot = InSlot;
 		bOverride = bInOverride;
@@ -157,6 +157,7 @@ public:
 		Width = InWidth;
 		Height = InHeight;
 
+		check(InGraphClass);
 		GraphClass = InGraphClass;
 		return this;
 	}

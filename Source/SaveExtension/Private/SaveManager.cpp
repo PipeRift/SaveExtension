@@ -56,7 +56,7 @@ void USaveManager::Deinitialize()
 	Super::Deinitialize();
 }
 
-bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
+bool USaveManager::SaveSlot(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	if (!CanLoadOrSave())
 		return false;
@@ -75,7 +75,7 @@ bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreensh
 
 	//Launch task, always fail if it didn't finish or wasn't scheduled
 	auto* Task = CreateTask<USlotDataTask_Saver>()
-		->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+		->Setup(SlotId, Graph, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
 		->Bind(OnSaved)
 		->Start();
 
@@ -134,7 +134,7 @@ void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 	.StartBackgroundTask();
 }
 
-void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
+void USaveManager::BPSaveSlotToId(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -143,7 +143,7 @@ void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreens
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
 		if (LatentActionManager.FindExistingAction<FSaveGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
-			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FSaveGameAction(this, SlotId, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FSaveGameAction(this, SlotId, Graph, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
 		}
 		return;
 	}

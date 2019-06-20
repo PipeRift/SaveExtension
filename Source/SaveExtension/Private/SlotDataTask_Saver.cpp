@@ -157,7 +157,6 @@ void FSerializeActorsTask::SerializeGameInstance()
 
 bool FSerializeActorsTask::SerializeActor(const AActor* Actor, FActorRecord& Record) const
 {
-
 	//Clean the record
 	Record = { Actor };
 
@@ -269,6 +268,7 @@ void USlotDataTask_Saver::OnStart()
 	}
 
 	SlotInfo = Manager->GetCurrentInfo();
+	SlotInfo->_SetGraphClass(GraphClass);
 	SlotData = Manager->GetCurrentData();
 	SlotData->Clean(true); // Reset previously stored data but keep level data
 

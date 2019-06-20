@@ -126,7 +126,7 @@ public:
 
 	/** Save the currently loaded Slot */
 	bool SaveCurrentSlot(bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
-		return SaveSlot(CurrentInfo, true, bScreenshot, Size, OnSaved);
+		return SaveSlot(CurrentInfo, CurrentInfo->GetGraphClass(), true, bScreenshot, Size, OnSaved);
 	}
 
 	/** Load game from a slot Id */
@@ -166,7 +166,7 @@ public:
 
 	/** Save the Game into an specified Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot to Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
+	void BPSaveSlotToId(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
 
 	/** Save the Game to a Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
@@ -176,7 +176,7 @@ public:
 			Result = ESaveGameResult::Failed;
 			return;
 		}
-		BPSaveSlotToId(SlotInfo->Id, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
+		BPSaveSlotToId(SlotInfo->Id, CurrentInfo->GetGraphClass(), bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
 	}
 
 	/** Save the currently loaded Slot */
