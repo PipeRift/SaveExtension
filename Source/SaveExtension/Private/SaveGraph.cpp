@@ -22,7 +22,7 @@ bool USaveGraph::EventPrepare_Implementation()
 
 void USaveGraph::AddActorPacket(const FActorClassFilter& Filter, const FActorPacketSettings& Settings/*, TSubclassOf<UActorSerializer> CustomSerializer*/)
 {
-	// Add packet to each valid level based on settings
+	// Add packet to each valid level based on settings and if it doesn't contain it already
 	FActorPacketRecord NewPacket{ Filter };
 
 	switch (Settings.Levels)
