@@ -1,6 +1,6 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "SlotDataTask_Saver.h"
+#include "Serialization/SlotDataTask_Saver.h"
 
 #include <Kismet/GameplayStatics.h>
 #include <Engine/LocalPlayer.h>
@@ -173,19 +173,19 @@ void USlotDataTask_Saver::SerializeWorld()
 
 	Tasks.Reserve(NumberOfThreads);
 
-	SerializeLevelSync(World->GetCurrentLevel(), TasksPerLevel);
+	SerializeLevel(World->GetCurrentLevel(), TasksPerLevel);
 	for (const ULevelStreaming* Level : Levels)
 	{
 		if (Level->IsLevelLoaded())
 		{
-			SerializeLevelSync(Level->GetLoadedLevel(), TasksPerLevel, Level);
+			SerializeLevel(Level->GetLoadedLevel(), TasksPerLevel, Level);
 		}
 	}
 
 	RunScheduledTasks();
 }
 
-void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
+void USlotDataTask_Saver::SerializeLevel(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
 {
 	check(IsValid(Level));
 
@@ -210,16 +210,20 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 	LevelRecord->Clean();
 
 	const int32 ActorCount = Level->Actors.Num();
-	const int32 ObjectsPerTask = FMath::CeilToInt((float)ActorCount / AssignedTasks);
+	const int32 MaxObjectsPerTask = FMath::CeilToInt((float)ActorCount / AssignedTasks);
 
 	// Split all actors between multi-threaded tasks
 	int32 Index{ 0 };
+	bool bStoreMainActors = Level->IsPersistentLevel();
 	while (Index < ActorCount)
 	{
+		const int32 ObjectsCount = FMath::Min(ActorCount - Index, MaxObjectsPerTask);
+
 		// Add new Task
-		const bool IsFirstTask = Index <= 0;
-		Tasks.Emplace(IsFirstTask, GetWorld(), SlotData, &Level->Actors, Index, ObjectsPerTask, LevelRecord, *Preset);
-		Index += ObjectsPerTask;
+		Tasks.Emplace(bStoreMainActors, GetWorld(), SlotData, &Level->Actors, Index, ObjectsCount, LevelRecord, *Preset);
+
+		Index += ObjectsCount;
+		bStoreMainActors = false;
 	}
 }
 
@@ -228,6 +232,7 @@ void USlotDataTask_Saver::RunScheduledTasks()
 	// Start all serialization tasks
 	if (Tasks.Num() > 0)
 	{
+		// First task stores
 		Tasks[0].StartSynchronousTask();
 		for (int32 I = 1; I < Tasks.Num(); ++I)
 		{

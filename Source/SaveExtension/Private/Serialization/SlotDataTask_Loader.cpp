@@ -1,6 +1,6 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "SlotDataTask_Loader.h"
+#include "Serialization/SlotDataTask_Loader.h"
 
 #include <Kismet/GameplayStatics.h>
 #include <Engine/LocalPlayer.h>

@@ -1,16 +1,16 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "MTTask_SerializeActors.h"
+#include "Serialization/MTTask_SerializeActors.h"
 
-#include <Kismet/GameplayStatics.h>
+#include <Components/CapsuleComponent.h>
 #include <Engine/LocalPlayer.h>
 #include <GameFramework/GameModeBase.h>
 #include <GameFramework/GameStateBase.h>
+#include <GameFramework/HUD.h>
 #include <GameFramework/PlayerController.h>
 #include <GameFramework/PlayerState.h>
-#include <GameFramework/HUD.h>
+#include <Kismet/GameplayStatics.h>
 #include <Serialization/MemoryWriter.h>
-#include <Components/CapsuleComponent.h>
 
 #include "SaveManager.h"
 #include "SlotInfo.h"
@@ -25,7 +25,7 @@ void FMTTask_SerializeActors::DoWork()
 	bool bIsAIController;
 	bool bIsLevelScript;
 
-	if (bIsSync)
+	if (bStoreMainActors)
 	{
 		if (bStoreGameInstance)
 			SerializeGameInstance();

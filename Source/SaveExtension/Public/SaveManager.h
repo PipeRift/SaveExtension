@@ -11,25 +11,22 @@
 #include <Engine/GameInstance.h>
 #include <Tickable.h>
 
-#include "SlotInfo.h"
-#include "SlotData.h"
-
-#include "LevelStreamingNotifier.h"
-#include "SaveExtensionInterface.h"
-#include "SavePreset.h"
-#include "SlotDataTask.h"
-#include "SlotDataTask_Saver.h"
-#include "SlotDataTask_Loader.h"
-#include "SlotDataTask_LevelSaver.h"
-#include "SlotDataTask_LevelLoader.h"
-
-#include "Multithreading/LoadAllSlotInfosTask.h"
-#include "Multithreading/DeleteSlotsTask.h"
-#include "Multithreading/ScopedTaskManager.h"
-
 #include "LatentActions/LoadGameAction.h"
 #include "LatentActions/SaveGameAction.h"
 #include "LatentActions/DeleteSlotsAction.h"
+#include "LevelStreamingNotifier.h"
+#include "Multithreading/LoadAllSlotInfosTask.h"
+#include "Multithreading/DeleteSlotsTask.h"
+#include "Multithreading/ScopedTaskManager.h"
+#include "SaveExtensionInterface.h"
+#include "SavePreset.h"
+#include "Serialization/SlotDataTask.h"
+#include "Serialization/SlotDataTask_Saver.h"
+#include "Serialization/SlotDataTask_Loader.h"
+#include "Serialization/SlotDataTask_LevelSaver.h"
+#include "Serialization/SlotDataTask_LevelLoader.h"
+#include "SlotInfo.h"
+#include "SlotData.h"
 
 #include "SaveManager.generated.h"
 

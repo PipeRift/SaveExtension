@@ -22,10 +22,8 @@
 class FMTTask : public FNonAbandonableTask {
 protected:
 
-	const bool bIsSync;
-	/** USE ONLY IF SYNC */
+	/** Used only if Sync */
 	const UWorld* const World;
-	/** USE ONLY IF SYNC */
 	USlotData* SlotData;
 
 	// Locally cached settings
@@ -37,8 +35,7 @@ protected:
 	const bool bStoreControlRotation;
 
 
-	FMTTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const USavePreset& Preset) :
-		bIsSync(bInIsSync),
+	FMTTask(const UWorld* InWorld, USlotData* InSlotData, const USavePreset& Preset) :
 		World(InWorld),
 		SlotData(InSlotData),
 		bStoreGameMode(Preset.bStoreGameMode),

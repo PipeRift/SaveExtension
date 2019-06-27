@@ -1,7 +1,7 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "LifetimeComponent.h"
-#include "SlotDataTask.h"
+#include "Serialization/MTTask.h"
 
 
 ULifetimeComponent::ULifetimeComponent()

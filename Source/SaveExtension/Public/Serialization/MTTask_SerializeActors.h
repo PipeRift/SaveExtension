@@ -32,6 +32,8 @@ class FMTTask_SerializeActors : public FMTTask
 	const int32 StartIndex;
 	const int32 Num;
 
+	bool bStoreMainActors;
+
 	/** USE ONLY FOR DUMPING DATA */
 	FLevelRecord* LevelRecord;
 
@@ -42,8 +44,8 @@ class FMTTask_SerializeActors : public FMTTask
 
 public:
 
-	explicit FMTTask_SerializeActors(const bool bIsSync, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, FLevelRecord* InLevelRecord, const USavePreset& Preset) :
-		FMTTask(bIsSync, World, SlotData, Preset),
+	explicit FMTTask_SerializeActors(const bool bStoreMainActors, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, FLevelRecord* InLevelRecord, const USavePreset& Preset) :
+		FMTTask(World, SlotData, Preset),
 		LevelActors(InLevelActors),
 		StartIndex(InStartIndex),
 		Num(FMath::Min(InNum, LevelActors->Num() - StartIndex)),

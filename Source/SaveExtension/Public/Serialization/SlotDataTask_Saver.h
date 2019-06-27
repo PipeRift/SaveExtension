@@ -86,16 +86,13 @@ public:
 
 protected:
 
-	/** BEGIN Serialization */
+	/** Begin Serialization */
 	void SerializeSync();
-	void SerializeLevelSync(const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
-
-	void SerializeASync();
-	void SerializeLevelASync(const ULevel* Level, const ULevelStreaming* StreamingLevel = nullptr);
+	void SerializeLevel(const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
 
 	/** Serializes all world actors. */
 	void SerializeWorld();
-	/** END Serialization */
+	/** End Serialization */
 
 	void RunScheduledTasks();
 
