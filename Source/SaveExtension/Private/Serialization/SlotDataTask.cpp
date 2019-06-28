@@ -2,18 +2,6 @@
 
 #include "Serialization/SlotDataTask.h"
 
-#include <Engine/Brush.h>
-#include <Engine/LODActor.h>
-#include <Engine/ReflectionCapture.h>
-#include <Engine/StaticMeshActor.h>
-#include <InstancedFoliageActor.h>
-#include <Lightmass/LightmassPortal.h>
-#include <GameFramework/GameMode.h>
-#include <GameFramework/GameState.h>
-#include <GameFramework/PlayerState.h>
-#include <GameFramework/PlayerController.h>
-#include <GameFramework/HUD.h>
-
 #include "SaveManager.h"
 #include "SavePreset.h"
 
@@ -72,46 +60,4 @@ USaveManager* USlotDataTask::GetManager() const
 UWorld* USlotDataTask::GetWorld() const
 {
 	return GetOuter()->GetWorld();
-}
-
-bool USlotDataTask::ShouldSaveAsWorld(const AActor* Actor, bool& bIsAIController, bool& bIsLevelScript) const
-{
-	const UClass* const ActorClass = Actor->GetClass();
-
-	bIsAIController = ActorClass->IsChildOf<AAIController>();
-	if (bIsAIController)
-	{
-		return Preset->bStoreAIControllers;
-	}
-
-	bIsLevelScript = ActorClass->IsChildOf<ALevelScriptActor>();
-	if (bIsLevelScript)
-	{
-		return Preset->bStoreLevelBlueprints;
-	}
-
-	if (ActorClass == AStaticMeshActor::StaticClass() ||
-		ActorClass->IsChildOf<AInstancedFoliageActor>() ||
-		ActorClass->IsChildOf<AReflectionCapture>() ||
-		ActorClass->IsChildOf<APlayerController>() ||
-		ActorClass->IsChildOf<ALightmassPortal>() ||
-		ActorClass->IsChildOf<ANavigationData>() ||
-		ActorClass->IsChildOf<APlayerState>() ||
-		ActorClass->IsChildOf<AGameState>() ||
-		ActorClass->IsChildOf<AGameMode>() ||
-		ActorClass->IsChildOf<ALODActor>() ||
-		ActorClass->IsChildOf<ABrush>() ||
-		ActorClass->IsChildOf<AHUD>())
-	{
-		return false;
-	}
-
-	// Is a child class of our non serialized classes?
-	for (const auto& Class : Preset->IgnoredActors)
-	{
-		if (ActorClass->IsChildOf(Class))
-			return false;
-	}
-
-	return true;
 }

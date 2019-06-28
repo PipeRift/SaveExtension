@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataAsset.h"
 #include "UObject/NoExportTypes.h"
 
-#include "Engine/DataAsset.h"
+#include "ClassFilter.h"
+#include "Serializer.h"
 #include "SavePreset.generated.h"
 
 
@@ -87,29 +89,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, AdvancedDisplay)
 	TArray<TSubclassOf<AActor>> IgnoredActors;
 
-	/** If true will store the current gamemode  */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	bool bStoreGameMode;
-
 	/** If true will store the game instance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
 	bool bStoreGameInstance;
 
-	/** If true will store all Level Blueprints */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	bool bStoreLevelBlueprints;
 
-	/** If true will store AI Controllers */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	bool bStoreAIControllers;
+	FClassFilter ActorFilter;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
+	bool bUseDifferentFilterForLoading;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config, meta = (EditCondition="bUseDifferentFilterForLoad"))
+	FClassFilter LoadActorFilter;
+
+	// List of serializers by class
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
+	TMap<UClass*, TSubclassOf<USerializer>> Serializers;
+
 
 	/** If true will store Actor Components
-	 * NOTE: StaticMeshComponents and SkeletalMeshComponents are not serialized
+	 * NOTE: StaticMeshComponents and SkeletalMeshComponents are never serialized
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
 	bool bStoreComponents;
 
-	/** If true will store player's control rotation */
+	/** If true will store controller control rotations */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Controllers", Config)
 	bool bStoreControlRotation;
 
@@ -161,6 +166,13 @@ public:
 		return MaxSlots <= 0 ? 16384 : MaxSlots;
 	}
 
+	FORCEINLINE FClassFilter& GetActorFilter(bool bIsLoading) {
+		return (bIsLoading && bUseDifferentFilterForLoading)? LoadActorFilter : ActorFilter;
+	}
+
+	FORCEINLINE const FClassFilter& GetActorFilter(bool bIsLoading) const {
+		return (bIsLoading && bUseDifferentFilterForLoading)? LoadActorFilter : ActorFilter;
+	}
 
 	FORCEINLINE bool IsMTSerializationLoad() const {
 		return MultithreadedSerialization == ESaveASyncMode::LoadAsync || MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;

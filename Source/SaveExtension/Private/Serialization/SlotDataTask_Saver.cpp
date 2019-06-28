@@ -2,15 +2,8 @@
 
 #include "Serialization/SlotDataTask_Saver.h"
 
-#include <Kismet/GameplayStatics.h>
-#include <Engine/LocalPlayer.h>
 #include <GameFramework/GameModeBase.h>
-#include <GameFramework/GameStateBase.h>
-#include <GameFramework/PlayerController.h>
-#include <GameFramework/PlayerState.h>
-#include <GameFramework/HUD.h>
 #include <Serialization/MemoryWriter.h>
-#include <Components/CapsuleComponent.h>
 
 #include "SaveManager.h"
 #include "SlotInfo.h"

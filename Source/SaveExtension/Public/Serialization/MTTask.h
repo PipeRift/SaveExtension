@@ -27,21 +27,17 @@ protected:
 	USlotData* SlotData;
 
 	// Locally cached settings
-	const bool bStoreGameMode;
+	FClassFilter ClassFilter;
 	const bool bStoreGameInstance;
-	const bool bStoreLevelBlueprints;
-	const bool bStoreAIControllers;
 	const bool bStoreComponents;
 	const bool bStoreControlRotation;
 
 
-	FMTTask(const UWorld* InWorld, USlotData* InSlotData, const USavePreset& Preset) :
+	FMTTask(const bool bIsloading, const UWorld* InWorld, USlotData* InSlotData, const USavePreset& Preset) :
 		World(InWorld),
 		SlotData(InSlotData),
-		bStoreGameMode(Preset.bStoreGameMode),
+		ClassFilter(Preset.GetActorFilter(bIsloading)),
 		bStoreGameInstance(Preset.bStoreGameInstance),
-		bStoreLevelBlueprints(Preset.bStoreLevelBlueprints),
-		bStoreAIControllers(Preset.bStoreAIControllers),
 		bStoreComponents(Preset.bStoreComponents),
 		bStoreControlRotation(Preset.bStoreControlRotation)
 	{}
@@ -54,7 +50,10 @@ protected:
 	FORCEINLINE bool SavesTags(const AActor* Actor) const { return Actor && !HasTag(Actor, USlotDataTask::TagNoTags); }
 	FORCEINLINE bool IsProcedural(const AActor* Actor) const { return Actor && Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
 
-	bool ShouldSaveAsWorld(const AActor* Actor, bool& bIsAIController, bool& bIsLevelScript) const;
+	FORCEINLINE bool ShouldSaveAsWorld(const AActor* Actor) const
+	{
+		return ClassFilter.IsClassAllowed(Actor->GetClass());
+	}
 
 
 	//Component Tags

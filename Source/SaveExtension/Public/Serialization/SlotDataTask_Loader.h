@@ -67,7 +67,9 @@ public:
 		, LoadDataTask(nullptr)
 		, bDeserializing(false)
 		, bLoadingMap(false)
-	{}
+	{
+		bIsLoading = true;
+	}
 
 	auto Setup(int32 InSlot)
 	{

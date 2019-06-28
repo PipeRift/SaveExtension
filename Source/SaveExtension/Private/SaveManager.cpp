@@ -2,17 +2,15 @@
 
 #include "SaveManager.h"
 
-#include "EngineUtils.h"
-#include "Kismet/GameplayStatics.h"
-#include "Engine/GameViewportClient.h"
-#include "Engine/LevelStreaming.h"
-#include "Engine/LocalPlayer.h"
-#include "GameFramework/GameModeBase.h"
-#include "HighResScreenshot.h"
-#include "Misc/Paths.h"
-
+#include <EngineUtils.h>
+#include <Engine/GameViewportClient.h>
+#include <Engine/LevelStreaming.h>
 #include <GameDelegates.h>
+#include <GameFramework/GameModeBase.h>
+#include <HighResScreenshot.h>
+#include <Kismet/GameplayStatics.h>
 #include <Misc/CoreDelegates.h>
+#include <Misc/Paths.h>
 
 #include "FileAdapter.h"
 #include "Multithreading/LoadSlotInfoTask.h"

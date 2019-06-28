@@ -1,15 +1,6 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "Serialization/MTTask_SerializeActors.h"
-
-#include <Components/CapsuleComponent.h>
-#include <Engine/LocalPlayer.h>
-#include <GameFramework/GameModeBase.h>
-#include <GameFramework/GameStateBase.h>
-#include <GameFramework/HUD.h>
-#include <GameFramework/PlayerController.h>
-#include <GameFramework/PlayerState.h>
-#include <Kismet/GameplayStatics.h>
 #include <Serialization/MemoryWriter.h>
 
 #include "SaveManager.h"
@@ -22,29 +13,9 @@
 // FMTTask_SerializeActors
 void FMTTask_SerializeActors::DoWork()
 {
-	bool bIsAIController;
-	bool bIsLevelScript;
-
-	if (bStoreMainActors)
+	if (bStoreMainActors && bStoreGameInstance)
 	{
-		if (bStoreGameInstance)
-			SerializeGameInstance();
-
-		if (bStoreGameMode)
-		{
-			SerializeGameMode();
-			SerializeGameState();
-
-			if (World->GetGameInstance()->GetLocalPlayers().Num() > 0)
-			{
-				const int32 PlayerId = 0;
-
-				SerializePlayerState(PlayerId);
-				SerializePlayerController(PlayerId);
-				//SerializePlayerPawn(PlayerId);
-				SerializePlayerHUD(PlayerId);
-			}
-		}
+		SerializeGameInstance();
 	}
 
 	for (int32 I = 0; I < Num; ++I)
@@ -52,26 +23,14 @@ void FMTTask_SerializeActors::DoWork()
 		const AActor* const Actor = (*LevelActors)[StartIndex + I];
 		if (ShouldSave(Actor))
 		{
-			bIsAIController = false;
-			bIsLevelScript = false;
-
-			if (ShouldSaveAsWorld(Actor, bIsAIController, bIsLevelScript))
+			if (ShouldSaveAsWorld(Actor))
 			{
-				if (bIsAIController)
+				// #TODO: Controller records should not be necessary with our own serializers
+				if (const auto* const AI = Cast<AAIController>(Actor))
 				{
-					if (const AAIController* const AI = Cast<AAIController>(Actor))
-					{
-						FControllerRecord Record;
-						SerializeController(AI, Record);
-						AIControllerRecords.Add(MoveTemp(Record));
-					}
-				}
-				else if (bIsLevelScript)
-				{
-					if (const ALevelScriptActor* const LevelScript = Cast<ALevelScriptActor>(Actor))
-					{
-						SerializeActor(LevelScript, LevelScriptRecord);
-					}
+					FControllerRecord Record;
+					SerializeController(AI, Record);
+					AIControllerRecords.Add(MoveTemp(Record));
 				}
 				else
 				{
@@ -81,60 +40,6 @@ void FMTTask_SerializeActors::DoWork()
 				}
 			}
 		}
-	}
-}
-
-bool FMTTask_SerializeActors::SerializeController(const AController* Actor, FControllerRecord& Record) const
-{
-	const bool bResult = SerializeActor(Actor, Record);
-	if (bResult && bStoreControlRotation)
-	{
-		Record.ControlRotation = Actor->GetControlRotation();
-	}
-	return bResult;
-}
-
-void FMTTask_SerializeActors::SerializeGameMode()
-{
-	if (ShouldSave(World->GetAuthGameMode()))
-	{
-		SerializeActor(World->GetAuthGameMode(), SlotData->GameMode);
-	}
-}
-
-void FMTTask_SerializeActors::SerializeGameState()
-{
-	const auto* GameState = World->GetGameState();
-	if (ShouldSave(GameState))
-	{
-		SerializeActor(GameState, SlotData->GameState);
-	}
-}
-
-void FMTTask_SerializeActors::SerializePlayerState(int32 PlayerId)
-{
-	const auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
-	if (Controller && ShouldSave(Controller->PlayerState))
-	{
-		SerializeActor(Controller->PlayerState, SlotData->PlayerState);
-	}
-}
-
-void FMTTask_SerializeActors::SerializePlayerController(int32 PlayerId)
-{
-	const APlayerController* PlayerController = UGameplayStatics::GetPlayerController(World, PlayerId);
-	if (ShouldSave(PlayerController))
-	{
-		SerializeController(PlayerController, SlotData->PlayerController);
-	}
-}
-
-void FMTTask_SerializeActors::SerializePlayerHUD(int32 PlayerId)
-{
-	const auto* Controller = UGameplayStatics::GetPlayerController(World, PlayerId);
-	if (Controller && ShouldSave(Controller->MyHUD))
-	{
-		SerializeActor(Controller->MyHUD, SlotData->PlayerHUD);
 	}
 }
 
@@ -152,6 +57,16 @@ void FMTTask_SerializeActors::SerializeGameInstance()
 
 		SlotData->GameInstance = MoveTemp(Record);
 	}
+}
+
+bool FMTTask_SerializeActors::SerializeController(const AController* Actor, FControllerRecord& Record) const
+{
+	const bool bResult = SerializeActor(Actor, Record);
+	if (bResult && bStoreControlRotation)
+	{
+		Record.ControlRotation = Actor->GetControlRotation();
+	}
+	return bResult;
 }
 
 bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& Record) const

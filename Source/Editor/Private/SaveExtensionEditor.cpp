@@ -12,8 +12,6 @@
 #include "Customizations/ClassFilterCustomization.h"
 #include "Customizations/ClassFilterGraphPanelPinFactory.h"
 
-#include "SaveGraph.h"
-
 #define LOCTEXT_NAMESPACE "SaveExtensionEditor"
 
 
@@ -36,8 +34,6 @@ void FSaveExtensionEditor::StartupModule()
 	RegisterPropertyTypeCustomizations();
 
 	BlueprintEditorTabBinding = MakeShared<FSaveActorEditorTabBinding>();
-
-	//RegisterDefaultEvent(USaveGraph, EventPrepare);
 }
 
 void FSaveExtensionEditor::ShutdownModule()

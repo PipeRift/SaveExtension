@@ -45,10 +45,10 @@ class FMTTask_SerializeActors : public FMTTask
 public:
 
 	explicit FMTTask_SerializeActors(const bool bStoreMainActors, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, FLevelRecord* InLevelRecord, const USavePreset& Preset) :
-		FMTTask(World, SlotData, Preset),
+		FMTTask(false, World, SlotData, Preset),
 		LevelActors(InLevelActors),
 		StartIndex(InStartIndex),
-		Num(FMath::Min(InNum, LevelActors->Num() - StartIndex)),
+		Num(InNum),
 		LevelRecord(InLevelRecord),
 		LevelScriptRecord{}, ActorRecords{}, AIControllerRecords{}
 	{
@@ -75,21 +75,10 @@ public:
 
 private:
 
-	void SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord) const;
-
-	void SerializeAI(const AAIController* AIController, FLevelRecord& LevelRecord) const;
+	void SerializeGameInstance();
 
 	/** Serializes an actor into this Controller Record */
 	bool SerializeController(const AController* Actor, FControllerRecord& Record) const;
-
-
-	void SerializeGameMode();
-	void SerializeGameState();
-	void SerializePlayerState(int32 PlayerId);
-	void SerializePlayerController(int32 PlayerId);
-	void SerializePlayerHUD(int32 PlayerId);
-	void SerializeGameInstance();
-
 
 	/** Serializes an actor into this Actor Record */
 	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;

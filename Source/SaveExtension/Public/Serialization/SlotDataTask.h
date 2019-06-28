@@ -73,16 +73,27 @@ protected:
 	// Cached value from preset to avoid cache misses
 	float MaxFrameMs;
 
+	bool bIsLoading = false;
+	const FClassFilter* ActorFilter;
+
 
 public:
 
-	USlotDataTask() : Super(), bRunning(false), bFinished(false) {}
+	USlotDataTask()
+		: Super()
+		, bRunning(false)
+		, bFinished(false)
+		, bIsLoading(false)
+		, ActorFilter(nullptr)
+	{}
 
 	void Prepare(USlotData* InSaveData, const USavePreset* InPreset)
 	{
 		SlotData = InSaveData;
 		Preset = InPreset;
 		MaxFrameMs = Preset? Preset->GetMaxFrameMs() : 5.f;
+		ActorFilter = &Preset->GetActorFilter(bIsLoading);
+		ActorFilter->BakeAllowedClasses();
 	}
 
 	USlotDataTask* Start();
@@ -111,12 +122,15 @@ protected:
 	virtual UWorld* GetWorld() const override;
 	//~ End UObject Interface
 
-	bool ShouldSaveAsWorld(const AActor* Actor, bool& bIsAIController, bool& bIsLevelScript) const;
+	FORCEINLINE bool ShouldSaveAsWorld(const AActor* Actor) const
+	{
+		return ActorFilter->IsClassAllowed(Actor->GetClass());
+	}
 
 	//Component Tags
-	FORCEINLINE bool ShouldSave(const UActorComponent* Component) const {
-		if (IsValid(Component) &&
-		   !HasTag(Component, TagNoSave))
+	FORCEINLINE bool ShouldSave(const UActorComponent* Component) const
+	{
+		if (IsValid(Component) && !HasTag(Component, TagNoSave))
 		{
 			const UClass* const Class = Component->GetClass();
 			return !Class->IsChildOf<UStaticMeshComponent>() &&
@@ -125,12 +139,17 @@ protected:
 		return false;
 	}
 
-	bool SavesTransform(const UActorComponent* Component) const {
+	bool SavesTransform(const UActorComponent* Component) const
+	{
 		return Component &&
 			   Component->GetClass()->IsChildOf<USceneComponent>() &&
 			   HasTag(Component, TagTransform);
 	}
-	FORCEINLINE bool SavesTags(const UActorComponent* Component) const { return Component && !HasTag(Component, TagNoTags); }
+
+	FORCEINLINE bool SavesTags(const UActorComponent* Component) const
+	{
+		return Component && !HasTag(Component, TagNoTags);
+	}
 
 
 protected:
