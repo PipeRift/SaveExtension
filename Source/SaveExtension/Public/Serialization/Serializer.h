@@ -33,7 +33,7 @@ protected:
 
 public:
 
-	void DoSerialize(FArchive& Ar, UObject* Object);
+	inline void DoSerialize(FArchive& Ar, UObject* Object);
 };
 
 /**
@@ -58,30 +58,86 @@ public:
 * Used to optionally extend on default engine serialization from c++ or blueprints
 * A CDO Serializer selects what to save once from its CDO and uses the same rule for all serialized objects
 */
-UCLASS()
+UCLASS(Blueprintable)
 class UInstanceSerializer : public USerializer
 {
 	GENERATED_BODY()
 
-	FArchive* CurrentArchive;
+	FArchive* CurrentArchive = nullptr;
 
 
 public:
 
 	UInstanceSerializer() : Super(ESerializerType::Instance) {}
 
-	void DoSerialize(FArchive& Ar, UObject* Object) {}
-
-	virtual void SerializeInstance(UObject* Instance) {}
-
-	template<typename T>
-	FORCEINLINE UInstanceSerializer& operator<<(T value) {
-		CurrentArchive << value;
+	void DoSerialize(FArchive& Ar, UObject* Object) {
+		CurrentArchive = &Ar;
+		EventSerialize(Object);
+		CurrentArchive = nullptr;
 	}
 
-	FORCEINLINE FArchive* GetArchive() const { return CurrentArchive; }
+	UFUNCTION(BlueprintPure, Category = Serializer)
 	FORCEINLINE bool IsSaving()  const { return CurrentArchive->IsSaving(); }
+
+	UFUNCTION(BlueprintPure, Category = Serializer)
 	FORCEINLINE bool IsLoading() const { return CurrentArchive->IsLoading(); }
+
+protected:
+
+	virtual void SerializeInstance(FArchive& Ar, UObject* Instance) {}
+
+	UFUNCTION(BlueprintNativeEvent, Category = Serializer, meta = (ForceAsFunction, DisplayName = "Serialize"))
+	void EventSerialize(UObject* Instance);
+	void EventSerialize_Implementation(UObject* Instance)
+	{
+		SerializeInstance(*CurrentArchive, Instance);
+	}
+
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeBool(UPARAM(Ref) bool& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeByte(UPARAM(Ref) uint8& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeFloat(UPARAM(Ref) float& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeInt(UPARAM(Ref) int32& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeInt64(UPARAM(Ref) int64& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeName(UPARAM(Ref) FName& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeString(UPARAM(Ref) FString& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeText(UPARAM(Ref) FText& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeVector(UPARAM(Ref) FVector& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeVector2D(UPARAM(Ref) FVector2D& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeIntPoint(UPARAM(Ref) FIntPoint& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeIntVector(UPARAM(Ref) FIntVector& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeQuat(UPARAM(Ref) FQuat& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeRotator(UPARAM(Ref) FRotator& Value) { *CurrentArchive << Value; }
+
+	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
+	void SerializeObject(UPARAM(Ref) UObject* Value) {}
 };
 
 /**
