@@ -21,24 +21,11 @@ void FMTTask_SerializeActors::DoWork()
 	for (int32 I = 0; I < Num; ++I)
 	{
 		const AActor* const Actor = (*LevelActors)[StartIndex + I];
-		if (ShouldSave(Actor))
+		if (ShouldSave(Actor) && ShouldSaveAsWorld(Actor))
 		{
-			if (ShouldSaveAsWorld(Actor))
-			{
-				// #TODO: Controller records should not be necessary with our own serializers
-				if (const auto* const AI = Cast<AAIController>(Actor))
-				{
-					FControllerRecord Record;
-					SerializeController(AI, Record);
-					AIControllerRecords.Add(MoveTemp(Record));
-				}
-				else
-				{
-					FActorRecord Record;
-					SerializeActor(Actor, Record);
-					ActorRecords.Add(MoveTemp(Record));
-				}
-			}
+			FActorRecord Record;
+			SerializeActor(Actor, Record);
+			ActorRecords.Add(MoveTemp(Record));
 		}
 	}
 }
@@ -57,16 +44,6 @@ void FMTTask_SerializeActors::SerializeGameInstance()
 
 		SlotData->GameInstance = MoveTemp(Record);
 	}
-}
-
-bool FMTTask_SerializeActors::SerializeController(const AController* Actor, FControllerRecord& Record) const
-{
-	const bool bResult = SerializeActor(Actor, Record);
-	if (bResult && bStoreControlRotation)
-	{
-		Record.ControlRotation = Actor->GetControlRotation();
-	}
-	return bResult;
 }
 
 bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& Record) const

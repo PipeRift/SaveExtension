@@ -85,44 +85,44 @@ public:
 	bool bDebugInScreen;
 
 
-	/* This Actor classes and their childs will be ignored while saving or loading */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, AdvancedDisplay)
-	TArray<TSubclassOf<AActor>> IgnoredActors;
-
-	/** If true will store the game instance */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	bool bStoreGameInstance;
-
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	FClassFilter ActorFilter;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	bool bUseDifferentFilterForLoading;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config, meta = (EditCondition="bUseDifferentFilterForLoad"))
-	FClassFilter LoadActorFilter;
-
-	// List of serializers by class
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	TMap<UClass*, TSubclassOf<USerializer>> Serializers;
-
-
-	/** If true will store Actor Components
-	 * NOTE: StaticMeshComponents and SkeletalMeshComponents are never serialized
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	bool bStoreComponents;
-
-	/** If true will store controller control rotations */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Controllers", Config)
-	bool bStoreControlRotation;
 
 	/** If true save files will be compressed
 	 * Performance: Can add from 10ms to 20ms to loading and saving (estimate) but reduce file sizes making them up to 30x smaller
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
 	bool bUseCompression;
+
+	/** If true will store the game instance */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
+	bool bStoreGameInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", Config)
+	FActorClassFilter ActorFilter;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", Config, meta = (PinHiddenByDefault, InlineEditConditionToggle))
+	bool bUseLoadActorFilter;
+
+	/** If enabled, this filter will be used while loading instead of "ActorFilter" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", Config, meta = (EditCondition="bUseLoadActorFilter"))
+	FActorClassFilter LoadActorFilter;
+
+	/** If true will store ActorComponents depending on the filters */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config)
+	bool bStoreComponents;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config)
+	FComponentClassFilter ComponentFilter;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config, meta = (PinHiddenByDefault, InlineEditConditionToggle))
+	bool bUseLoadComponentFilter;
+
+	/** If enabled, this filter will be used while loading instead of "ComponentFilter" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config, meta = (EditCondition = "bUseLoadComponentFilter"))
+	FComponentClassFilter LoadComponentFilter;
+
+	// List of serializers by class
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
+	TMap<UClass*, TSubclassOf<USerializer>> Serializers;
 
 protected:
 
@@ -166,12 +166,22 @@ public:
 		return MaxSlots <= 0 ? 16384 : MaxSlots;
 	}
 
-	FORCEINLINE FClassFilter& GetActorFilter(bool bIsLoading) {
-		return (bIsLoading && bUseDifferentFilterForLoading)? LoadActorFilter : ActorFilter;
+	UFUNCTION(BlueprintPure, Category = SavePreset)
+	FORCEINLINE FActorClassFilter& GetActorFilter(bool bIsLoading) {
+		return (bIsLoading && bUseLoadActorFilter)? LoadActorFilter : ActorFilter;
 	}
 
-	FORCEINLINE const FClassFilter& GetActorFilter(bool bIsLoading) const {
-		return (bIsLoading && bUseDifferentFilterForLoading)? LoadActorFilter : ActorFilter;
+	FORCEINLINE const FActorClassFilter& GetActorFilter(bool bIsLoading) const {
+		return (bIsLoading && bUseLoadActorFilter)? LoadActorFilter : ActorFilter;
+	}
+
+	UFUNCTION(BlueprintPure, Category = SavePreset)
+	FORCEINLINE FComponentClassFilter& GetComponentFilter(bool bIsLoading) {
+		return (bIsLoading && bUseLoadComponentFilter) ? LoadComponentFilter : ComponentFilter;
+	}
+
+	FORCEINLINE const FComponentClassFilter& GetComponentFilter(bool bIsLoading) const {
+		return (bIsLoading && bUseLoadActorFilter) ? LoadComponentFilter : ComponentFilter;
 	}
 
 	FORCEINLINE bool IsMTSerializationLoad() const {

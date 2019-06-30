@@ -11,6 +11,8 @@
 #include "Customizations/SavePresetDetails.h"
 #include "Customizations/ClassFilterCustomization.h"
 #include "Customizations/ClassFilterGraphPanelPinFactory.h"
+#include "Customizations/ActorClassFilterCustomization.h"
+#include "Customizations/ComponentClassFilterCustomization.h"
 
 #define LOCTEXT_NAMESPACE "SaveExtensionEditor"
 
@@ -53,6 +55,8 @@ void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 	RegisterCustomClassLayout("SavePreset", FOnGetDetailCustomizationInstance::CreateStatic(&FSavePresetDetails::MakeInstance));
 
 	RegisterCustomPropertyTypeLayout("ClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FClassFilterCustomization::MakeInstance));
+	RegisterCustomPropertyTypeLayout("ActorClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FActorClassFilterCustomization::MakeInstance));
+	RegisterCustomPropertyTypeLayout("ComponentClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FComponentClassFilterCustomization::MakeInstance));
 	//RegisterCustomPropertyTypeLayout("SavePreset", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSavePresetCustomization::MakeInstance));
 
 	RegisterCustomPinFactory<FClassFilterGraphPanelPinFactory>();

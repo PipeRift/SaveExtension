@@ -27,19 +27,19 @@ protected:
 	USlotData* SlotData;
 
 	// Locally cached settings
-	FClassFilter ClassFilter;
+	const FActorClassFilter* ActorFilter;
+	const FComponentClassFilter* ComponentFilter;
 	const bool bStoreGameInstance;
 	const bool bStoreComponents;
-	const bool bStoreControlRotation;
 
 
-	FMTTask(const bool bIsloading, const UWorld* InWorld, USlotData* InSlotData, const USavePreset& Preset) :
-		World(InWorld),
-		SlotData(InSlotData),
-		ClassFilter(Preset.GetActorFilter(bIsloading)),
-		bStoreGameInstance(Preset.bStoreGameInstance),
-		bStoreComponents(Preset.bStoreComponents),
-		bStoreControlRotation(Preset.bStoreControlRotation)
+	FMTTask(const bool bIsloading, const UWorld* InWorld, USlotData* InSlotData, const USavePreset& Preset)
+		: World(InWorld)
+		, SlotData(InSlotData)
+		, ActorFilter(&Preset.GetActorFilter(bIsloading))
+		, ComponentFilter(&Preset.GetComponentFilter(bIsloading))
+		, bStoreGameInstance(Preset.bStoreGameInstance)
+		, bStoreComponents(Preset.bStoreComponents)
 	{}
 
 	//Actor Tags
@@ -52,19 +52,17 @@ protected:
 
 	FORCEINLINE bool ShouldSaveAsWorld(const AActor* Actor) const
 	{
-		return ClassFilter.IsClassAllowed(Actor->GetClass());
+		return ActorFilter->IsClassAllowed(Actor->GetClass());
 	}
 
 
 	//Component Tags
 	FORCEINLINE bool ShouldSave(const UActorComponent* Component) const
 	{
-		if (IsValid(Component) &&
-			!HasTag(Component, USlotDataTask::TagNoSave))
+		if (IsValid(Component))
 		{
-			const UClass* const Class = Component->GetClass();
-			return !Class->IsChildOf<UStaticMeshComponent>() &&
-				!Class->IsChildOf<USkeletalMeshComponent>();
+			return ComponentFilter->IsClassAllowed(Component->GetClass())
+				&& !HasTag(Component, USlotDataTask::TagNoSave);
 		}
 		return false;
 	}

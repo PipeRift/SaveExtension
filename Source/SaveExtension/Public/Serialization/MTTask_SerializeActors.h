@@ -77,9 +77,6 @@ private:
 
 	void SerializeGameInstance();
 
-	/** Serializes an actor into this Controller Record */
-	bool SerializeController(const AController* Actor, FControllerRecord& Record) const;
-
 	/** Serializes an actor into this Actor Record */
 	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;
 

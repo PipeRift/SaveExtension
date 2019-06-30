@@ -6,7 +6,7 @@
 #include <UObjectIterator.h>
 
 
-FClassFilter::FClassFilter(const UClass* BaseClass)
+FClassFilter::FClassFilter(UClass* BaseClass)
 	: BaseClass{ BaseClass }
 	, IgnoredClasses {}
 {}

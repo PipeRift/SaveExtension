@@ -93,7 +93,7 @@ namespace ClassFilter
 		*
 		*	@return The node.
 		*/
-		FClassFilterNodePtr FindNodeByClass(const FClassFilterNodePtr& InRootNode, const UClass* Class);
+		FClassFilterNodePtr FindNodeByClass(const FClassFilterNodePtr& InRootNode, UClass* Class);
 
 
 	private:
@@ -346,9 +346,9 @@ namespace ClassFilter
 		{
 			// Use BaseClass as root
 			FClassFilterNodePtr RootNode;
-			if (Filter.GetBaseClass())
+			if (Filter.BaseClass)
 			{
-				RootNode = ClassHierarchy->FindNodeByClass(ClassHierarchy->GetObjectRootNode(), Filter.GetBaseClass());
+				RootNode = ClassHierarchy->FindNodeByClass(ClassHierarchy->GetObjectRootNode(), Filter.BaseClass);
 			}
 			else // Use UObject as root
 			{

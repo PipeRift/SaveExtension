@@ -456,16 +456,6 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 	return true;
 }
 
-bool USlotDataTask_Loader::DeserializeController(AController* Actor, const FControllerRecord& Record)
-{
-	const bool bResult = DeserializeActor(Actor, Record);
-	if (bResult && Preset->bStoreControlRotation)
-	{
-		Actor->SetControlRotation(Record.ControlRotation);
-	}
-	return bResult;
-}
-
 void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, int8 Indent)
 {
 	if (SavesComponents(Actor))

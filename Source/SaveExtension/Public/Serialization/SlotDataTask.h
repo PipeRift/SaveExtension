@@ -74,7 +74,7 @@ protected:
 	float MaxFrameMs;
 
 	bool bIsLoading = false;
-	const FClassFilter* ActorFilter;
+	const FActorClassFilter* ActorFilter;
 
 
 public:
