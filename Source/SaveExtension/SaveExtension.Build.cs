@@ -12,17 +12,16 @@ public class SaveExtension : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		bEnforceIWYU = true;
 
-		PublicDependencyModuleNames.AddRange(
-			new string[] {
-				"Core",
-				"Engine",
-				"Foliage",
-				"AIModule",
-				"CoreUObject",
-				"ImageWrapper",
-				"NavigationSystem"
-			}
-		);
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"Engine",
+			"Foliage",
+			"AIModule",
+			"CoreUObject",
+			"ImageWrapper",
+			"NavigationSystem"
+		});
 	}
 }
 
