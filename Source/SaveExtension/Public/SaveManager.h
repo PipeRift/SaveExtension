@@ -11,26 +11,22 @@
 #include <Engine/GameInstance.h>
 #include <Tickable.h>
 
-#include "SlotInfo.h"
-#include "SlotData.h"
-
-#include "LevelStreamingNotifier.h"
-#include "SaveExtensionInterface.h"
-#include "SavePreset.h"
-#include "SlotDataTask.h"
-#include "SlotDataTask_Saver.h"
-#include "SlotDataTask_Loader.h"
-#include "SlotDataTask_LevelSaver.h"
-#include "SlotDataTask_LevelLoader.h"
-
-#include "Multithreading/LoadAllSlotInfosTask.h"
-#include "Multithreading/DeleteSlotsTask.h"
-#include "Multithreading/ScopedTaskManager.h"
-
 #include "LatentActions/LoadGameAction.h"
 #include "LatentActions/SaveGameAction.h"
 #include "LatentActions/DeleteSlotsAction.h"
-#include "SaveGraph.h"
+#include "LevelStreamingNotifier.h"
+#include "Multithreading/LoadAllSlotInfosTask.h"
+#include "Multithreading/DeleteSlotsTask.h"
+#include "Multithreading/ScopedTaskManager.h"
+#include "SaveExtensionInterface.h"
+#include "SavePreset.h"
+#include "Serialization/SlotDataTask.h"
+#include "Serialization/SlotDataTask_Saver.h"
+#include "Serialization/SlotDataTask_Loader.h"
+#include "Serialization/SlotDataTask_LevelSaver.h"
+#include "Serialization/SlotDataTask_LevelLoader.h"
+#include "SlotInfo.h"
+#include "SlotData.h"
 
 #include "SaveManager.generated.h"
 
@@ -50,6 +46,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Screenshot)
 	int32 Width;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Screenshot)
 	int32 Height;
 };
@@ -277,6 +274,31 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
 
+	/**
+	 * Set the preset to be used for saving and loading
+	 * @return true if the preset was set successfully
+	 */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
+	bool SetActivePreset(TAssetPtr<USavePreset> ActivePreset)
+	{
+		// We can only change a preset if we have no tasks running
+		if (!HasTasks())
+		{
+			PresetAsset = ActivePreset;
+			return true;
+		}
+		return false;
+	}
+
+	const USavePreset* GetPreset() const {
+		if (!PresetAsset.IsNull())
+		{
+			return PresetAsset.LoadSynchronous();
+		}
+		return GetDefault<USavePreset>();
+	}
+
+
 	void TryInstantiateInfo(bool bForced = false);
 
 	virtual FString GenerateBaseSlotName(const int32 SlotId) const {
@@ -292,7 +314,7 @@ public:
 	}
 
 	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
-		const int32 MaxSlots = GetSettings().GetMaxSlots();
+		const int32 MaxSlots = Settings->GetMaxSlots();
 		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
 	}
 
@@ -334,14 +356,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = SaveExtension)
 	FORCEINLINE bool IsSavingOrLoading() const { return HasTasks(); }
 
-	UFUNCTION(BlueprintPure, Category = SaveExtension)
-	bool IsLoading() const;
-
-	UFUNCTION(BlueprintPure, Category = SaveExtension)
-	bool IsSaving() const;
-
-	UFUNCTION(BlueprintPure, Category = "Pipeline")
-	const FSESettings& GetSettings() const { return Settings; }
+	FORCEINLINE bool IsLoading() const {
+		return HasTasks() && (
+			Tasks[0]->IsA<USlotDataTask_Loader>() ||
+			Tasks[0]->IsA<USlotDataTask_LevelLoader>()
+		);
+	}
 
 protected:
 

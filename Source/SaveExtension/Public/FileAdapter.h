@@ -12,6 +12,8 @@
 
 #include "ISaveExtension.h"
 
+
+class USavePreset;
 class FMemoryReader;
 class FMemoryWriter;
 

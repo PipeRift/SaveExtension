@@ -1,14 +1,19 @@
 {
   "name": "save-extension-documentation",
+  "description": "",
   "directories": {
     "lib": "lib"
   },
   "devDependencies": {
+    "del": "^3.0.0",
+    "fs-extra": "^7.0.1",
     "gitbook": "^3.2.3",
     "gitbook-cli": "^2.3.2",
+    "gitbook-plugin-search-plus": "^1.0.4-alpha-3",
     "gitbook-summary": "^1.2.2",
     "gulp": "^3.9.1",
-    "gulp-cli": "^2.0.1",
+    "gulp-cli": "^2.2.0",
+    "gulp-exec": "^3.0.2",
     "gulp-gitbook": "0.0.2",
     "run-sequence": "^2.2.1"
   },
@@ -24,6 +29,7 @@
     "gitbook-plugin-links": "^3.0.1",
     "gitbook-plugin-page-toc": "^1.1.0",
     "gitbook-plugin-prism": "^2.4.0",
+    "gitbook-plugin-search-plus": "^1.0.3",
     "gitbook-plugin-styles-less": "^1.0.0"
   },
   "scripts": {

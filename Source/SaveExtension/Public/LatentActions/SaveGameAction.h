@@ -36,7 +36,7 @@ public:
 	FWeakObjectPtr CallbackTarget;
 
 
-	FSaveGameAction(USaveManager* Manager, int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& OutResult, const FLatentActionInfo& LatentInfo);
+	FSaveGameAction(USaveManager* Manager, int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& OutResult, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 

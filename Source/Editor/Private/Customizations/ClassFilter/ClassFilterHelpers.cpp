@@ -201,6 +201,27 @@ namespace ClassFilter
 		return {};
 	}
 
+	FClassFilterNodePtr FClassHierarchy::FindNodeByClass(const FClassFilterNodePtr& InRootNode, const UClass* Class)
+	{
+		if (InRootNode->Class.IsValid() && InRootNode->Class == Class)
+		{
+			return InRootNode;
+		}
+
+		// Search the children recursively, one of them might have the parent.
+		FClassFilterNodePtr ReturnNode;
+		for (const auto& Child : InRootNode->GetChildrenList())
+		{
+			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
+			ReturnNode = FindNodeByClass(Child, Class);
+			if (ReturnNode.IsValid())
+			{
+				return ReturnNode;
+			}
+		}
+		return {};
+	}
+
 	FClassFilterNodePtr FClassHierarchy::FindNodeByGeneratedClassPath(const FClassFilterNodePtr& InRootNode, FName InGeneratedClassPath)
 	{
 		if (InRootNode->ClassPath == InGeneratedClassPath)

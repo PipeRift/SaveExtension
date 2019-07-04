@@ -5,7 +5,7 @@
 
 #include "ISaveExtension.h"
 
-#include <CoreMinimal.h>
+ #include <CoreMinimal.h>
 #include <GameFramework/SaveGame.h>
 
 #include "LevelRecords.h"
@@ -42,13 +42,6 @@ public:
 	 */
 
 	FObjectRecord GameInstance;
-	FActorRecord GameMode;
-	FActorRecord GameState;
-
-	FActorRecord PlayerPawn;
-	FControllerRecord PlayerController;
-	FActorRecord PlayerState;
-	FActorRecord PlayerHUD;
 
 	FPersistentLevelRecord MainLevel;
 	TArray<FStreamingLevelRecord> SubLevels;

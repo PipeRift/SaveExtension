@@ -21,20 +21,22 @@ FClassFilterCustomization::~FClassFilterCustomization()
 void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle> StructPropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {
 	StructHandle = StructPropertyHandle;
+	FilterHandle = GetFilterHandle(StructPropertyHandle);
 
 	BuildEditableFilterList();
 
 	HeaderRow
 	.NameContent()
 	[
-		StructPropertyHandle->CreatePropertyNameWidget()
+		StructHandle->CreatePropertyNameWidget()
 	]
 	.ValueContent()
-	.MaxDesiredWidth(512)
+	.HAlign(HAlign_Fill)
 	[
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
-		.AutoWidth()
+		.HAlign(HAlign_Fill)
+		.MaxWidth(200.f)
 		[
 			SAssignNew(EditButton, SComboButton)
 			.ButtonStyle(FEditorStyle::Get(), "HoverHintOnly")
@@ -84,31 +86,35 @@ void FClassFilterCustomization::CustomizeChildren(TSharedRef<class IPropertyHand
 void FClassFilterCustomization::BuildEditableFilterList()
 {
 	EditableFilters.Empty();
-	if (StructHandle.IsValid())
+	if (FilterHandle.IsValid())
 	{
 		TArray<void*> RawStructData;
-		StructHandle->AccessRawData(RawStructData);
+		FilterHandle->AccessRawData(RawStructData);
+
+		TArray<UObject*> Outers;
+		FilterHandle->GetOuterObjects(Outers);
+		UObject* FirstOuter = Outers.Num() ? Outers[0] : nullptr;
 
 		for (int32 ContainerIdx = 0; ContainerIdx < RawStructData.Num(); ++ContainerIdx)
 		{
-			EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(nullptr, (FClassFilter*)RawStructData[ContainerIdx]));
+			EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(FirstOuter, (FClassFilter*)RawStructData[ContainerIdx]));
 		}
 	}
 }
 
 TSharedRef<SWidget> FClassFilterCustomization::GetListContent()
 {
-	if (!StructHandle.IsValid() || StructHandle->GetProperty() == nullptr)
+	if (!FilterHandle.IsValid() || FilterHandle->GetProperty() == nullptr)
 	{
 		return SNullWidget::NullWidget;
 	}
 
-	bool bReadOnly = StructHandle->IsEditConst();
+	bool bReadOnly = FilterHandle->IsEditConst();
 
 	TSharedRef<SClassFilter> EditPopup = SNew(SClassFilter, EditableFilters)
 	.ReadOnly(bReadOnly)
 	.OnFilterChanged(this, &FClassFilterCustomization::RefreshClassList)
-	.PropertyHandle(StructHandle);
+	.PropertyHandle(FilterHandle);
 
 	LastFilterPopup = EditPopup;
 
@@ -139,7 +145,11 @@ FReply FClassFilterCustomization::OnClearClicked()
 	for (auto& Filter : EditableFilters)
 	{
 		// Reset Filter
-		Filter.Owner->Modify();
+		if (Filter.Owner.IsValid())
+		{
+			Filter.Owner->Modify();
+		}
+
 		*Filter.Filter = {};
 	}
 
@@ -161,7 +171,7 @@ TSharedRef<SWidget> FClassFilterCustomization::GetClassPreview()
 	RefreshClassList();
 
 	return SNew(SBox)
-	.MinDesiredWidth(200.f)
+	.MinDesiredWidth(100.f)
 	[
 		SAssignNew(PreviewList, SListView<TSharedPtr<FClassFilterItem>>)
 		.SelectionMode(ESelectionMode::None)

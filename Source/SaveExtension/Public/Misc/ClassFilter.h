@@ -11,9 +11,13 @@ struct SAVEEXTENSION_API FClassFilter
 {
 	GENERATED_BODY()
 
+private:
+
 	// Used from editor side to limit displayed classes
-	UPROPERTY(Transient)
-	const UClass* BaseClass;
+	UPROPERTY()
+	UClass* BaseClass;
+
+public:
 
 	/** This classes are allowed (and their children) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization")
@@ -23,20 +27,26 @@ struct SAVEEXTENSION_API FClassFilter
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization")
 	TSet<TSoftClassPtr<UObject>> IgnoredClasses;
 
-	UPROPERTY(Transient)
-	TSet<const UClass*> BakedAllowedClasses;
+protected:
 
+	UPROPERTY(Transient)
+	mutable TSet<const UClass*> BakedAllowedClasses;
+
+public:
 
 	FClassFilter() : FClassFilter(UObject::StaticClass()) {}
-	FClassFilter(const UClass* BaseClass);
+	FClassFilter(UClass* const BaseClass);
 
 	/** Bakes a set of allowed classes based on the current settings */
-	void BakeAllowedClasses();
+	void BakeAllowedClasses() const;
 
-	bool IsClassAllowed(const UClass* Class) const {
+	FORCEINLINE bool IsClassAllowed(UClass* const Class) const
+	{
 		// Check is a single O(1) pointer hash comparison
 		return BakedAllowedClasses.Contains(Class);
 	}
+
+	FORCEINLINE UClass* GetBaseClass() const { return BaseClass; }
 
 	FString ToString();
 	void FromString(FString String);
@@ -57,6 +67,14 @@ struct FActorClassFilter
 	FActorClassFilter()
 		: ClassFilter(AActor::StaticClass())
 	{}
+
+	/** Bakes a set of allowed classes based on the current settings */
+	void BakeAllowedClasses() const { ClassFilter.BakeAllowedClasses(); }
+
+	FORCEINLINE bool IsClassAllowed(UClass* const Class) const
+	{
+		return ClassFilter.IsClassAllowed(Class);
+	}
 };
 
 
@@ -72,4 +90,12 @@ struct FComponentClassFilter
 	FComponentClassFilter()
 		: ClassFilter(UActorComponent::StaticClass())
 	{}
+
+	/** Bakes a set of allowed classes based on the current settings */
+	void BakeAllowedClasses() const { ClassFilter.BakeAllowedClasses(); }
+
+	FORCEINLINE bool IsClassAllowed(UClass* const Class) const
+	{
+		return ClassFilter.IsClassAllowed(Class);
+	}
 };

@@ -88,6 +88,14 @@ namespace ClassFilter
 		*/
 		FClassFilterNodePtr FindNodeByClassName(const FClassFilterNodePtr& InRootNode, const FString& InClassName);
 
+		/** Finds the node, recursively going deeper into the hierarchy. Does so by comparing class names.
+		*	@param InClass The pointer of the class to find the node for.
+		*
+		*	@return The node.
+		*/
+		FClassFilterNodePtr FindNodeByClass(const FClassFilterNodePtr& InRootNode, const UClass* Class);
+
+
 	private:
 		/** Recursive function to build a tree, will not filter.
 		 *	@param InOutRootNode						The node that this function will add the children of to the tree.
@@ -336,13 +344,21 @@ namespace ClassFilter
 			bool bInShowUnloadedBlueprints, bool bInInternalClasses = true,
 			const TArray<UClass*>& InternalClasses = TArray<UClass*>(), const TArray<FDirectoryPath>& InternalPaths = TArray<FDirectoryPath>())
 		{
-
-			const FClassFilterNodePtr ObjectClassRoot = ClassHierarchy->GetObjectRootNode();
+			// Use BaseClass as root
+			FClassFilterNodePtr RootNode;
+			if (Filter.GetBaseClass())
+			{
+				RootNode = ClassHierarchy->FindNodeByClass(ClassHierarchy->GetObjectRootNode(), Filter.GetBaseClass());
+			}
+			else // Use UObject as root
+			{
+				RootNode = ClassHierarchy->GetObjectRootNode();
+			}
 
 			// Duplicate the node, it will have no children.
-			InOutRootNode = MakeShared<FClassFilterNode>(*ObjectClassRoot);
+			InOutRootNode = MakeShared<FClassFilterNode>(*RootNode);
 
-			AddChildren_Tree(Filter, InOutRootNode, ObjectClassRoot, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
+			AddChildren_Tree(Filter, InOutRootNode, RootNode, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
 		}
 
 		/** Recursive function to build the list, filtering out nodes based on the InitOptions and filter search terms.

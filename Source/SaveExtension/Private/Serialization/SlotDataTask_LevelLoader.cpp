@@ -1,6 +1,6 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "SlotDataTask_LevelLoader.h"
+#include "Serialization/SlotDataTask_LevelLoader.h"
 
 
 /////////////////////////////////////////////////////
@@ -10,7 +10,7 @@ void USlotDataTask_LevelLoader::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
-		if (Settings->IsFrameSplitLoad())
+		if (Preset->IsFrameSplitLoad())
 		{
 			DeserializeLevelASync(StreamingLevel->GetLoadedLevel(), StreamingLevel);
 		}
@@ -26,7 +26,7 @@ void USlotDataTask_LevelLoader::OnStart()
 
 void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 {
-	FLevelRecord * LevelRecord = SlotData->FindLevelRecord(CurrentSLevel.Get());
+	FLevelRecord * LevelRecord = FindLevelRecord(CurrentSLevel.Get());
 	if (!LevelRecord)
 	{
 		Finish(false);

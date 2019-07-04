@@ -2,17 +2,15 @@
 
 #include "SaveManager.h"
 
-#include "EngineUtils.h"
-#include "Kismet/GameplayStatics.h"
-#include "Engine/GameViewportClient.h"
-#include "Engine/LevelStreaming.h"
-#include "Engine/LocalPlayer.h"
-#include "GameFramework/GameModeBase.h"
-#include "HighResScreenshot.h"
-#include "Misc/Paths.h"
-
+#include <EngineUtils.h>
+#include <Engine/GameViewportClient.h>
+#include <Engine/LevelStreaming.h>
 #include <GameDelegates.h>
+#include <GameFramework/GameModeBase.h>
+#include <HighResScreenshot.h>
+#include <Kismet/GameplayStatics.h>
 #include <Misc/CoreDelegates.h>
+#include <Misc/Paths.h>
 
 #include "FileAdapter.h"
 #include "Multithreading/LoadSlotInfoTask.h"
@@ -59,7 +57,9 @@ void USaveManager::Deinitialize()
 bool USaveManager::SaveSlot(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	if (!CanLoadOrSave())
+	{
 		return false;
+	}
 
 	if (!IsValidSlot(SlotId))
 	{
@@ -221,11 +221,15 @@ void USaveManager::TryInstantiateInfo(bool bForced)
 
 	UClass* InfoTemplate = Settings.SlotInfoTemplate.Get();
 	if (!InfoTemplate)
+	{
 		InfoTemplate = USlotInfo::StaticClass();
+	}
 
 	UClass* DataTemplate = Settings.SlotDataTemplate.Get();
 	if (!DataTemplate)
+	{
 		DataTemplate = USlotData::StaticClass();
+	}
 
 	CurrentInfo = NewObject<USlotInfo>(GetTransientPackage(), InfoTemplate);
 	CurrentData = NewObject<USlotData>(GetTransientPackage(), DataTemplate);
@@ -264,7 +268,7 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 {
 	if (!IsValidSlot(SlotId))
 	{
-		SELog(Settings, "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
+		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
@@ -288,8 +292,8 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
 {
-	auto* Task = NewObject<USlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentData, Settings);
+	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
+	Task->Prepare(CurrentData, GetPreset());
 	Tasks.Add(Task);
 	return Task;
 }
@@ -301,26 +305,6 @@ void USaveManager::FinishTask(USlotDataTask* Task)
 	// Start next task
 	if (Tasks.Num() > 0)
 		Tasks[0]->Start();
-}
-
-bool USaveManager::IsLoading() const
-{
-	if (!IsSavingOrLoading())
-		return false;
-
-	const UClass* const TaskClass = Tasks[0]->GetClass();
-	return TaskClass == USlotDataTask_Loader::StaticClass()
-		|| TaskClass == USlotDataTask_LevelLoader::StaticClass();
-}
-
-bool USaveManager::IsSaving() const
-{
-	if (!IsSavingOrLoading())
-		return false;
-
-	const UClass* const TaskClass = Tasks[0]->GetClass();
-	return TaskClass == USlotDataTask_Saver::StaticClass()
-		|| TaskClass == USlotDataTask_LevelSaver::StaticClass();
 }
 
 void USaveManager::Tick(float DeltaTime)
@@ -425,7 +409,7 @@ void USaveManager::OnLoadFinished(const bool bError)
 
 void USaveManager::OnMapLoadStarted(const FString& MapName)
 {
-	SELog(Settings, "Loading Map '" + MapName + "'", FColor::Purple);
+	SELog(GetPreset(), "Loading Map '" + MapName + "'", FColor::Purple);
 }
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)

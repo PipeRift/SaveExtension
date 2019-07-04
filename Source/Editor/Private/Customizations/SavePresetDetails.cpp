@@ -29,7 +29,7 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 
 	if (Objects.Num() && Objects[0] != nullptr)
 	{
-		Settings = CastChecked<UDEPRECATED_SavePreset>(Objects[0].Get());
+		Settings = CastChecked<USavePreset>(Objects[0].Get());
 
 		DetailBuilder.EditCategory(TEXT("Gameplay"));
 		DetailBuilder.EditCategory(TEXT("Serialization"));
