@@ -17,8 +17,7 @@ struct FComponentPacketRecord : public FObjectPacketRecord
 	// Component packets don't have a list of components like ActorPackets
 	// because its more efficient to store and read them from ActorRecords
 
-	FComponentPacketRecord() : Super()
+	FComponentPacketRecord() : Super(FClassFilter{UActorComponent::StaticClass()})
 	{
-		Filter.BaseClass = UActorComponent::StaticClass();
 	}
 };

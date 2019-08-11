@@ -8,19 +8,9 @@
 
 #include "ClassFilter.h"
 #include "Serializer.h"
+#include "Settings.h"
 #include "SavePreset.generated.h"
 
-
-/**
-* Specifies the behavior while saving or loading
-*/
-UENUM()
-enum class ESaveASyncMode : uint8 {
-	OnlySync,
-	LoadAsync,
-	SaveAsync,
-	SaveAndLoadAsync
-};
 
 class USlotInfo;
 class USlotData;
@@ -29,13 +19,13 @@ class USlotData;
  * What to save, how to save it, when, every x minutes, what info file, what data file, save by level streaming?
  */
 UCLASS(ClassGroup = SaveExtension, BlueprintType, Config = Game)
-class SAVEEXTENSION_API USavePreset : public UDataAsset
+class SAVEEXTENSION_API UDEPRECATED_SavePreset : public UDataAsset
 {
 	GENERATED_BODY()
 
 public:
 
-	USavePreset();
+	UDEPRECATED_SavePreset();
 
 
 	/**

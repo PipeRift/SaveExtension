@@ -17,5 +17,6 @@ struct FObjectPacketRecord
 
 
 	FObjectPacketRecord() = default;
+	FObjectPacketRecord(FClassFilter&& InFilter) : Filter(InFilter) {}
 	FObjectPacketRecord(const FClassFilter& InFilter) : Filter(InFilter) {}
 };

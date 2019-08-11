@@ -14,10 +14,8 @@ class SAVEEXTENSION_API ISaveExtensionInterface {
 
 	GENERATED_BODY()
 
+
 public:
-
-
-
 
 	/** BP API **/
 

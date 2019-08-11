@@ -27,6 +27,7 @@
 #include "Serialization/SlotDataTask_LevelLoader.h"
 #include "SlotInfo.h"
 #include "SlotData.h"
+#include "Settings.h"
 
 #include "SaveManager.generated.h"
 
@@ -173,7 +174,7 @@ public:
 			Result = ESaveGameResult::Failed;
 			return;
 		}
-		BPSaveSlotToId(SlotInfo->Id, CurrentInfo->GetGraphClass(), bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
+		BPSaveSlotToId(SlotInfo->Id, SlotInfo->GetGraphClass(), bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
 	}
 
 	/** Save the currently loaded Slot */
@@ -273,30 +274,6 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
-
-	/**
-	 * Set the preset to be used for saving and loading
-	 * @return true if the preset was set successfully
-	 */
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
-	bool SetActivePreset(TAssetPtr<USavePreset> ActivePreset)
-	{
-		// We can only change a preset if we have no tasks running
-		if (!HasTasks())
-		{
-			PresetAsset = ActivePreset;
-			return true;
-		}
-		return false;
-	}
-
-	const USavePreset* GetPreset() const {
-		if (!PresetAsset.IsNull())
-		{
-			return PresetAsset.LoadSynchronous();
-		}
-		return GetDefault<USavePreset>();
-	}
 
 
 	void TryInstantiateInfo(bool bForced = false);

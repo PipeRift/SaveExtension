@@ -11,6 +11,22 @@ FClassFilter::FClassFilter(UClass* BaseClass)
 	, IgnoredClasses {}
 {}
 
+void FClassFilter::Merge(const FClassFilter& Other)
+{
+	// Remove conflicts
+	for (const auto& IgnoredClass : Other.IgnoredClasses)
+	{
+		AllowedClasses.Remove(IgnoredClass);
+	}
+	for (const auto& AllowedClass : Other.AllowedClasses)
+	{
+		IgnoredClasses.Remove(AllowedClass);
+	}
+
+	AllowedClasses.Append(Other.AllowedClasses);
+	IgnoredClasses.Append(Other.IgnoredClasses);
+}
+
 void FClassFilter::BakeAllowedClasses() const
 {
 	for (TObjectIterator<UClass> It; It; ++It)

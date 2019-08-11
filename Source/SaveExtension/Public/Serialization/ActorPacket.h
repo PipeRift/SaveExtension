@@ -26,11 +26,15 @@ struct FActorPacketSettings
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
-	EPacketLevelMode Levels;
+	EPacketLevelMode Levels = EPacketLevelMode::AllLevels;
 
 	/** List of levels to affect if Packet is "SpecifiedLevels" */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	TArray<TSoftObjectPtr<UWorld>> LevelList;
+
+	/** List of levels to affect if Packet is "SpecifiedLevels" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
+	bool bDontCheckRootLevel = false;
 
 
 	bool IsLevelAllowed(FName Name) const;
@@ -48,10 +52,7 @@ struct FActorPacketRecord : public FObjectPacketRecord
 	// CustomSerializer*
 
 
-	FActorPacketRecord() : Super()
-	{
-		Filter.BaseClass = AActor::StaticClass();
-	}
+	FActorPacketRecord() : Super(FClassFilter{ AActor::StaticClass() }) {}
 	FActorPacketRecord(const FActorClassFilter& InFilter)
 		: Super(InFilter.ClassFilter)
 	{}
