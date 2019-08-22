@@ -4,9 +4,10 @@
 #include <Serialization/MemoryWriter.h>
 
 #include "SaveManager.h"
+#include "SavePreset.h"
+#include "SEArchive.h"
 #include "SlotInfo.h"
 #include "SlotData.h"
-#include "SavePreset.h"
 
 
 /////////////////////////////////////////////////////
@@ -39,7 +40,7 @@ void FMTTask_SerializeActors::SerializeGameInstance()
 
 		//Serialize into Record Data
 		FMemoryWriter MemoryWriter(Record.Data, true);
-		FSaveExtensionArchive Archive(MemoryWriter, false);
+		FSEArchive Archive(MemoryWriter, false);
 		GameInstance->Serialize(Archive);
 
 		SlotData->GameInstance = MoveTemp(Record);
@@ -99,7 +100,7 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 	}
 
 	FMemoryWriter MemoryWriter(Record.Data, true);
-	FSaveExtensionArchive Archive(MemoryWriter, false);
+	FSEArchive Archive(MemoryWriter, false);
 	const_cast<AActor*>(Actor)->Serialize(Archive);
 
 	return true;
@@ -133,7 +134,7 @@ void FMTTask_SerializeActors::SerializeActorComponents(const AActor* Actor, FAct
 			if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
 			{
 				FMemoryWriter MemoryWriter(ComponentRecord.Data, true);
-				FSaveExtensionArchive Archive(MemoryWriter, false);
+				FSEArchive Archive(MemoryWriter, false);
 				Component->Serialize(Archive);
 			}
 			ActorRecord.ComponentRecords.Add(ComponentRecord);

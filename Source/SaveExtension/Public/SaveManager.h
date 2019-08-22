@@ -291,7 +291,7 @@ public:
 	}
 
 	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
-		const int32 MaxSlots = Settings->GetMaxSlots();
+		const int32 MaxSlots = Settings.GetMaxSlots();
 		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
 	}
 

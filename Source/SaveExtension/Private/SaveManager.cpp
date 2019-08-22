@@ -268,7 +268,7 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 {
 	if (!IsValidSlot(SlotId))
 	{
-		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
+		SELog(Settings, "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
@@ -293,7 +293,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
 {
 	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentData, GetPreset());
+	Task->Prepare(CurrentData, Settings);
 	Tasks.Add(Task);
 	return Task;
 }
@@ -409,7 +409,7 @@ void USaveManager::OnLoadFinished(const bool bError)
 
 void USaveManager::OnMapLoadStarted(const FString& MapName)
 {
-	SELog(GetPreset(), "Loading Map '" + MapName + "'", FColor::Purple);
+	SELog(Settings, "Loading Map '" + MapName + "'", FColor::Purple);
 }
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)

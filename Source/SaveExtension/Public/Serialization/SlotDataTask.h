@@ -15,6 +15,7 @@
 
 #include "SaveGraph.h"
 #include "SlotData.h"
+#include "Settings.h"
 
 #include "SlotDataTask.generated.h"
 
@@ -107,7 +108,10 @@ protected:
 	virtual UWorld* GetWorld() const override;
 	//~ End UObject Interface
 
-	bool ShouldSaveAsWorld(const AActor * Actor, bool& bIsAIController, bool& bIsLevelScript) const;
+	bool ShouldSaveAsWorld(const AActor* Actor) const
+	{
+		return Settings->ActorFilter.IsClassAllowed(Actor->GetClass());
+	}
 
 	//Component Tags
 	FORCEINLINE bool ShouldSave(const UActorComponent * Component) const {

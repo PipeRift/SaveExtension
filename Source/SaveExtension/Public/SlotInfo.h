@@ -2,9 +2,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Engine/Texture2D.h"
-#include "GameFramework/SaveGame.h"
+#include <CoreMinimal.h>
+#include <Engine/Texture2D.h>
+#include <GameFramework/SaveGame.h>
+#include "SaveGraph.h"
+
 
 #include "SlotInfo.generated.h"
 
@@ -65,6 +67,9 @@ private:
 	UPROPERTY(Transient)
 	UTexture2D* CachedThumbnail;
 
+	UPROPERTY()
+	TSubclassOf<USaveGraph> Graph;
+
 
 public:
 
@@ -75,10 +80,15 @@ public:
 	/** Captures a thumbnail for the current slot */
 	bool CaptureThumbnail(const int32 Width = 640, const int32 Height = 360);
 
+	UFUNCTION(BlueprintPure, Category = SlotInfo)
+	FORCEINLINE UClass* GetGraphClass() const { return Graph; }
 
 	/** Internal Usage. Will be called when an screenshot is captured */
 	void _SetThumbnailPath(const FString& Path);
 
 	/** Internal Usage. Will be called to remove previous thumbnail */
 	FString _GetThumbnailPath() { return ThumbnailPath; }
+
+	/** Internal Usage. Will be called to store the graph this slot uses */
+	void _SetGraphClass(const TSubclassOf<USaveGraph>& Class) { Graph = Class; }
 };
