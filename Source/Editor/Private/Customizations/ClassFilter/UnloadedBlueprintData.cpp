@@ -4,17 +4,17 @@
 #include "Engine/BlueprintGeneratedClass.h"
 
 
-FUnloadedBlueprintData::FUnloadedBlueprintData(TWeakPtr<FClassFilterNode> ClassFilterNode)
-	: ClassFilterNode(ClassFilterNode)
+FUnloadedBlueprintData::FUnloadedBlueprintData(TWeakPtr<FClassFilterNode> InClassViewerNode)
+	: ClassViewerNode(InClassViewerNode)
 {
 }
 
-bool FUnloadedBlueprintData::HasAnyClassFlags( uint32 InFlagsToCheck ) const
+bool FUnloadedBlueprintData::HasAnyClassFlags(uint32 InFlagsToCheck) const
 {
 	return (ClassFlags & InFlagsToCheck) != 0;
 }
 
-bool FUnloadedBlueprintData::HasAllClassFlags( uint32 InFlagsToCheck ) const
+bool FUnloadedBlueprintData::HasAllClassFlags(uint32 InFlagsToCheck) const
 {
 	return ((ClassFlags & InFlagsToCheck) == InFlagsToCheck);
 }
@@ -24,9 +24,9 @@ void FUnloadedBlueprintData::SetClassFlags(uint32 InFlags)
 	ClassFlags = InFlags;
 }
 
-bool FUnloadedBlueprintData::IsChildOf(const UClass* InClass) const
+bool FUnloadedBlueprintData::IsChildOf(const UClass * InClass) const
 {
-	FClassFilterNodePtr CurrentNode = ClassFilterNode.Pin()->ParentNode.Pin();
+	TSharedPtr<FClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 
 	// Keep going through parents till you find an invalid.
 	while (CurrentNode.IsValid())
@@ -41,7 +41,7 @@ bool FUnloadedBlueprintData::IsChildOf(const UClass* InClass) const
 	return false;
 }
 
-bool FUnloadedBlueprintData::ImplementsInterface(const UClass* InInterface) const
+bool FUnloadedBlueprintData::ImplementsInterface(const UClass * InInterface) const
 {
 	// Does this blueprint implement the interface directly?
 	for (const FString& DirectlyImplementedInterface : ImplementedInterfaces)
@@ -53,7 +53,7 @@ bool FUnloadedBlueprintData::ImplementsInterface(const UClass* InInterface) cons
 	}
 
 	// If not, does a parent class implement the interface?
-	FClassFilterNodePtr CurrentNode = ClassFilterNode.Pin()->ParentNode.Pin();
+	TSharedPtr<FClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 	while (CurrentNode.IsValid())
 	{
 		if (CurrentNode->Class.IsValid() && CurrentNode->Class->ImplementsInterface(InInterface))
@@ -70,7 +70,7 @@ bool FUnloadedBlueprintData::ImplementsInterface(const UClass* InInterface) cons
 	return false;
 }
 
-bool FUnloadedBlueprintData::IsA(const UClass* InClass) const
+bool FUnloadedBlueprintData::IsA(const UClass * InClass) const
 {
 	// Unloaded blueprints will always return true for IsA(UBlueprintGeneratedClass::StaticClass). With that in mind, even though we do not have the exact class, we can use that knowledge as a basis for a check.
 	return ((UObject*)UBlueprintGeneratedClass::StaticClass())->IsA(InClass);
@@ -78,7 +78,7 @@ bool FUnloadedBlueprintData::IsA(const UClass* InClass) const
 
 const UClass* FUnloadedBlueprintData::GetClassWithin() const
 {
-	FClassFilterNodePtr CurrentNode = ClassFilterNode.Pin()->ParentNode.Pin();
+	TSharedPtr<FClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 
 	while (CurrentNode.IsValid())
 	{
@@ -98,7 +98,7 @@ const UClass* FUnloadedBlueprintData::GetClassWithin() const
 
 const UClass* FUnloadedBlueprintData::GetNativeParent() const
 {
-	FClassFilterNodePtr CurrentNode = ClassFilterNode.Pin()->ParentNode.Pin();
+	TSharedPtr<FClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 
 	while (CurrentNode.IsValid())
 	{
@@ -116,13 +116,32 @@ const UClass* FUnloadedBlueprintData::GetNativeParent() const
 	return nullptr;
 }
 
-
-const TWeakPtr<FClassFilterNode>& FUnloadedBlueprintData::GetClassFilterNode() const
+TSharedPtr<FString> FUnloadedBlueprintData::GetClassName() const
 {
-	return ClassFilterNode;
+	if (ClassViewerNode.IsValid())
+	{
+		return MakeShared<FString>(ClassViewerNode.Pin()->GetClassName());
+	}
+
+	return TSharedPtr<FString>();
 }
 
-void FUnloadedBlueprintData::AddImplementedInterface(const FString& InterfaceName)
+FName FUnloadedBlueprintData::GetClassPath() const
+{
+	if (ClassViewerNode.IsValid())
+	{
+		return ClassViewerNode.Pin()->ClassPath;
+	}
+
+	return FName();
+}
+
+const TWeakPtr<FClassFilterNode>& FUnloadedBlueprintData::GetClassViewerNode() const
+{
+	return ClassViewerNode;
+}
+
+void FUnloadedBlueprintData::AddImplementedInterface(const FString & InterfaceName)
 {
 	ImplementedInterfaces.Add(InterfaceName);
 }
