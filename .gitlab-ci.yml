@@ -1,0 +1,10 @@
+image: adamrehn/ue4-full:4.22
+
+stages:
+  - build
+  - test
+  - package
+
+build:
+test:
+package:
