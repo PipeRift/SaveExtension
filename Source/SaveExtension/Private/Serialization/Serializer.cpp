@@ -1,6 +1,7 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "Serializer.h"
+#include "Serialization/Serializer.h"
+
 
 void USerializer::DoSerialize(FArchive& Ar, UObject* Object)
 {
@@ -17,4 +18,9 @@ void USerializer::DoSerialize(FArchive& Ar, UObject* Object)
 		static_cast<UBlueprintSerializer*>(this)->DoSerialize(Ar, Object);
 		break;
 	}
+}
+
+void UInstanceSerializer::EventSerialize_Implementation(UObject* Instance)
+{
+	SerializeInstance(*CurrentArchive, Instance);
 }

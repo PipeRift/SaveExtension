@@ -2,7 +2,9 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include <CoreMinimal.h>
+#include <Serialization/Archive.h>
+#include <Internationalization/Text.h>
 #include "Serializer.generated.h"
 
 
@@ -88,10 +90,6 @@ protected:
 
 	UFUNCTION(BlueprintNativeEvent, Category = Serializer, meta = (ForceAsFunction, DisplayName = "Serialize"))
 	void EventSerialize(UObject* Instance);
-	void EventSerialize_Implementation(UObject* Instance)
-	{
-		SerializeInstance(*CurrentArchive, Instance);
-	}
 
 
 	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
@@ -114,9 +112,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
 	void SerializeString(UPARAM(Ref) FString& Value) { *CurrentArchive << Value; }
-
-	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
-	void SerializeText(UPARAM(Ref) FText& Value) { *CurrentArchive << Value; }
 
 	UFUNCTION(BlueprintCallable, Category = "Serializer|Types")
 	void SerializeVector(UPARAM(Ref) FVector& Value) { *CurrentArchive << Value; }

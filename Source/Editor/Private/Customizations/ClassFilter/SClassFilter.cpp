@@ -10,10 +10,10 @@
 #include "Widgets/SWindow.h"
 #include "Dialogs/Dialogs.h"
 #include "GameplayTagsModule.h"
-#include "ScopedTransaction.h"
-#include "Textures/SlateIcon.h"
-#include "PropertyHandle.h"
-#include "Toolkits/AssetEditorManager.h"
+#include <ScopedTransaction.h>
+#include <Textures/SlateIcon.h>
+#include <PropertyHandle.h>
+#include <Toolkits/AssetEditorManager.h>
 #include <AssetToolsModule.h>
 #include <Widgets/Input/SHyperlink.h>
 #include <Widgets/Input/SSearchBox.h>

@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include <CoreMinimal.h>
+#include <GameFramework/Actor.h>
 #include "ClassFilter.generated.h"
 
 
