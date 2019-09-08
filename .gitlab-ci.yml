@@ -1,19 +1,12 @@
-image: adamrehn/ue4-full:4.22
-
 stages:
-  - build
+  - compile
   - test
-  - deploy
+  - package
 
 build plugin:
-  stage: build
+  stage: compile
   script:
-    - ue4 build
-    
-build test project:
-  stage: build
-  script:
-    - ue4 build
+    - call "E:\Piperift\GitlabRunner\Lib\BuildPlugin.bat" SaveExtension 4.23
     
 unit test:
   stage: test
@@ -21,6 +14,6 @@ unit test:
     - ue4 test
 
 package:
-  stage: deploy
+  stage: package
   script:
     - ue4 package
