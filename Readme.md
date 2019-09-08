@@ -1,5 +1,7 @@
 # Save Extension
 ![version](https://img.shields.io/github/v/release/piperift/SaveExtension?label=version)
+![UE4](https://img.shields.io/badge/UE4-4.19%2B-orange)
+![status](https://gitlab.com/piperift/ci-cd/save-extension/badges/master/pipeline.svg)
 
 Save Extension allows your projects to be saved and loaded.
 
