@@ -10,4 +10,4 @@ build plugin:
 unit test:
   stage: test
   script:
-    - ue4 test
+    - echo No tests implemented
