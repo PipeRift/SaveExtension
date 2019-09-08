@@ -10,12 +10,12 @@ variables:
 cache:
   paths:
     - Build/
-    
+
 build plugin:
   stage: compile
   script:
     - cmd.exe /c E:\Piperift\GitlabRunner\Lib\BuildPlugin.bat
-    
+
 unit test:
   stage: test
   script:
