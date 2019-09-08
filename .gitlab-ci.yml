@@ -2,11 +2,25 @@ image: adamrehn/ue4-full:4.22
 
 stages:
   - build
-  - package
+  - test
+  - deploy
 
-build:
+build plugin:
+  stage: build
   script:
     - ue4 build
+    
+build test project:
+  stage: build
+  script:
+    - ue4 build
+    
+unit test:
+  stage: test
+  script:
+    - ue4 test
+
 package:
+  stage: deploy
   script:
     - ue4 package
