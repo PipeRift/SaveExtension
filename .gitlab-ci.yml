@@ -6,7 +6,7 @@ stages:
 build plugin:
   stage: compile
   script:
-    - call "E:\Piperift\GitlabRunner\Lib\BuildPlugin.bat" SaveExtension 4.23
+    - cmd "E:\Piperift\GitlabRunner\Lib\BuildPlugin.bat" SaveExtension 4.23
     
 unit test:
   stage: test
