@@ -2,9 +2,11 @@ image: adamrehn/ue4-full:4.22
 
 stages:
   - build
-  - test
   - package
 
 build:
-test:
+  script:
+    - ue4 build
 package:
+  script:
+    - ue4 package
