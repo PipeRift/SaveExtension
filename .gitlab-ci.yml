@@ -1,0 +1,28 @@
+stages:
+  - compile
+  - test
+  - deploy
+
+variables:
+  plugin: SaveExtension
+  engine_version: 23
+
+cache:
+  paths:
+    - Build/
+    
+build plugin:
+  stage: compile
+  script:
+    - cmd.exe /c E:\Piperift\GitlabRunner\Lib\BuildPlugin.bat
+    
+unit test:
+  stage: test
+  script:
+    - echo No tests implemented
+
+upload:
+  stage: deploy
+  script:
+    - cmd.exe /c E:\Piperift\GitlabRunner\Lib\CompressPlugin.bat
+    - cmd.exe /c E:\Piperift\GitlabRunner\Lib\Upload.bat
