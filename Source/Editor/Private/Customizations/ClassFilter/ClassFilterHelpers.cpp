@@ -1,9 +1,9 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "ClassFilterHelpers.h"
-#include <HotReloadInterface.h>
+#include <Misc/HotReloadInterface.h>
 #include <Editor.h>
-#include <CoreRedirects.h>
+#include <UObject/CoreRedirects.h>
 #include <Animation/AnimBlueprint.h>
 
 #include "UnloadedBlueprintData.h"
