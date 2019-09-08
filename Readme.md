@@ -1,4 +1,6 @@
 # Save Extension
+![version](https://img.shields.io/github/v/release/piperift/SaveExtension?label=version)
+
 Save Extension allows your projects to be saved and loaded.
 
 This plugin is for Unreal Engine 4 and actively supports the last 2 versions of the engine.
