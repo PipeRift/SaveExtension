@@ -17,3 +17,4 @@ upload:
   stage: deploy
   script:
     - cmd.exe /c E:\Piperift\GitlabRunner\Lib\CompressPlugin.bat SaveExtension 23
+    - cmd.exe /c E:\Piperift\GitlabRunner\Lib\Upload.bat SaveExtension 23
