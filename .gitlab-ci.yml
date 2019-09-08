@@ -2,7 +2,11 @@ stages:
   - compile
   - test
   - deploy
-
+  
+cache:
+  paths:
+    - Build/
+    
 build plugin:
   stage: compile
   script:
