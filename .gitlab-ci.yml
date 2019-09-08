@@ -1,6 +1,7 @@
 stages:
   - compile
   - test
+  - deploy
 
 build plugin:
   stage: compile
@@ -11,3 +12,8 @@ unit test:
   stage: test
   script:
     - echo No tests implemented
+
+upload:
+  stage: deploy
+  script:
+    - cmd.exe /c E:\Piperift\GitlabRunner\Lib\CompressPlugin.bat SaveExtension 23
