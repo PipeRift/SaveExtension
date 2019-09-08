@@ -4,7 +4,7 @@
 #include <CoreMinimal.h>
 #include <ClassViewerModule.h>
 #include <UObject/WeakObjectPtr.h>
-#include <SharedPointer.h>
+#include <Templates/SharedPointer.h>
 
 class IPropertyHandle;
 class IUnloadedBlueprintData;

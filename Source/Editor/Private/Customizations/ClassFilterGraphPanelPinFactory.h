@@ -8,7 +8,7 @@
 #include "EdGraphSchema_K2.h"
 #include "SGraphPin.h"
 #include "SClassFilterGraphPin.h"
-#include "ClassFilter.h"
+#include "Misc/ClassFilter.h"
 
 
 class FClassFilterGraphPanelPinFactory: public FGraphPanelPinFactory
