@@ -2,9 +2,9 @@
 
 #include "ClassFilterNode.h"
 #include <Engine/Blueprint.h>
+#include <PropertyHandle.h>
 
-#include "PropertyHandle.h"
-#include "ClassFilter.h"
+#include "Misc/ClassFilter.h"
 
 
 FClassFilterNode::FClassFilterNode(const FString& InClassName, const FString& InClassDisplayName)

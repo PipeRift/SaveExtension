@@ -1,9 +1,9 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
-#include "ClassFilter.h"
+#include "Misc/ClassFilter.h"
 
-#include <Parse.h>
-#include <UObjectIterator.h>
+#include <Misc/Parse.h>
+#include <UObject/UObjectIterator.h>
 
 
 FClassFilter::FClassFilter(UClass* BaseClass)

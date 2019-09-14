@@ -4,23 +4,23 @@
 #include "ClassFilterNode.h"
 #include <AssetData.h>
 #include <Engine/Blueprint.h>
-#include <KismetEditorUtilities.h>
+#include <Kismet2/KismetEditorUtilities.h>
 #include <CoreGlobals.h>
-#include <MessageDialog.h>
+#include <Misc/MessageDialog.h>
 #include <PackageTools.h>
-#include <AssetEditorManager.h>
+#include <Toolkits/AssetEditorManager.h>
 #include <AssetRegistryModule.h>
 #include <EditorDirectories.h>
-#include <Dialogs.h>
+#include <Dialogs/Dialogs.h>
 #include <AssetToolsModule.h>
 #include <IContentBrowserSingleton.h>
 #include <ContentBrowserModule.h>
 #include <GameProjectGeneration/Public/GameProjectGenerationModule.h>
-#include <MessageLog.h>
+#include <Logging/MessageLog.h>
 #include <SourceCodeNavigation.h>
-#include <MultiBoxBuilder.h>
-#include <FeedbackContext.h>
-#include <ConfigCacheIni.h>
+#include <Framework/Multibox/MultiBoxBuilder.h>
+#include <Misc/FeedbackContext.h>
+#include <Misc/ConfigCacheIni.h>
 
 #define LOCTEXT_NAMESPACE "ClassFilterHelpers"
 
