@@ -70,8 +70,8 @@ class SAVEEXTENSION_API USaveManager : public UGameInstanceSubsystem, public FTi
 	/************************************************************************/
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Pipeline", Config)
-	FSESettings Settings;
+	UPROPERTY(EditAnywhere, Category = "Pipeline")
+	USavePreset* Preset;
 
 private:
 

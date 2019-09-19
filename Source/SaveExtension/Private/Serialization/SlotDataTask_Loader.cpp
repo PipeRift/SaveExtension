@@ -264,7 +264,7 @@ void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 
 			const float CurrentMS = GetTimeMilliseconds();
 			// If x milliseconds passed, continue on next frame
-			if (CurrentMS - StartMS >= MaxFrameMs)
+			if (CurrentMS - StartMS >= Filter.MaxFrameMs)
 				return;
 		}
 	}
@@ -293,20 +293,18 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 	// Records not contained in Scene Actors		 => Actors to be Respawned
 	// Scene Actors not contained in loaded records  => Actors to be Destroyed
 	// The rest									     => Just deserialize
-
 	TArray<FActorRecord> ActorsToSpawn = LevelRecord.Actors;
-	TArray<AActor*> ActorsToDestroy{};
 	{
 		// O(M*Log(N))
 		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 		{
 			AActor* const Actor{ *ActorItr };
-			if (ShouldSave(Actor))
+			if (IsValid(Actor))
 			{
 				// Remove records which actors do exist
 				const bool bFoundActorRecord = ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
 
-				if (!bFoundActorRecord && ShouldSaveAsWorld(Actor)) // Don't destroy level actors
+				if (!bFoundActorRecord && Filter.ShouldLoad(Actor)) // Don't destroy level actors
 				{
 					// If the actor wasn't found, mark it for destruction
 					Actor->Destroy();
@@ -375,16 +373,13 @@ void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* const Actor, const FLe
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor);
 
-	if (ShouldSave(Actor))
+	if (Filter.ShouldLoad(Actor))
 	{
-		if (ShouldSaveAsWorld(Actor))
+		// Find the record
+		const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
+		if (Record)
 		{
-			// Find the record
-			const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
-			if (Record)
-			{
-				DeserializeActor(Actor, *Record);
-			}
+			DeserializeActor(Actor, *Record);
 		}
 	}
 }
@@ -396,7 +391,9 @@ void USlotDataTask_Loader::DeserializeGameInstance()
 	const FObjectRecord& Record = SlotData->GameInstance;
 
 	if (!IsValid(GameInstance) || GameInstance->GetClass() != Record.Class)
+	{
 		bSuccess = false;
+	}
 
 	if (bSuccess)
 	{
@@ -413,8 +410,7 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeActor);
 
-	if (!IsValid(Actor) || !Record.IsValid() || !ShouldSave(Actor) ||
-		Actor->GetClass() != Record.Class)
+	if (!IsValid(Actor) || !Record.IsValid() || Actor->GetClass() != Record.Class  || !Filter.ShouldLoad(Actor))
 	{
 		return false;
 	}
@@ -422,12 +418,11 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 	// Always load saved tags
 	Actor->Tags = Record.Tags;
 
-	const bool bSavesPhysics = SavesPhysics(Actor);
-	if (SavesTransform(Actor))
+	if (Filter.StoresTransform(Actor))
 	{
 		Actor->SetActorTransform(Record.Transform);
 
-		if (SavesPhysics(Actor))
+		if (Filter.StoresPhysics(Actor))
 		{
 			USceneComponent* Root = Actor->GetRootComponent();
 			if (auto* Primitive = Cast<UPrimitiveComponent>(Root))
@@ -459,7 +454,7 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 
 void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, int8 Indent)
 {
-	if (SavesComponents(Actor))
+	if (Filter.bStoreComponents)
 	{
 		QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeActorComponents);
 
@@ -467,7 +462,7 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 
 		for (auto* Component : Components)
 		{
-			if (ShouldSave(Component))
+			if (Filter.ShouldLoad(Component))
 			{
 				// Find the record
 				const FComponentRecord* Record = ActorRecord.ComponentRecords.FindByKey(Component);
@@ -477,7 +472,7 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 					continue;
 				}
 
-				if (SavesTransform(Component))
+				if (Filter.StoresTransform(Component))
 				{
 					USceneComponent* Scene = CastChecked<USceneComponent>(Component);
 					if (Scene->Mobility == EComponentMobility::Movable)
@@ -486,17 +481,14 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 					}
 				}
 
-				if (SavesTags(Component))
+				if (Filter.StoresTags(Component))
 				{
 					Component->ComponentTags = Record->Tags;
 				}
 
-				if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
-				{
-					FMemoryReader MemoryReader(Record->Data, true);
-					FSEArchive Archive(MemoryReader, false);
-					Component->Serialize(Archive);
-				}
+				FMemoryReader MemoryReader(Record->Data, true);
+				FSEArchive Archive(MemoryReader, false);
+				Component->Serialize(Archive);
 			}
 		}
 	}

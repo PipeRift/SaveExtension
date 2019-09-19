@@ -5,8 +5,8 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 
-#include "Engine/DataAsset.h"
-#include "Settings.h"
+#include <Engine/DataAsset.h>
+
 #include "LevelRecords.h"
 #include "ActorPacket.h"
 #include "ComponentPacket.h"

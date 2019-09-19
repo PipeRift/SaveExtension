@@ -65,7 +65,7 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 		// Only save save-tags
 		for (const auto& Tag : Actor->Tags)
 		{
-			if (USlotDataTask::IsSaveTag(Tag))
+			if (FSaveFilter::IsSaveTag(Tag))
 			{
 				Record.Tags.Add(Tag);
 			}

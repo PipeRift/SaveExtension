@@ -13,7 +13,8 @@ class USlotData;
 
 
 USTRUCT()
-struct FBaseRecord {
+struct FBaseRecord
+{
 	GENERATED_BODY()
 
 	FName Name;

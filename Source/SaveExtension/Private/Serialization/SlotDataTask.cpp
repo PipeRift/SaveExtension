@@ -9,19 +9,6 @@
 /////////////////////////////////////////////////////
 // USaveDataTask
 
-const FName USlotDataTask::TagNoSave{ "!Save" };
-const FName USlotDataTask::TagNoTransform{ "!SaveTransform" };
-const FName USlotDataTask::TagNoPhysics{ "!SavePhysics" };
-const FName USlotDataTask::TagNoComponents{ "!SaveComponents" };
-const FName USlotDataTask::TagNoTags{ "!SaveTags" };
-const FName USlotDataTask::TagTransform{ "SaveTransform" };
-
-
-bool USlotDataTask::IsSaveTag(const FName& Tag)
-{
-	return Tag == TagNoSave || Tag == TagNoTransform || Tag == TagNoPhysics || Tag == TagNoComponents || Tag == TagNoTags;
-}
-
 USlotDataTask* USlotDataTask::Start()
 {
 	const USaveManager* Manager = GetManager();

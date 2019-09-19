@@ -2,33 +2,37 @@
 
 #pragma once
 
-#include "Modules/ModuleManager.h"
-#include "Engine/Engine.h"
+#include <Modules/ModuleManager.h>
+#include <Engine/Engine.h>
 
-#include "Settings.h"
+#include "SavePreset.h"
 
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSaveExtension, All, All);
 
-class ISaveExtension : public IModuleInterface {
+class ISaveExtension : public IModuleInterface
+{
 public:
-	static inline ISaveExtension& Get() {
+	static inline ISaveExtension& Get()
+	{
 		return FModuleManager::LoadModuleChecked<ISaveExtension>("SaveExtension");
 	}
-	static inline bool IsAvailable() {
+	static inline bool IsAvailable()
+	{
 		return FModuleManager::Get().IsModuleLoaded("SaveExtension");
 	}
 
-	static void Log(const FSESettings& Settings, const FString& Message, bool bError)
+	static void Log(const USavePreset* Preset, const FString& Message, bool bError)
 	{
-		Log(Settings, Message, FColor::White, bError, 2.f);
+		Log(Preset, Message, FColor::White, bError, 2.f);
 	}
 
-	static void Log(const FSESettings& Settings, const FString& Message, FColor Color = FColor::White, bool bError = false, const float Duration = 2.f)
+	static void Log(const USavePreset* Preset, const FString& Message, FColor Color = FColor::White, bool bError = false, const float Duration = 2.f)
 	{
-		if (Settings.bDebug)
+		if (Preset->bDebug)
 		{
-			if (bError) {
+			if (bError)
+			{
 				Color = FColor::Red;
 			}
 
@@ -43,7 +47,7 @@ public:
 				UE_LOG(LogSaveExtension, Log, TEXT("%s"), *ComposedMessage);
 			}
 
-			if (Settings.bDebugInScreen && GEngine)
+			if (Preset->bDebugInScreen && GEngine)
 			{
 				GEngine->AddOnScreenDebugMessage(-1, Duration, Color, ComposedMessage);
 			}

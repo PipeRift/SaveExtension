@@ -3,7 +3,7 @@
 
 #include <CoreMinimal.h>
 
-#include "ClassFilter.h"
+#include "Misc/ClassFilter.h"
 #include "ObjectPacket.generated.h"
 
 
