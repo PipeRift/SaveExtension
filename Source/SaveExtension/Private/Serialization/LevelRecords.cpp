@@ -27,13 +27,3 @@ void FLevelRecord::Clean()
 	Actors.Empty();
 	AIControllers.Empty();
 }
-
-FActorPacketRecord& FLevelRecord::FindOrCreateActorPacket(const FActorPacketRecord& NewPacket)
-{
-	int32 Index = ActorPackets.Find(NewPacket);
-	if (Index != INDEX_NONE)
-	{
-		return ActorPackets[Index];
-	}
-	return ActorPackets.Add_GetRef(NewPacket);
-}

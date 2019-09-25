@@ -12,7 +12,7 @@ class USaveManager;
  * Contains all settings that affect saving.
  * This information is saved to be restored while loading.
  */
-USTRUCT()
+USTRUCT(Blueprintable)
 struct FSaveFilter
 {
 	GENERATED_BODY()
@@ -53,15 +53,15 @@ public:
 
 
 	FSaveFilter() {}
-	FSaveFilter(const USavePreset* Preset)
+	FSaveFilter(const USavePreset& Preset)
 	{
-		ActorFilter         = Preset->GetLoadActorFilter();
-		ComponentFilter     = Preset->GetLoadComponentFilter();
-		LoadActorFilter     = Preset->GetSaveActorFilter();
-		LoadComponentFilter = Preset->GetSaveComponentFilter();
+		ActorFilter         = Preset.GetActorFilter(true);
+		ComponentFilter     = Preset.GetComponentFilter(true);
+		LoadActorFilter     = Preset.GetActorFilter(false);
+		LoadComponentFilter = Preset.GetComponentFilter(false);
 
-		MaxFrameMs = Preset->GetMaxFrameMs();
-		bStoreComponents = Preset->bStoreComponents;
+		MaxFrameMs       = Preset.GetMaxFrameMs();
+		bStoreComponents = Preset.bStoreComponents;
 	}
 
 	FORCEINLINE bool ShouldSave(const AActor* Actor) const

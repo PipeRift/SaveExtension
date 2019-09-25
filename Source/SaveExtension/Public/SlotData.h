@@ -6,9 +6,14 @@
 #include "ISaveExtension.h"
 
  #include <CoreMinimal.h>
+#include <Engine/LevelStreaming.h>
+#include <Engine/LevelScriptActor.h>
 #include <GameFramework/SaveGame.h>
+#include <Serialization/ObjectAndNameAsStringProxyArchive.h>
 
+#include "Records.h"
 #include "LevelRecords.h"
+
 #include "SlotData.generated.h"
 
 
@@ -52,6 +57,4 @@ public:
 
 	/** Using manual serialization. It's way faster than reflection serialization */
 	virtual void Serialize(FArchive& Ar) override;
-
-	FLevelRecord* FindLevelRecord(const ULevelStreaming* Level);
 };

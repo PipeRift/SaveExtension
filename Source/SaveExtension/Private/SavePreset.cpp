@@ -5,7 +5,7 @@
 #include "SlotData.h"
 
 
-UDEPRECATED_SavePreset::UDEPRECATED_SavePreset()
+USavePreset::USavePreset()
 	: Super()
 	, SlotInfoTemplate(USlotInfo::StaticClass())
 	, SlotDataTemplate(USlotData::StaticClass())
@@ -21,6 +21,7 @@ UDEPRECATED_SavePreset::UDEPRECATED_SavePreset()
 	, bStoreGameInstance(false)
 	, bUseLoadActorFilter(false)
 	, bStoreComponents(true)
+	, bUseLoadComponentFilter(false)
 	, MultithreadedSerialization(ESaveASyncMode::SaveAsync)
 	, FrameSplittedSerialization(ESaveASyncMode::OnlySync)
 	, MaxFrameMs(5.f)

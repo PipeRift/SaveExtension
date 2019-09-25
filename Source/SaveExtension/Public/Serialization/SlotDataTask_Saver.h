@@ -16,6 +16,7 @@
 #include "SavePreset.h"
 #include "SlotData.h"
 
+#include "MTTask_SerializeActors.h"
 #include "Multithreading/SaveFileTask.h"
 #include "SlotDataTask_Saver.generated.h"
 
@@ -26,80 +27,6 @@
 DECLARE_DELEGATE_OneParam(FOnGameSaved, USlotInfo*);
 
 
-/////////////////////////////////////////////////////
-// FSerializeActorsTask
-// Async task to serialize actors from a level.
-class FSerializeActorsTask : public FSlotDataActorsTask
-{
-	const TArray<AActor*>* const LevelActors;
-	const int32 StartIndex;
-	const int32 Num;
-
-	/** USE ONLY FOR DUMPING DATA */
-	FLevelRecord* LevelRecord;
-
-	FActorRecord LevelScriptRecord;
-	TArray<FActorRecord> ActorRecords;
-	TArray<FControllerRecord> AIControllerRecords;
-
-
-public:
-
-	explicit FSerializeActorsTask(const bool bIsSync, const UWorld* World, USlotData* SlotData, const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, FLevelRecord* InLevelRecord, const FSESettings& Settings) :
-		FSlotDataActorsTask(bIsSync, World, SlotData, Settings),
-		LevelActors(InLevelActors),
-		StartIndex(InStartIndex),
-		Num(FMath::Min(InNum, LevelActors->Num() - StartIndex)),
-		LevelRecord(InLevelRecord),
-		LevelScriptRecord{}, ActorRecords{}, AIControllerRecords{}
-	{
-		// No apparent performance benefit
-		// ActorRecords.Reserve(Num);
-	}
-
-	void DoWork();
-
-	/** Called after task has completed to recover resulting information */
-	void DumpData() {
-		if (LevelScriptRecord.IsValid())
-			LevelRecord->LevelScript = LevelScriptRecord;
-
-		// Shrink not needed. Move wont keep reserved space
-		LevelRecord->Actors.Append(MoveTemp(ActorRecords));
-		LevelRecord->AIControllers.Append(MoveTemp(AIControllerRecords));
-	}
-
-	FORCEINLINE TStatId GetStatId() const
-	{
-		RETURN_QUICK_DECLARE_CYCLE_STAT(FSerializeActorsTask, STATGROUP_ThreadPoolAsyncTasks);
-	}
-
-private:
-
-	void SerializeLevelScript(const ALevelScriptActor* Level, FLevelRecord& LevelRecord) const;
-
-	void SerializeAI(const AAIController* AIController, FLevelRecord& LevelRecord) const;
-
-	/** Serializes an actor into this Controller Record */
-	bool SerializeController(const AController* Actor, FControllerRecord& Record) const;
-
-
-	void SerializeGameMode();
-	void SerializeGameState();
-	void SerializePlayerState(int32 PlayerId);
-	void SerializePlayerController(int32 PlayerId);
-	void SerializePlayerHUD(int32 PlayerId);
-	void SerializeGameInstance();
-
-
-	/** Serializes an actor into this Actor Record */
-	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;
-
-	/** Serializes the components of an actor into a provided Actor Record */
-	inline void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0) const;
-};
-
-
 /**
 * Manages the saving process of a SaveData file
 */
@@ -108,7 +35,7 @@ class USlotDataTask_Saver : public USlotDataTask
 {
 	GENERATED_BODY()
 
-		bool bOverride;
+	bool bOverride;
 	bool bSaveThumbnail;
 	int32 Slot;
 	int32 Width;
@@ -119,13 +46,7 @@ class USlotDataTask_Saver : public USlotDataTask
 protected:
 
 	UPROPERTY()
-		USlotInfo* SlotInfo;
-
-	UPROPERTY()
-		UClass* GraphClass;
-
-	UPROPERTY()
-		USaveGraph* Graph;
+	USlotInfo* SlotInfo;
 
 	/** Start Async variables */
 	TWeakObjectPtr<ULevel> CurrentLevel;
@@ -135,7 +56,7 @@ protected:
 	/** End Async variables */
 
 	/** Begin AsyncTasks */
-	TArray<FAsyncTask<FSerializeActorsTask>> Tasks;
+	TArray<FAsyncTask<FMTTask_SerializeActors>> Tasks;
 	FAsyncTask<FSaveFileTask>* SaveInfoTask;
 	FAsyncTask<FSaveFileTask>* SaveDataTask;
 	/** End AsyncTasks */
@@ -149,7 +70,7 @@ public:
 		, SaveDataTask(nullptr)
 	{}
 
-	auto Setup(int32 InSlot, UClass* InGraphClass, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
+	auto* Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
 	{
 		Slot = InSlot;
 		bOverride = bInOverride;
@@ -157,34 +78,22 @@ public:
 		Width = InWidth;
 		Height = InHeight;
 
-		check(InGraphClass);
-		GraphClass = InGraphClass;
 		return this;
 	}
 
-	auto Bind(const FOnGameSaved& OnSaved) { Delegate = OnSaved; return this; }
+	auto* Bind(const FOnGameSaved& OnSaved) { Delegate = OnSaved; return this; }
 
 	// Where all magic happens
 	virtual void OnStart() override;
 
-	virtual void Tick(float DeltaTime) override;
 	virtual void OnFinish(bool bSuccess) override;
 	virtual void BeginDestroy() override;
 
 protected:
 
-	bool TryOverridePreviousSlot(const FString& InfoCard, const FString& DataCard);
-
-	bool Prepare();
-
-	void UpdateInfoStats();
-
 	/** BEGIN Serialization */
 	void SerializeSync();
 	void SerializeLevelSync(const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
-
-	void SerializeASync();
-	void SerializeLevelASync(const ULevel* Level, const ULevelStreaming* StreamingLevel = nullptr);
 
 	/** Serializes all world actors. */
 	void SerializeWorld();

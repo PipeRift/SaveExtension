@@ -13,7 +13,6 @@
 #include <Components/StaticMeshComponent.h>
 #include <Components/SkeletalMeshComponent.h>
 
-#include "SaveGraph.h"
 #include "SlotData.h"
 #include "SaveFilter.h"
 
@@ -38,17 +37,22 @@ private:
 
 protected:
 
+	UPROPERTY()
 	USlotData* SlotData;
+
+	UPROPERTY()
+	const USavePreset* Preset;
 	FSaveFilter Filter;
 
 public:
 
 	USlotDataTask() : Super(), bRunning(false), bFinished(false) {}
 
-	void Prepare(USlotData* InSaveData, const FSESettings& InSettings, bool bIsLoading)
+	void Prepare(USlotData* InSaveData, const USavePreset& InPreset)
 	{
 		SlotData = InSaveData;
-		Filter = { InSettings };
+		Preset = &InPreset;
+		Filter = { InPreset };
 	}
 
 	USlotDataTask* Start();
@@ -97,23 +101,13 @@ protected:
 	/** USE ONLY IF SYNC */
 	USlotData* SlotData;
 
-	const bool bStoreGameMode;
-	const bool bStoreGameInstance;
-	const bool bStoreLevelBlueprints;
-	const bool bStoreAIControllers;
-	const bool bStoreComponents;
-	const bool bStoreControlRotation;
+	const FSaveFilter& Filter;
 
 
-	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const USavePreset& Settings) :
+	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const FSaveFilter& Filter) :
 		bIsSync(bInIsSync),
 		World(InWorld),
 		SlotData(InSlotData),
-		bStoreGameMode(Settings.bStoreGameMode),
-		bStoreGameInstance(Settings.bStoreGameInstance),
-		bStoreLevelBlueprints(Settings.bStoreLevelBlueprints),
-		bStoreAIControllers(Settings.bStoreAIControllers),
-		bStoreComponents(Settings.bStoreComponents),
-		bStoreControlRotation(Settings.bStoreControlRotation)
+		Filter(Filter)
 	{}
 };

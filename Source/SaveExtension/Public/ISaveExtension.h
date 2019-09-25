@@ -2,37 +2,33 @@
 
 #pragma once
 
-#include <Modules/ModuleManager.h>
-#include <Engine/Engine.h>
+#include "Modules/ModuleManager.h"
+#include "Engine/Engine.h"
 
 #include "SavePreset.h"
 
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSaveExtension, All, All);
 
-class ISaveExtension : public IModuleInterface
-{
+class ISaveExtension : public IModuleInterface {
 public:
-	static inline ISaveExtension& Get()
-	{
+	static inline ISaveExtension& Get() {
 		return FModuleManager::LoadModuleChecked<ISaveExtension>("SaveExtension");
 	}
-	static inline bool IsAvailable()
-	{
+	static inline bool IsAvailable() {
 		return FModuleManager::Get().IsModuleLoaded("SaveExtension");
 	}
 
-	static void Log(const USavePreset* Preset, const FString& Message, bool bError)
+	static void Log(const USavePreset* Preset, const FString Message, bool bError)
 	{
 		Log(Preset, Message, FColor::White, bError, 2.f);
 	}
 
-	static void Log(const USavePreset* Preset, const FString& Message, FColor Color = FColor::White, bool bError = false, const float Duration = 2.f)
+	static void Log(const USavePreset* Preset, const FString Message, FColor Color = FColor::White, bool bError = false, const float Duration = 2.f)
 	{
 		if (Preset->bDebug)
 		{
-			if (bError)
-			{
+			if (bError) {
 				Color = FColor::Red;
 			}
 

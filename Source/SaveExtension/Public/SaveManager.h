@@ -27,7 +27,6 @@
 #include "Serialization/SlotDataTask_LevelLoader.h"
 #include "SlotInfo.h"
 #include "SlotData.h"
-#include "Settings.h"
 
 #include "SaveManager.generated.h"
 
@@ -47,7 +46,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Screenshot)
 	int32 Width;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Screenshot)
 	int32 Height;
 };
@@ -68,10 +66,11 @@ class SAVEEXTENSION_API USaveManager : public UGameInstanceSubsystem, public FTi
 	/************************************************************************/
 	/* PROPERTIES														    */
 	/************************************************************************/
-protected:
+public:
 
-	UPROPERTY(EditAnywhere, Category = "Pipeline")
-	USavePreset* Preset;
+	/** Which save preset to use. Will use Default preset if none */
+	UPROPERTY(EditAnywhere, Category = "Save Extension", Config, meta = (DisplayName = "Preset"))
+	TAssetPtr<USavePreset> PresetAsset;
 
 private:
 
@@ -82,6 +81,9 @@ private:
 	/** Currently loaded SaveData. SaveData stores all serialized info about the world. */
 	UPROPERTY()
 	USlotData* CurrentData;
+
+	/** The game instance to which this save manager is owned. */
+	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
 	FScopedTaskList MTTasks;
 
@@ -109,22 +111,23 @@ public:
 	virtual void Deinitialize() override;
 	/** End USubsystem */
 
+	void SetGameInstance(UGameInstance* GameInstance) { OwningGameInstance = GameInstance; }
 
 	/** BLUEPRINTS */
 
 	/** Save the Game into an specified Slot */
-	bool SaveSlot(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
+	bool SaveSlot(int32 SlotId, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
 
 	/** Save the Game to a Slot */
-	bool SaveSlot(const USlotInfo* SlotInfo, TSubclassOf<USaveGraph> Graph, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
+	bool SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
 		if (!SlotInfo)
 			return false;
-		return SaveSlot(SlotInfo->Id, Graph, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
+		return SaveSlot(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
 	}
 
 	/** Save the currently loaded Slot */
 	bool SaveCurrentSlot(bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
-		return SaveSlot(CurrentInfo, CurrentInfo->GetGraphClass(), true, bScreenshot, Size, OnSaved);
+		return SaveSlot(CurrentInfo, true, bScreenshot, Size, OnSaved);
 	}
 
 	/** Load game from a slot Id */
@@ -164,7 +167,7 @@ public:
 
 	/** Save the Game into an specified Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot to Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPSaveSlotToId(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
+	void BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
 
 	/** Save the Game to a Slot */
 	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
@@ -174,7 +177,7 @@ public:
 			Result = ESaveGameResult::Failed;
 			return;
 		}
-		BPSaveSlotToId(SlotInfo->Id, SlotInfo->GetGraphClass(), bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
+		BPSaveSlotToId(SlotInfo->Id, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
 	}
 
 	/** Save the currently loaded Slot */
@@ -275,23 +278,51 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool IsInSlot() const { return CurrentInfo && CurrentData; }
 
+	/**
+	 * Set the preset to be used for saving and loading
+	 * @return true if the preset was set successfully
+	 */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
+	bool SetActivePreset(TAssetPtr<USavePreset> ActivePreset)
+	{
+		// We can only change a preset if we have no tasks running
+		if (!HasTasks())
+		{
+			PresetAsset = ActivePreset;
+			return true;
+		}
+		return false;
+	}
+
+	const USavePreset* GetPreset() const {
+		if (!PresetAsset.IsNull())
+		{
+			return PresetAsset.LoadSynchronous();
+		}
+		return GetDefault<USavePreset>();
+	}
+
 
 	void TryInstantiateInfo(bool bForced = false);
 
-	virtual FString GenerateBaseSlotName(const int32 SlotId) const {
+	virtual FString GenerateBaseSlotName(const int32 SlotId) const
+	{
 		return IsValidSlot(SlotId)? FString::FromInt(SlotId) : FString{};
 	}
 
-	FString GenerateSlotInfoName(const int32 SlotId) const {
+	FString GenerateSlotInfoName(const int32 SlotId) const
+	{
 		return GenerateBaseSlotName(SlotId);
 	}
 
-	FString GenerateSlotDataName(const int32 SlotId) const {
+	FString GenerateSlotDataName(const int32 SlotId) const
+	{
 		return GenerateSlotInfoName(SlotId).Append(TEXT("_data"));
 	}
 
-	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
-		const int32 MaxSlots = Settings.GetMaxSlots();
+	FORCEINLINE bool IsValidSlot(const int32 Slot) const
+	{
+		const int32 MaxSlots = GetPreset()->GetMaxSlots();
 		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
 	}
 
@@ -374,10 +405,10 @@ public:
 	void UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface);
 
 
-	void OnSaveBegan();
-	void OnSaveFinished(const bool bError);
-	void OnLoadBegan();
-	void OnLoadFinished(const bool bError);
+	void OnSaveBegan(const FSaveFilter& Filter);
+	void OnSaveFinished(const FSaveFilter& Filter, const bool bError);
+	void OnLoadBegan(const FSaveFilter& Filter);
+	void OnLoadFinished(const FSaveFilter& Filter, const bool bError);
 
 private:
 

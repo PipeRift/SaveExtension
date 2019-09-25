@@ -17,12 +17,12 @@ void USlotDataTask_Loader::OnStart()
 {
 	USaveManager* Manager = GetManager();
 
-	SELog(*Settings, "Loading from Slot " + FString::FromInt(Slot));
+	SELog(Preset, "Loading from Slot " + FString::FromInt(Slot));
 
 	NewSlotInfo = Manager->LoadInfo(Slot);
 	if (!NewSlotInfo)
 	{
-		SELog(*Settings, "Slot Info not found! Can't load.", FColor::White, true, 1);
+		SELog(Preset, "Slot Info not found! Can't load.", FColor::White, true, 1);
 		Finish(false);
 		return;
 	}
@@ -39,7 +39,7 @@ void USlotDataTask_Loader::OnStart()
 		//Keep loaded Info for loading
 		UGameplayStatics::OpenLevel(this, NewSlotInfo->Map);
 
-		SELog(*Settings, "Slot '" + FString::FromInt(Slot) + "' is recorded on another Map. Loading before charging slot.", FColor::White, false, 1);
+		SELog(Preset, "Slot '" + FString::FromInt(Slot) + "' is recorded on another Map. Loading before charging slot.", FColor::White, false, 1);
 	}
 	else if(IsDataLoaded())
 	{
@@ -67,12 +67,12 @@ void USlotDataTask_Loader::OnFinish(bool bSuccess)
 {
 	if (bSuccess)
 	{
-		SELog(*Settings, "Finished Loading", FColor::Green);
+		SELog(Preset, "Finished Loading", FColor::Green);
 	}
 
 	// Execute delegates
 	Delegate.ExecuteIfBound((bSuccess) ? NewSlotInfo : nullptr);
-	GetManager()->OnLoadFinished(!bSuccess);
+	GetManager()->OnLoadFinished(Filter, !bSuccess);
 }
 
 void USlotDataTask_Loader::BeginDestroy()
@@ -113,14 +113,14 @@ void USlotDataTask_Loader::StartDeserialization()
 		return;
 	}
 
-	Manager->OnLoadBegan();
+	Manager->OnLoadBegan(Filter);
 
 	//Apply current Info if succeeded
 	Manager->CurrentInfo = NewSlotInfo;
 
 	BeforeDeserialize();
 
-	if (Settings->IsFrameSplitLoad())
+	if (Preset->IsFrameSplitLoad())
 		DeserializeASync();
 	else
 		DeserializeSync();
@@ -131,7 +131,7 @@ void USlotDataTask_Loader::StartLoadingData()
 	const FString SlotDataName = GetManager()->GenerateSlotDataName(Slot);
 	LoadDataTask = new FAsyncTask<FLoadFileTask>(SlotDataName);
 
-	if (Settings->IsMTFilesLoad())
+	if (Preset->IsMTFilesLoad())
 		LoadDataTask->StartBackgroundTask();
 	else
 		LoadDataTask->StartSynchronousTask();
@@ -151,7 +151,7 @@ void USlotDataTask_Loader::BeforeDeserialize()
 	// Set current game time to the saved value
 	World->TimeSeconds = SlotData->TimeSeconds;
 
-	if (Settings->bStoreGameInstance)
+	if (Preset->bStoreGameInstance)
 		DeserializeGameInstance();
 }
 
@@ -162,7 +162,7 @@ void USlotDataTask_Loader::DeserializeSync()
 	const UWorld* World = GetWorld();
 	check(World);
 
-	SELog(*Settings, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	PrepareAllLevels();
 
@@ -191,7 +191,7 @@ void USlotDataTask_Loader::DeserializeLevelSync(const ULevel* Level, const ULeve
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelSync);
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SELog(*Settings, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
 	if (!LevelRecord)
@@ -207,7 +207,7 @@ void USlotDataTask_Loader::DeserializeASync()
 {
 	// Deserialize world
 	{
-		SELog(*Settings, "World '" + GetWorld()->GetName() + "'", FColor::Green, false, 1);
+		SELog(Preset, "World '" + GetWorld()->GetName() + "'", FColor::Green, false, 1);
 
 		PrepareAllLevels();
 
@@ -220,7 +220,7 @@ void USlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStreaming*
 	check(IsValid(Level));
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SELog(*Settings, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
 	if (!LevelRecord) {
@@ -293,18 +293,20 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 	// Records not contained in Scene Actors		 => Actors to be Respawned
 	// Scene Actors not contained in loaded records  => Actors to be Destroyed
 	// The rest									     => Just deserialize
+
 	TArray<FActorRecord> ActorsToSpawn = LevelRecord.Actors;
+	TArray<AActor*> ActorsToDestroy{};
 	{
 		// O(M*Log(N))
 		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 		{
 			AActor* const Actor{ *ActorItr };
-			if (IsValid(Actor))
+			if (Filter.ShouldSave(Actor))
 			{
 				// Remove records which actors do exist
 				const bool bFoundActorRecord = ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
 
-				if (!bFoundActorRecord && Filter.ShouldLoad(Actor)) // Don't destroy level actors
+				if (!bFoundActorRecord) // Don't destroy level actors
 				{
 					// If the actor wasn't found, mark it for destruction
 					Actor->Destroy();
@@ -373,7 +375,7 @@ void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* const Actor, const FLe
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor);
 
-	if (Filter.ShouldLoad(Actor))
+	if (Filter.ShouldSave(Actor))
 	{
 		// Find the record
 		const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
@@ -391,9 +393,7 @@ void USlotDataTask_Loader::DeserializeGameInstance()
 	const FObjectRecord& Record = SlotData->GameInstance;
 
 	if (!IsValid(GameInstance) || GameInstance->GetClass() != Record.Class)
-	{
 		bSuccess = false;
-	}
 
 	if (bSuccess)
 	{
@@ -403,14 +403,15 @@ void USlotDataTask_Loader::DeserializeGameInstance()
 		GameInstance->Serialize(Archive);
 	}
 
-	SELog(*Settings, "Game Instance '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	SELog(Preset, "Game Instance '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& Record)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeActor);
 
-	if (!IsValid(Actor) || !Record.IsValid() || Actor->GetClass() != Record.Class  || !Filter.ShouldLoad(Actor))
+	if (!IsValid(Actor) || !Record.IsValid() || !Filter.ShouldSave(Actor) ||
+		Actor->GetClass() != Record.Class)
 	{
 		return false;
 	}
@@ -418,6 +419,7 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 	// Always load saved tags
 	Actor->Tags = Record.Tags;
 
+	const bool bSavesPhysics = Filter.StoresPhysics(Actor);
 	if (Filter.StoresTransform(Actor))
 	{
 		Actor->SetActorTransform(Record.Transform);
@@ -462,13 +464,13 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 
 		for (auto* Component : Components)
 		{
-			if (Filter.ShouldLoad(Component))
+			if (Filter.ShouldSave(Component))
 			{
 				// Find the record
 				const FComponentRecord* Record = ActorRecord.ComponentRecords.FindByKey(Component);
 
 				if (!Record) {
-					SELog(*Settings, "Component '" + Component->GetFName().ToString() + "' - Record not found", FColor::Red, false, Indent + 1);
+					SELog(Preset, "Component '" + Component->GetFName().ToString() + "' - Record not found", FColor::Red, false, Indent + 1);
 					continue;
 				}
 
@@ -486,9 +488,12 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 					Component->ComponentTags = Record->Tags;
 				}
 
-				FMemoryReader MemoryReader(Record->Data, true);
-				FSEArchive Archive(MemoryReader, false);
-				Component->Serialize(Archive);
+				if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
+				{
+					FMemoryReader MemoryReader(Record->Data, true);
+					FSEArchive Archive(MemoryReader, false);
+					Component->Serialize(Archive);
+				}
 			}
 		}
 	}

@@ -53,7 +53,7 @@ void USlotDataTask_Saver::OnStart()
 	{
 		const UWorld* World = GetWorld();
 
-		GetManager()->OnSaveBegan();
+		GetManager()->OnSaveBegan(Filter);
 
 		USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 		SlotData = Manager->GetCurrentData();
@@ -117,14 +117,14 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 		// Clean serialization data
 		SlotData->Clean(true);
 
-		SELog(*Settings, "Finished Saving", FColor::Green);
+		SELog(Preset, "Finished Saving", FColor::Green);
 	}
 
 	// Execute delegates
 	USaveManager* Manager = GetManager();
 	check(Manager);
 	Delegate.ExecuteIfBound((Manager && bSuccess)? Manager->GetCurrentInfo() : nullptr);
-	Manager->OnSaveFinished(!bSuccess);
+	Manager->OnSaveFinished(Filter, !bSuccess);
 }
 
 void USlotDataTask_Saver::BeginDestroy()
@@ -156,7 +156,7 @@ void USlotDataTask_Saver::SerializeWorld()
 {
 	const UWorld* World = GetWorld();
 
-	SELog(*Settings, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 
@@ -182,11 +182,11 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 {
 	check(IsValid(Level));
 
-	if (!Settings->IsMTSerializationSave())
+	if (!Preset->IsMTSerializationSave())
 		AssignedTasks = 1;
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SELog(*Settings, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 
 	// Find level record. By default, main level
@@ -213,7 +213,7 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 		const int32 ObjectsCount = FMath::Min(ActorCount - Index, MaxObjectsPerTask);
 
 		// Add new Task
-		Tasks.Emplace(bStoreMainActors, GetWorld(), SlotData, &Level->Actors, Index, ObjectsCount, LevelRecord, *Settings);
+		Tasks.Emplace(bStoreMainActors, GetWorld(), SlotData, &Level->Actors, Index, ObjectsCount, LevelRecord, *Preset);
 
 		Index += ObjectsCount;
 		bStoreMainActors = false;
@@ -225,15 +225,15 @@ void USlotDataTask_Saver::RunScheduledTasks()
 	// Start all serialization tasks
 	if (Tasks.Num() > 0)
 	{
-		// First task stores
-		Tasks[0].StartSynchronousTask();
 		for (int32 I = 1; I < Tasks.Num(); ++I)
 		{
-			if (Settings->IsMTSerializationSave())
+			if (Preset->IsMTSerializationSave())
 				Tasks[I].StartBackgroundTask();
 			else
 				Tasks[I].StartSynchronousTask();
 		}
+		// First task stores
+		Tasks[0].StartSynchronousTask();
 	}
 	// Wait until all tasks have finished
 	for (auto& AsyncTask : Tasks)
@@ -256,9 +256,9 @@ void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataN
 	USlotData* CurrentData = Manager->GetCurrentData();
 
 	SaveInfoTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, InfoName, false /* Infos don't use compression to be loaded faster */);
-	SaveDataTask = new FAsyncTask<FSaveFileTask>(CurrentData, DataName, Settings->bUseCompression);
+	SaveDataTask = new FAsyncTask<FSaveFileTask>(CurrentData, DataName, Preset->bUseCompression);
 
-	if (Settings->IsMTFilesSave())
+	if (Preset->IsMTFilesSave())
 	{
 		SaveInfoTask->StartBackgroundTask();
 		SaveDataTask->StartBackgroundTask();

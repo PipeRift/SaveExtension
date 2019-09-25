@@ -29,13 +29,6 @@ class SAVEEXTENSION_API ULifetimeComponent : public UActorComponent, public ISav
 {
 	GENERATED_BODY()
 
-
-	/************************************************************************/
-	/* PROPERTIES														    */
-	/************************************************************************/
-public:
-
-
 	/************************************************************************/
 	/* METHODS											     			    */
 	/************************************************************************/
@@ -48,10 +41,10 @@ public:
 
 
 	// Event called when Save process starts
-	virtual void OnSaveBegan() override;
+	virtual void OnSaveBegan(const FSaveFilter& Filter) override;
 
 	// Event called when Load process ends
-	virtual void OnLoadFinished(bool bError);
+	virtual void OnLoadFinished(const FSaveFilter& Filter, bool bError);
 
 
 	FORCEINLINE USaveManager* GetManager() const

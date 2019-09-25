@@ -39,22 +39,24 @@ void ULifetimeComponent::EndPlay(EEndPlayReason::Type Reason)
 		{
 			Finish.Broadcast();
 		}
+
+		Manager->UnsubscribeFromEvents(this);
 	}
 
 	Super::EndPlay(Reason);
 }
 
-void ULifetimeComponent::OnSaveBegan()
+void ULifetimeComponent::OnSaveBegan(const FSaveFilter& Filter)
 {
-	if (USlotDataTask::ShouldSave(GetOwner()))
+	if (Filter.ShouldSave(GetOwner()))
 	{
 		Saved.Broadcast();
 	}
 }
 
-void ULifetimeComponent::OnLoadFinished(bool bError)
+void ULifetimeComponent::OnLoadFinished(const FSaveFilter& Filter, bool bError)
 {
-	if (USlotDataTask::ShouldSave(GetOwner()))
+	if (Filter.ShouldSave(GetOwner()))
 	{
 		Resume.Broadcast();
 	}

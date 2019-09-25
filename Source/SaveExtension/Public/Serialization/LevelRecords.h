@@ -8,7 +8,7 @@
 #include <Engine/LevelScriptActor.h>
 
 #include "Records.h"
-#include "ActorPacket.h"
+#include "SaveFilter.h"
 #include "LevelRecords.generated.h"
 
 
@@ -17,6 +17,9 @@ USTRUCT()
 struct FLevelRecord : public FBaseRecord
 {
 	GENERATED_BODY()
+
+
+	FSaveFilter SaveFilter;
 
 	/** Record of the Level Script Actor */
 	FActorRecord LevelScript;
@@ -28,23 +31,13 @@ struct FLevelRecord : public FBaseRecord
 	TArray<FControllerRecord> AIControllers;
 
 
-	TArray<FActorPacketRecord> ActorPackets;
-
-	// Combined filter from all ComponentPackets
-	FClassFilter ComponentFilter;
-
-
 	FLevelRecord() : Super() {}
 
 	virtual bool Serialize(FArchive& Ar) override;
 
-	bool IsValid() const {
-		return !Name.IsNone();
-	}
+	bool IsValid() const { return !Name.IsNone(); }
 
 	void Clean();
-
-	FActorPacketRecord& FindOrCreateActorPacket(const FActorPacketRecord& NewPacket);
 };
 
 

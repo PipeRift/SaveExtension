@@ -6,7 +6,9 @@
 
 #include "Asset/AssetTypeAction_SlotInfo.h"
 #include "Asset/AssetTypeAction_SlotData.h"
+#include "Asset/AssetTypeAction_SavePreset.h"
 
+#include "Customizations/SavePresetDetails.h"
 #include "Customizations/ClassFilterCustomization.h"
 #include "Customizations/ClassFilterGraphPanelPinFactory.h"
 #include "Customizations/ActorClassFilterCustomization.h"
@@ -26,6 +28,9 @@ void FSaveExtensionEditor::StartupModule()
 
 		TSharedRef<IAssetTypeActions> SaveDataAction = MakeShareable(new FAssetTypeAction_SlotData);
 		AssetTools.RegisterAssetTypeActions(SaveDataAction);
+
+		TSharedRef<IAssetTypeActions> SavePresetAction = MakeShareable(new FAssetTypeAction_SavePreset);
+		AssetTools.RegisterAssetTypeActions(SavePresetAction);
 	}
 
 	RegisterPropertyTypeCustomizations();
@@ -47,6 +52,8 @@ void FSaveExtensionEditor::ShutdownModule()
 
 void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 {
+	RegisterCustomClassLayout("SavePreset", FOnGetDetailCustomizationInstance::CreateStatic(&FSavePresetDetails::MakeInstance));
+
 	RegisterCustomPropertyTypeLayout("ClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FClassFilterCustomization::MakeInstance));
 	RegisterCustomPropertyTypeLayout("ActorClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FActorClassFilterCustomization::MakeInstance));
 	RegisterCustomPropertyTypeLayout("ComponentClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FComponentClassFilterCustomization::MakeInstance));

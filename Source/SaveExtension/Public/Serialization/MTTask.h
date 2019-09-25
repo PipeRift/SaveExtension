@@ -28,16 +28,11 @@ protected:
 
 	// Locally cached settings
 	FSaveFilter Filter;
-	const bool bStoreGameInstance;
-	const bool bStoreComponents;
 
 
-	FMTTask(const bool bIsloading, const UWorld* InWorld, USlotData* InSlotData, const FSESettings& Preset)
+	FMTTask(const bool bIsloading, const UWorld* InWorld, USlotData* InSlotData, const FSaveFilter& Filter)
 		: World(InWorld)
 		, SlotData(InSlotData)
-		, ActorFilter(&Preset.GetActorFilter(bIsloading))
-		, ComponentFilter(&Preset.GetComponentFilter(bIsloading))
-		, bStoreGameInstance(Preset.bStoreGameInstance)
-		, bStoreComponents(Preset.bStoreComponents)
+		, Filter(Filter)
 	{}
 };

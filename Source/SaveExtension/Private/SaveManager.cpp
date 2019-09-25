@@ -29,53 +29,55 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
+	//AutoLoad
+	if (GetPreset()->bAutoLoad)
+		ReloadCurrentSlot();
+
 	TryInstantiateInfo();
 	UpdateLevelStreamings();
 
-	//AutoLoad
-	if (Settings.bAutoLoad)
-	{
-		ReloadCurrentSlot();
-	}
+	AddToRoot();
 }
 
 void USaveManager::Deinitialize()
 {
-	if (Settings.bSaveOnExit)
-	{
-		SaveCurrentSlot();
-	}
+	Super::Deinitialize();
 
 	MTTasks.CancelAll();
 
+	if (GetPreset()->bSaveOnExit)
+		SaveCurrentSlot();
+
 	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
+	FGameDelegates::Get().GetEndPlayMapDelegate().RemoveAll(this);
 
-	Super::Deinitialize();
+	// Destroy
+	RemoveFromRoot();
+	MarkPendingKill();
 }
 
-bool USaveManager::SaveSlot(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
+bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	if (!CanLoadOrSave())
-	{
 		return false;
-	}
 
+	const USavePreset* Preset = GetPreset();
 	if (!IsValidSlot(SlotId))
 	{
-		SELog(Settings, "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
+		SELog(Preset, "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
 		return false;
 	}
 
 	//Saving
-	SELog(Settings, "Saving to Slot " + FString::FromInt(SlotId));
+	SELog(Preset, "Saving to Slot " + FString::FromInt(SlotId));
 
 	UWorld* World = GetWorld();
 	check(World);
 
 	//Launch task, always fail if it didn't finish or wasn't scheduled
 	auto* Task = CreateTask<USlotDataTask_Saver>()
-		->Setup(SlotId, Graph, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+		->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
 		->Bind(OnSaved)
 		->Start();
 
@@ -134,7 +136,7 @@ void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 	.StartBackgroundTask();
 }
 
-void USaveManager::BPSaveSlotToId(int32 SlotId, TSubclassOf<USaveGraph> Graph, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
+void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -143,7 +145,7 @@ void USaveManager::BPSaveSlotToId(int32 SlotId, TSubclassOf<USaveGraph> Graph, b
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
 		if (LatentActionManager.FindExistingAction<FSaveGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
-			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FSaveGameAction(this, SlotId, Graph, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID, new FSaveGameAction(this, SlotId, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
 		}
 		return;
 	}
@@ -219,17 +221,15 @@ void USaveManager::TryInstantiateInfo(bool bForced)
 	if (IsInSlot() && !bForced)
 		return;
 
-	UClass* InfoTemplate = Settings.SlotInfoTemplate.Get();
-	if (!InfoTemplate)
-	{
-		InfoTemplate = USlotInfo::StaticClass();
-	}
+	const USavePreset* Preset = GetPreset();
 
-	UClass* DataTemplate = Settings.SlotDataTemplate.Get();
+	UClass* InfoTemplate = Preset->SlotInfoTemplate.Get();
+	if (!InfoTemplate)
+		InfoTemplate = USlotInfo::StaticClass();
+
+	UClass* DataTemplate = Preset->SlotDataTemplate.Get();
 	if (!DataTemplate)
-	{
 		DataTemplate = USlotData::StaticClass();
-	}
 
 	CurrentInfo = NewObject<USlotInfo>(GetTransientPackage(), InfoTemplate);
 	CurrentData = NewObject<USlotData>(GetTransientPackage(), DataTemplate);
@@ -268,7 +268,7 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 {
 	if (!IsValidSlot(SlotId))
 	{
-		SELog(Settings, "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
+		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
@@ -293,7 +293,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
 {
 	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentData, Settings);
+	Task->Prepare(CurrentData, *GetPreset());
 	Tasks.Add(Task);
 	return Task;
 }
@@ -333,35 +333,33 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 }
 
 
-void USaveManager::OnSaveBegan()
+void USaveManager::OnSaveBegan(const FSaveFilter& Filter)
 {
-	IterateSubscribedInterfaces([](auto* Object)
+	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->OnSaveBegan();
+			Interface->OnSaveBegan(Filter);
 		}
-
-		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object);
+		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object, Filter);
 	});
 }
 
-void USaveManager::OnSaveFinished(const bool bError)
+void USaveManager::OnSaveFinished(const FSaveFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([bError](auto* Object)
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->OnSaveFinished(bError);
+			Interface->OnSaveFinished(Filter, bError);
 		}
-
-		ISaveExtensionInterface::Execute_ReceiveOnSaveFinished(Object, bError);
+		ISaveExtensionInterface::Execute_ReceiveOnSaveFinished(Object, Filter, bError);
 	});
 
 	if (!bError)
@@ -370,35 +368,33 @@ void USaveManager::OnSaveFinished(const bool bError)
 	}
 }
 
-void USaveManager::OnLoadBegan()
+void USaveManager::OnLoadBegan(const FSaveFilter& Filter)
 {
-	IterateSubscribedInterfaces([](auto* Object)
+	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->OnLoadBegan();
+			Interface->OnLoadBegan(Filter);
 		}
-
-		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object);
+		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object, Filter);
 	});
 }
 
-void USaveManager::OnLoadFinished(const bool bError)
+void USaveManager::OnLoadFinished(const FSaveFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([bError](auto* Object)
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->OnLoadFinished(bError);
+			Interface->OnLoadFinished(Filter, bError);
 		}
-
-		ISaveExtensionInterface::Execute_ReceiveOnLoadFinished(Object, bError);
+		ISaveExtensionInterface::Execute_ReceiveOnLoadFinished(Object, Filter, bError);
 	});
 
 	if (!bError)
@@ -409,7 +405,7 @@ void USaveManager::OnLoadFinished(const bool bError)
 
 void USaveManager::OnMapLoadStarted(const FString& MapName)
 {
-	SELog(Settings, "Loading Map '" + MapName + "'", FColor::Purple);
+	SELog(GetPreset(), "Loading Map '" + MapName + "'", FColor::Purple);
 }
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)
