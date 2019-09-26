@@ -9,11 +9,13 @@
 
 
 UINTERFACE(Category = SaveExtension, BlueprintType)
-class SAVEEXTENSION_API USaveExtensionInterface : public UInterface {
+class SAVEEXTENSION_API USaveExtensionInterface : public UInterface
+{
 	GENERATED_UINTERFACE_BODY()
 };
 
-class SAVEEXTENSION_API ISaveExtensionInterface {
+class SAVEEXTENSION_API ISaveExtensionInterface
+{
 
 	GENERATED_BODY()
 

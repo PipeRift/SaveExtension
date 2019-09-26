@@ -9,7 +9,6 @@
 #include <GameFramework/Actor.h>
 #include <Engine/LevelScriptActor.h>
 #include <GameFramework/Controller.h>
-#include <AIController.h>
 
 #include "SavePreset.h"
 #include "SlotInfo.h"

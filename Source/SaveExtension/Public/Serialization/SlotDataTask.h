@@ -7,11 +7,6 @@
 #include <Engine/Level.h>
 #include <Engine/LevelStreaming.h>
 #include <GameFramework/Actor.h>
-#include <Engine/LevelScriptActor.h>
-#include <GameFramework/Controller.h>
-#include <AIController.h>
-#include <Components/StaticMeshComponent.h>
-#include <Components/SkeletalMeshComponent.h>
 
 #include "SlotData.h"
 #include "SaveFilter.h"

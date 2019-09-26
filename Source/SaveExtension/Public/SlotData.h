@@ -11,8 +11,8 @@
 #include <GameFramework/SaveGame.h>
 #include <Serialization/ObjectAndNameAsStringProxyArchive.h>
 
-#include "Records.h"
-#include "LevelRecords.h"
+#include "Serialization/Records.h"
+#include "Serialization/LevelRecords.h"
 
 #include "SlotData.generated.h"
 
