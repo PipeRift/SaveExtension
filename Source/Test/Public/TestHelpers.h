@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <AutomationTest.h>
+#include <Misc/AutomationTest.h>
 #include <Engine/World.h>
 
 

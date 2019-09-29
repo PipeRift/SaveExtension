@@ -1,7 +1,7 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved
 #pragma once
 
-#include <CoreUObject.h>
+#include <CoreMinimal.h>
 #include <Serialization/ObjectAndNameAsStringProxyArchive.h>
 
 
