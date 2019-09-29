@@ -25,4 +25,5 @@ upload:
   stage: deploy
   script:
     - cmd.exe /c E:\Piperift\GitlabRunner\Lib\CompressPlugin.bat
+    - py E:\Piperift\GitlabRunner\Lib\upload.py
     - cmd.exe /c E:\Piperift\GitlabRunner\Lib\Upload.bat
