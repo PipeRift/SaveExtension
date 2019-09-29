@@ -53,6 +53,10 @@ UWorld* FSaveSpec::CreateTestWorld()
 
 	if (ReturnVal != nullptr)
 	{
+		// Create a blank world context, to prevent crashes
+		FWorldContext& CurContext = GEngine->CreateNewWorldContext(EWorldType::None);
+		CurContext.SetCurrentWorld(ReturnVal);
+
 		Worlds.Add(ReturnVal);
 
 		// Hack-mark the world as having begun play (when it has not)
@@ -78,10 +82,6 @@ UWorld* FSaveSpec::CreateTestWorld()
 				}
 			}
 		}
-
-		// Create a blank world context, to prevent crashes
-		FWorldContext& CurContext = GEngine->CreateNewWorldContext(EWorldType::None);
-		CurContext.SetCurrentWorld(ReturnVal);
 	}
 
 	return ReturnVal;

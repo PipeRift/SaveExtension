@@ -19,8 +19,14 @@ void FSavePresetSpec::Define()
 		World = CreateTestWorld();
 	});
 
-	It("Can change preset", [this]() {
-		TestNotImplemented();
+	It("Can change preset", [this]() {});
+
+	It("This Test Succeeds", [this]() {
+		TestTrue("Value", true);
+	});
+
+	It("This Test Fails", [this]() {
+		TestTrue("Value", false);
 	});
 
 	AfterEach([this]() {

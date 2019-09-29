@@ -19,7 +19,7 @@ build plugin:
 unit test:
   stage: test
   script:
-    - echo No tests implemented
+    - py E:\Piperift\GitlabRunner\Lib\test_plugin.py
 
 upload:
   stage: deploy
