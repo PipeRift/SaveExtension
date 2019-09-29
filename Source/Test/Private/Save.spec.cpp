@@ -16,7 +16,7 @@ END_TESTSPEC(FSavePresetSpec)
 void FSavePresetSpec::Define()
 {
 	BeforeEach([this]() {
-		World = CreateTestWorld();
+		//World = CreateTestWorld();
 	});
 
 	It("Can change preset", [this]() {});
@@ -30,7 +30,7 @@ void FSavePresetSpec::Define()
 	});
 
 	AfterEach([this]() {
-		DestroyTestWorld(World);
+		//DestroyTestWorld(World);
 	});
 }
 
