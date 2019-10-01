@@ -2,21 +2,13 @@
 
 #pragma once
 
+#include <CoreMinimal.h>
 #include <Misc/AutomationTest.h>
 #include <Engine/World.h>
 
 
 class FSaveSpec : public FAutomationSpecBase
 {
-private:
-
-	/** Active unit test worlds */
-	static TArray<UWorld*> Worlds;
-
-	/** Unit testing worlds, pending cleanup */
-	static TArray<UWorld*> PendingWorldsToCleanup;
-
-
 public:
 
 	FSaveSpec(const FString& InName, const bool bInComplexTask)
@@ -30,18 +22,7 @@ protected:
 		AddWarning("Test not implemented.");
 	}
 
-
-	UWorld* GetPrimaryWorld() const;
-	UWorld* CreateTestWorld();
-
-	void DestroyTestWorld(UWorld* CleanupWorld);
-
-	static void CleanupUnitTestWorlds();
-
-	bool IsUnitTestWorld(UWorld* InWorld) const
-	{
-		return Worlds.Contains(InWorld);
-	}
+	UWorld* GetTestWorld() const;
 };
 
 

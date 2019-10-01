@@ -1,35 +1,32 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "TestHelpers.h"
+#include "SaveManager.h"
 
 namespace
 {
-	constexpr uint32 TestFlags = EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::EngineFilter;
+	constexpr uint32 TestFlags = EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter;
 }
 
 #define BASE_SPEC FSaveSpec
 
 BEGIN_TESTSPEC(FSavePresetSpec, "SaveExtension.Presets", TestFlags)
-	UWorld* World;
+	UWorld* World = nullptr;
+	USaveManager* SaveManager = nullptr;
 END_TESTSPEC(FSavePresetSpec)
 
 void FSavePresetSpec::Define()
 {
 	BeforeEach([this]() {
-		//World = CreateTestWorld();
+		World = GetTestWorld();
+		SaveManager = USaveManager::GetSaveManager(World);
 	});
 
-	It("Can change preset", [this]() {
-		TestNotImplemented();
+	It("SaveManager is instanced", [this]() {
+		TestNotNull(TEXT("SaveManager"), SaveManager);
 	});
 
-	It("This Test Succeeds", [this]() {
-		TestTrue("Value", true);
-	});
-
-	AfterEach([this]() {
-		//DestroyTestWorld(World);
-	});
+	AfterEach([this]() {});
 }
 
 
