@@ -3,10 +3,15 @@
 #pragma once
 
 #include "SlotDataTask.h"
+#include "ISaveExtension.h"
 
 #include <Engine/Level.h>
 #include <Engine/LevelStreaming.h>
 #include <GameFramework/Actor.h>
+#include <Engine/LevelScriptActor.h>
+#include <GameFramework/Controller.h>
+#include <AIController.h>
+#include <Async/AsyncWork.h>
 
 #include "SavePreset.h"
 #include "SlotData.h"
@@ -40,12 +45,15 @@ class USlotDataTask_Saver : public USlotDataTask
 
 protected:
 
-	// Async variables
+	UPROPERTY()
+	USlotInfo* SlotInfo;
+
+	/** Start Async variables */
 	TWeakObjectPtr<ULevel> CurrentLevel;
 	TWeakObjectPtr<ULevelStreaming> CurrentSLevel;
-
 	int32 CurrentActorIndex;
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
+	/** End Async variables */
 
 	/** Begin AsyncTasks */
 	TArray<FAsyncTask<FMTTask_SerializeActors>> Tasks;
@@ -62,37 +70,34 @@ public:
 		, SaveDataTask(nullptr)
 	{}
 
-	auto Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
+	auto* Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
 	{
 		Slot = InSlot;
 		bOverride = bInOverride;
 		bSaveThumbnail = bInSaveThumbnail;
 		Width = InWidth;
 		Height = InHeight;
+
 		return this;
 	}
 
-	auto Bind(const FOnGameSaved& OnSaved) { Delegate = OnSaved; return this; }
+	auto* Bind(const FOnGameSaved& OnSaved) { Delegate = OnSaved; return this; }
 
+	// Where all magic happens
 	virtual void OnStart() override;
-	virtual void Tick(float DeltaTime) override
-	{
-		// If save file tasks exist and are both done
-		if (SaveInfoTask && SaveDataTask && SaveInfoTask->IsDone() && SaveDataTask->IsDone())
-			Finish(true);
-	}
+
 	virtual void OnFinish(bool bSuccess) override;
 	virtual void BeginDestroy() override;
 
 protected:
 
-	/** Begin Serialization */
+	/** BEGIN Serialization */
 	void SerializeSync();
-	void SerializeLevel(const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
+	void SerializeLevelSync(const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
 
 	/** Serializes all world actors. */
 	void SerializeWorld();
-	/** End Serialization */
+	/** END Serialization */
 
 	void RunScheduledTasks();
 

@@ -46,7 +46,7 @@ void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 
 			const float CurrentMS = GetTimeMilliseconds();
 			// If x milliseconds passed, continue on next frame
-			if (CurrentMS - StartMS >= MaxFrameMs)
+			if (CurrentMS - StartMS >= Filter.MaxFrameMs)
 				return;
 		}
 	}

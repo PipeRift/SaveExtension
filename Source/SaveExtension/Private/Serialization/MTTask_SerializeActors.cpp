@@ -7,13 +7,14 @@
 #include "SlotInfo.h"
 #include "SlotData.h"
 #include "SavePreset.h"
+#include "Serialization/SEArchive.h"
 
 
 /////////////////////////////////////////////////////
 // FMTTask_SerializeActors
 void FMTTask_SerializeActors::DoWork()
 {
-	if (bStoreMainActors && bStoreGameInstance)
+	if (Filter.bStoreGameInstance)
 	{
 		SerializeGameInstance();
 	}
@@ -21,7 +22,7 @@ void FMTTask_SerializeActors::DoWork()
 	for (int32 I = 0; I < Num; ++I)
 	{
 		const AActor* const Actor = (*LevelActors)[StartIndex + I];
-		if (ShouldSave(Actor) && ShouldSaveAsWorld(Actor))
+		if (Filter.ShouldSave(Actor))
 		{
 			FActorRecord Record;
 			SerializeActor(Actor, Record);
@@ -32,14 +33,13 @@ void FMTTask_SerializeActors::DoWork()
 
 void FMTTask_SerializeActors::SerializeGameInstance()
 {
-	UGameInstance* GameInstance = World->GetGameInstance();
-	if (GameInstance)
+	if (UGameInstance* GameInstance = World->GetGameInstance())
 	{
 		FObjectRecord Record{ GameInstance };
 
 		//Serialize into Record Data
 		FMemoryWriter MemoryWriter(Record.Data, true);
-		FSaveExtensionArchive Archive(MemoryWriter, false);
+		FSEArchive Archive(MemoryWriter, false);
 		GameInstance->Serialize(Archive);
 
 		SlotData->GameInstance = MoveTemp(Record);
@@ -48,14 +48,13 @@ void FMTTask_SerializeActors::SerializeGameInstance()
 
 bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& Record) const
 {
-
 	//Clean the record
 	Record = { Actor };
 
 	Record.bHiddenInGame = Actor->bHidden;
-	Record.bIsProcedural = IsProcedural(Actor);
+	Record.bIsProcedural = Filter.IsProcedural(Actor);
 
-	if (SavesTags(Actor))
+	if (Filter.StoresTags(Actor))
 	{
 		Record.Tags = Actor->Tags;
 	}
@@ -64,18 +63,18 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 		// Only save save-tags
 		for (const auto& Tag : Actor->Tags)
 		{
-			if (USlotDataTask::IsSaveTag(Tag))
+			if (Filter.IsSaveTag(Tag))
 			{
 				Record.Tags.Add(Tag);
 			}
 		}
 	}
 
-	if (SavesTransform(Actor))
+	if (Filter.StoresTransform(Actor))
 	{
 		Record.Transform = Actor->GetTransform();
 
-		if (SavesPhysics(Actor))
+		if (Filter.StoresPhysics(Actor))
 		{
 			USceneComponent* const Root = Actor->GetRootComponent();
 			if (Root && Root->Mobility == EComponentMobility::Movable)
@@ -93,13 +92,13 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 		}
 	}
 
-	if (SavesComponents(Actor))
+	if (Filter.bStoreComponents)
 	{
 		SerializeActorComponents(Actor, Record, 1);
 	}
 
 	FMemoryWriter MemoryWriter(Record.Data, true);
-	FSaveExtensionArchive Archive(MemoryWriter, false);
+	FSEArchive Archive(MemoryWriter, false);
 	const_cast<AActor*>(Actor)->Serialize(Archive);
 
 	return true;
@@ -110,13 +109,13 @@ void FMTTask_SerializeActors::SerializeActorComponents(const AActor* Actor, FAct
 	const TSet<UActorComponent*>& Components = Actor->GetComponents();
 	for (auto* Component : Components)
 	{
-		if (ShouldSave(Component))
+		if (Filter.ShouldSave(Component))
 		{
 			FComponentRecord ComponentRecord;
 			ComponentRecord.Name = Component->GetFName();
 			ComponentRecord.Class = Component->GetClass();
 
-			if (SavesTransform(Component))
+			if (Filter.StoresTransform(Component))
 			{
 				const USceneComponent* Scene = CastChecked<USceneComponent>(Component);
 				if (Scene->Mobility == EComponentMobility::Movable)
@@ -125,7 +124,7 @@ void FMTTask_SerializeActors::SerializeActorComponents(const AActor* Actor, FAct
 				}
 			}
 
-			if (SavesTags(Component))
+			if (Filter.StoresTags(Component))
 			{
 				ComponentRecord.Tags = Component->ComponentTags;
 			}
@@ -133,7 +132,7 @@ void FMTTask_SerializeActors::SerializeActorComponents(const AActor* Actor, FAct
 			if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
 			{
 				FMemoryWriter MemoryWriter(ComponentRecord.Data, true);
-				FSaveExtensionArchive Archive(MemoryWriter, false);
+				FSEArchive Archive(MemoryWriter, false);
 				Component->Serialize(Archive);
 			}
 			ActorRecord.ComponentRecords.Add(ComponentRecord);

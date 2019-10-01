@@ -293,7 +293,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
 {
 	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentData, GetPreset());
+	Task->Prepare(CurrentData, *GetPreset());
 	Tasks.Add(Task);
 	return Task;
 }
@@ -333,35 +333,33 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 }
 
 
-void USaveManager::OnSaveBegan()
+void USaveManager::OnSaveBegan(const FSaveFilter& Filter)
 {
-	IterateSubscribedInterfaces([](auto* Object)
+	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->OnSaveBegan();
+			Interface->OnSaveBegan(Filter);
 		}
-
-		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object);
+		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object, Filter);
 	});
 }
 
-void USaveManager::OnSaveFinished(const bool bError)
+void USaveManager::OnSaveFinished(const FSaveFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([bError](auto* Object)
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->OnSaveFinished(bError);
+			Interface->OnSaveFinished(Filter, bError);
 		}
-
-		ISaveExtensionInterface::Execute_ReceiveOnSaveFinished(Object, bError);
+		ISaveExtensionInterface::Execute_ReceiveOnSaveFinished(Object, Filter, bError);
 	});
 
 	if (!bError)
@@ -370,35 +368,33 @@ void USaveManager::OnSaveFinished(const bool bError)
 	}
 }
 
-void USaveManager::OnLoadBegan()
+void USaveManager::OnLoadBegan(const FSaveFilter& Filter)
 {
-	IterateSubscribedInterfaces([](auto* Object)
+	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->OnLoadBegan();
+			Interface->OnLoadBegan(Filter);
 		}
-
-		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object);
+		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object, Filter);
 	});
 }
 
-void USaveManager::OnLoadFinished(const bool bError)
+void USaveManager::OnLoadFinished(const FSaveFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([bError](auto* Object)
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
 		if (ISaveExtensionInterface* Interface = Cast<ISaveExtensionInterface>(Object))
 		{
-			Interface->OnLoadFinished(bError);
+			Interface->OnLoadFinished(Filter, bError);
 		}
-
-		ISaveExtensionInterface::Execute_ReceiveOnLoadFinished(Object, bError);
+		ISaveExtensionInterface::Execute_ReceiveOnLoadFinished(Object, Filter, bError);
 	});
 
 	if (!bError)

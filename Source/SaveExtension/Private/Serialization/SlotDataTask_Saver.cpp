@@ -53,7 +53,7 @@ void USlotDataTask_Saver::OnStart()
 	{
 		const UWorld* World = GetWorld();
 
-		GetManager()->OnSaveBegan();
+		GetManager()->OnSaveBegan(Filter);
 
 		USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 		SlotData = Manager->GetCurrentData();
@@ -124,7 +124,7 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 	USaveManager* Manager = GetManager();
 	check(Manager);
 	Delegate.ExecuteIfBound((Manager && bSuccess)? Manager->GetCurrentInfo() : nullptr);
-	Manager->OnSaveFinished(!bSuccess);
+	Manager->OnSaveFinished(Filter, !bSuccess);
 }
 
 void USlotDataTask_Saver::BeginDestroy()
@@ -166,19 +166,19 @@ void USlotDataTask_Saver::SerializeWorld()
 
 	Tasks.Reserve(NumberOfThreads);
 
-	SerializeLevel(World->GetCurrentLevel(), TasksPerLevel);
+	SerializeLevelSync(World->GetCurrentLevel(), TasksPerLevel);
 	for (const ULevelStreaming* Level : Levels)
 	{
 		if (Level->IsLevelLoaded())
 		{
-			SerializeLevel(Level->GetLoadedLevel(), TasksPerLevel, Level);
+			SerializeLevelSync(Level->GetLoadedLevel(), TasksPerLevel, Level);
 		}
 	}
 
 	RunScheduledTasks();
 }
 
-void USlotDataTask_Saver::SerializeLevel(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
+void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
 {
 	check(IsValid(Level));
 
@@ -225,8 +225,6 @@ void USlotDataTask_Saver::RunScheduledTasks()
 	// Start all serialization tasks
 	if (Tasks.Num() > 0)
 	{
-		// First task stores
-		Tasks[0].StartSynchronousTask();
 		for (int32 I = 1; I < Tasks.Num(); ++I)
 		{
 			if (Preset->IsMTSerializationSave())
@@ -234,6 +232,8 @@ void USlotDataTask_Saver::RunScheduledTasks()
 			else
 				Tasks[I].StartSynchronousTask();
 		}
+		// First task stores
+		Tasks[0].StartSynchronousTask();
 	}
 	// Wait until all tasks have finished
 	for (auto& AsyncTask : Tasks)

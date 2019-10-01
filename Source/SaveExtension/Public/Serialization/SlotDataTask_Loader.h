@@ -9,7 +9,6 @@
 #include <GameFramework/Actor.h>
 #include <Engine/LevelScriptActor.h>
 #include <GameFramework/Controller.h>
-#include <AIController.h>
 
 #include "SavePreset.h"
 #include "SlotInfo.h"
@@ -67,9 +66,7 @@ public:
 		, LoadDataTask(nullptr)
 		, bDeserializing(false)
 		, bLoadingMap(false)
-	{
-		bIsLoading = true;
-	}
+	{}
 
 	auto Setup(int32 InSlot)
 	{

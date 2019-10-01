@@ -7,7 +7,6 @@
 #include "UObject/NoExportTypes.h"
 
 #include "Misc/ClassFilter.h"
-#include "Serialization/Serializer.h"
 #include "SavePreset.generated.h"
 
 
@@ -119,10 +118,6 @@ public:
 	/** If enabled, this filter will be used while loading instead of "ComponentFilter" */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config, meta = (EditCondition = "bUseLoadComponentFilter"))
 	FComponentClassFilter LoadComponentFilter;
-
-	// List of serializers by class
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
-	TMap<UClass*, TSubclassOf<USerializer>> Serializers;
 
 protected:
 

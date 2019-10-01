@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <CoreMinimal.h>
+#include "CoreMinimal.h"
 #include <GameFramework/Actor.h>
+#include <Components/ActorComponent.h>
 #include "ClassFilter.generated.h"
 
 
@@ -33,10 +34,14 @@ protected:
 	UPROPERTY(Transient)
 	mutable TSet<const UClass*> BakedAllowedClasses;
 
+
 public:
 
 	FClassFilter() : FClassFilter(UObject::StaticClass()) {}
 	FClassFilter(UClass* const BaseClass);
+
+	// Merges another filter into this one. Other has priority.
+	void Merge(const FClassFilter& Other);
 
 	/** Bakes a set of allowed classes based on the current settings */
 	void BakeAllowedClasses() const;
@@ -68,6 +73,7 @@ struct FActorClassFilter
 	FActorClassFilter()
 		: ClassFilter(AActor::StaticClass())
 	{}
+	FActorClassFilter(TSubclassOf<AActor> actorClass) : ClassFilter(actorClass) {}
 
 	/** Bakes a set of allowed classes based on the current settings */
 	void BakeAllowedClasses() const { ClassFilter.BakeAllowedClasses(); }
@@ -91,6 +97,7 @@ struct FComponentClassFilter
 	FComponentClassFilter()
 		: ClassFilter(UActorComponent::StaticClass())
 	{}
+	FComponentClassFilter(TSubclassOf<UActorComponent> compClass) : ClassFilter(compClass) {}
 
 	/** Bakes a set of allowed classes based on the current settings */
 	void BakeAllowedClasses() const { ClassFilter.BakeAllowedClasses(); }

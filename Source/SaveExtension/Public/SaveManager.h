@@ -305,19 +305,23 @@ public:
 
 	void TryInstantiateInfo(bool bForced = false);
 
-	virtual FString GenerateBaseSlotName(const int32 SlotId) const {
+	virtual FString GenerateBaseSlotName(const int32 SlotId) const
+	{
 		return IsValidSlot(SlotId)? FString::FromInt(SlotId) : FString{};
 	}
 
-	FString GenerateSlotInfoName(const int32 SlotId) const {
+	FString GenerateSlotInfoName(const int32 SlotId) const
+	{
 		return GenerateBaseSlotName(SlotId);
 	}
 
-	FString GenerateSlotDataName(const int32 SlotId) const {
+	FString GenerateSlotDataName(const int32 SlotId) const
+	{
 		return GenerateSlotInfoName(SlotId).Append(TEXT("_data"));
 	}
 
-	FORCEINLINE bool IsValidSlot(const int32 Slot) const {
+	FORCEINLINE bool IsValidSlot(const int32 Slot) const
+	{
 		const int32 MaxSlots = GetPreset()->GetMaxSlots();
 		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
 	}
@@ -401,10 +405,10 @@ public:
 	void UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface);
 
 
-	void OnSaveBegan();
-	void OnSaveFinished(const bool bError);
-	void OnLoadBegan();
-	void OnLoadFinished(const bool bError);
+	void OnSaveBegan(const FSaveFilter& Filter);
+	void OnSaveFinished(const FSaveFilter& Filter, const bool bError);
+	void OnLoadBegan(const FSaveFilter& Filter);
+	void OnLoadFinished(const FSaveFilter& Filter, const bool bError);
 
 private:
 
