@@ -26,7 +26,9 @@ protected:
 };
 
 
-#define BASE_SPEC FSaveSpec
+#ifndef BASE_SPEC
+	#define BASE_SPEC FSaveSpec
+#endif
 
 #define BEGIN_TESTSPEC_PRIVATE( TClass, PrettyName, TFlags, FileName, LineNumber ) \
 	class TClass : public BASE_SPEC \
