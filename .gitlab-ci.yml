@@ -14,15 +14,15 @@ cache:
 build plugin:
   stage: compile
   script:
-    - cmd.exe /c E:\Piperift\GitlabRunner\Lib\BuildPlugin.bat
+    - cmd.exe /c $LIB_PATH/BuildPlugin.bat
 
 unit test:
   stage: test
   script:
-    - py E:\Piperift\GitlabRunner\Lib\test_plugin.py
+    - py $LIB_PATH/test_plugin.py
 
 upload:
   stage: deploy
   script:
-    - cmd.exe /c E:\Piperift\GitlabRunner\Lib\CompressPlugin.bat
-    - py E:\Piperift\GitlabRunner\Lib\upload.py
+    - cmd.exe /c $LIB_PATH/CompressPlugin.bat
+    - py $LIB_PATH/upload.py
