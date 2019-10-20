@@ -34,7 +34,7 @@ UWorld* FSaveSpec::GetTestWorld() const
 	UWorld* TestWorld = GWorld;
 	if (GIsEditor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SaveExtension Test using GWorld. Not correct for PIE"));
+		UE_LOG(LogTemp, Warning, TEXT("Test using GWorld. Not correct for PIE"));
 	}
 
 	return TestWorld;
