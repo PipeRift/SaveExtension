@@ -7,13 +7,38 @@
 #include <Engine/World.h>
 
 
+DECLARE_DELEGATE_OneParam(FSaveTestOnWorldReady, UWorld*);
+
 class FSaveSpec : public FAutomationSpecBase
 {
+	using Super = FAutomationSpecBase;
+
+protected:
+
+#if WITH_EDITOR
+	bool bInitializedPIE = false;
+	bool bWorldIsReady = false;
+#endif
+
+	int32 TestRemaining = 0;
+
+private:
+
+#if WITH_EDITOR
+	FDelegateHandle PIEStartedHandle;
+#endif
+
+	// Selected world for testing
+	TWeakObjectPtr<UWorld> World;
+
+
 public:
 
 	FSaveSpec(const FString& InName, const bool bInComplexTask)
 		: FAutomationSpecBase(InName, bInComplexTask)
 	{}
+
+	UWorld* GetWorld() const { return World.Get(); }
 
 protected:
 
@@ -22,7 +47,20 @@ protected:
 		AddWarning("Test not implemented.");
 	}
 
-	UWorld* GetTestWorld() const;
+	void PrepareTestWorld(FSaveTestOnWorldReady OnWorldReady);
+	void ReleaseTestWorld();
+
+	// Runs before
+	void PreDefine();
+	void PostDefine();
+
+	virtual bool RunTest(const FString& InParameters) override;
+
+private:
+
+#if WITH_EDITOR
+	static UWorld* FindGameEditorWorld();
+#endif
 };
 
 
