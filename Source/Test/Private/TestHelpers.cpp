@@ -9,7 +9,7 @@
 #include <GameFramework/WorldSettings.h>
 #include <EngineUtils.h>
 #if WITH_EDITOR
-#include <AutomationEditorPromotionCommon.h>
+#include <Tests/AutomationEditorPromotionCommon.h>
 #include <Editor.h>
 #endif
 
