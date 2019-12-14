@@ -10,7 +10,7 @@
 	"CreatedByURL" : "https://piperift.com",
     "DocsURL": "https://piperift.com/SaveExtension/",
 	"SupportURL" : "info@piperift.com",
-	"EngineVersion" : "4.23.0",
+	"EngineVersion" : "4.24",
     "EnabledByDefault": true,
     "CanContainContent": false,
 	"IsBetaVersion" : false,
@@ -23,7 +23,6 @@
 				"Win64",
 				"Win32",
 				"Linux",
-				"HTML5",
 				"Android",
 				"PS4",
 				"XboxOne",
@@ -39,7 +38,6 @@
 				"Win64",
 				"Win32",
 				"Linux",
-				"HTML5",
 				"Android",
 				"PS4",
 				"XboxOne",
@@ -49,7 +47,7 @@
 		},
 		{
 			"Name" : "SaveExtensionTest",
-			"Type" : "Developer",
+			"Type" : "DeveloperTool",
 			"LoadingPhase" : "PreDefault",
 			"WhitelistPlatforms": [
 				"Win64",
