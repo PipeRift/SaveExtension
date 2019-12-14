@@ -51,7 +51,7 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 	//Clean the record
 	Record = { Actor };
 
-	Record.bHiddenInGame = Actor->bHidden;
+	Record.bHiddenInGame = Actor->IsHidden();
 	Record.bIsProcedural = Filter.IsProcedural(Actor);
 
 	if (Filter.StoresTags(Actor))
