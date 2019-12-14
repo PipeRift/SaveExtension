@@ -92,18 +92,21 @@ void FSaveSpec::PrepareTestWorld(FSaveTestOnWorldReady OnWorldReady)
 		bInitializedPIE = true;
 		SelectedWorld = FindGameEditorWorld();
 	}
+
+	bWorldIsReady = true;
 #endif
 
 	if (!SelectedWorld)
 	{
 		SelectedWorld = GWorld;
+#if WITH_EDITOR
 		if (GIsEditor)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Test using GWorld. Not correct for PIE"));
 		}
+#endif
 	}
 
-	bWorldIsReady = true;
 	OnWorldReady.ExecuteIfBound(SelectedWorld);
 }
 
