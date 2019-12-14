@@ -16,13 +16,13 @@ namespace UnrealBuildTool.Rules
 				"Core",
 				"Engine",
 				"CoreUObject",
-				"SaveExtension",
-                "UnrealEd"
+				"SaveExtension"
 			});
 
-			PrivateDependencyModuleNames.AddRange(new string[]
-			{
-			});
-		}
+            if (Target.bBuildEditor == true)
+            {
+                PrivateDependencyModuleNames.Add("UnrealEd");
+            }
+        }
 	}
 }
