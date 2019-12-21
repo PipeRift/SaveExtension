@@ -92,6 +92,7 @@ void USlotDataTask_Loader::OnMapLoaded()
 	const UWorld* World = GetWorld();
 	if (World->GetFName() == NewSlotInfo->Map)
 	{
+		Filter.BakeAllowedClasses();
 		bLoadingMap = false;
 
 		if(IsDataLoaded())
