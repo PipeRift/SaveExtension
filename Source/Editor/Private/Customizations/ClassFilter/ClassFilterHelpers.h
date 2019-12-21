@@ -170,7 +170,7 @@ namespace ClassFilter
 		 * @param InClass					The class to verify can be made into a Blueprint
 		 * @return							TRUE if the class can be made into a Blueprint
 		 */
-		bool CanCreateBlueprintOfClass_IgnoreDeprecation(UClass* InClass)
+		static bool CanCreateBlueprintOfClass_IgnoreDeprecation(UClass* InClass)
 		{
 			// Temporarily remove the deprecated flag so we can check if it is valid for
 			bool bIsClassDeprecated = InClass->HasAnyClassFlags(CLASS_Deprecated);
