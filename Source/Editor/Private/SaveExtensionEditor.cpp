@@ -89,3 +89,4 @@ void FSaveExtensionEditor::RegisterCustomPinFactory()
 }
 
 #undef LOCTEXT_NAMESPACE
+IMPLEMENT_MODULE(FSaveExtensionEditor, SaveExtensionEditor);

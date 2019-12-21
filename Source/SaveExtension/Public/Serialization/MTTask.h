@@ -10,6 +10,7 @@
 #include <GameFramework/Controller.h>
 
 #include "SavePreset.h"
+#include "SaveFilter.h"
 
 
 /////////////////////////////////////////////////////

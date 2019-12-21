@@ -1,6 +1,7 @@
 // Copyright 2015-2019 Piperift. All Rights Reserved.
 
 #include "Customizations/ComponentClassFilterCustomization.h"
+#include "PropertyHandle.h"
 
 #define LOCTEXT_NAMESPACE "FComponentClassFilterCustomization"
 
