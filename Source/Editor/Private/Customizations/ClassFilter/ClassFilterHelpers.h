@@ -21,6 +21,7 @@
 #include <Framework/Multibox/MultiBoxBuilder.h>
 #include <Misc/FeedbackContext.h>
 #include <Misc/ConfigCacheIni.h>
+#include "Misc/ClassFilter.h"
 
 #define LOCTEXT_NAMESPACE "ClassFilterHelpers"
 

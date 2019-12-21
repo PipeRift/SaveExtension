@@ -4,6 +4,8 @@
 
 #include <GameFramework/Character.h>
 #include <Serialization/MemoryReader.h>
+#include <Kismet/GameplayStatics.h>
+#include <Components/PrimitiveComponent.h>
 
 #include "SavePreset.h"
 #include "SaveManager.h"

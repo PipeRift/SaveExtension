@@ -2,6 +2,7 @@
 
 #include "Serialization/MTTask_SerializeActors.h"
 #include <Serialization/MemoryWriter.h>
+#include <Components/PrimitiveComponent.h>
 
 #include "SaveManager.h"
 #include "SlotInfo.h"

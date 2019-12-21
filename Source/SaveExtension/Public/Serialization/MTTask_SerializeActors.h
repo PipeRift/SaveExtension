@@ -12,6 +12,8 @@
 #include "SavePreset.h"
 
 #include "MTTask.h"
+#include "Serialization/Records.h"
+#include "Serialization/LevelRecords.h"
 
 
 class USlotData;
