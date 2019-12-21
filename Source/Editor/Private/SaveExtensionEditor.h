@@ -97,4 +97,4 @@ private:
 	TArray<TSharedPtr<FGraphPanelPinFactory>> CreatedPinFactories;
 };
 
-IMPLEMENT_MODULE(FSaveExtensionEditor, SaveExtensionEditor);
+
