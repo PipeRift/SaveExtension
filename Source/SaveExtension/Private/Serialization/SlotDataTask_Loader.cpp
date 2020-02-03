@@ -304,11 +304,12 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 		{
 			AActor* const Actor{ *ActorItr };
+
+			// Remove records which actors do exist
+			const bool bFoundActorRecord = ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
+
 			if (Filter.ShouldSave(Actor))
 			{
-				// Remove records which actors do exist
-				const bool bFoundActorRecord = ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
-
 				if (!bFoundActorRecord) // Don't destroy level actors
 				{
 					// If the actor wasn't found, mark it for destruction
