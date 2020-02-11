@@ -110,6 +110,17 @@ void USlotDataTask_Saver::OnStart()
 	Finish(false);
 }
 
+void USlotDataTask_Saver::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (SaveInfoTask && SaveDataTask && 
+		SaveInfoTask->IsDone() && SaveDataTask->IsDone())
+	{
+		Finish(true);
+	}
+}
+
 void USlotDataTask_Saver::OnFinish(bool bSuccess)
 {
 	if (bSuccess)

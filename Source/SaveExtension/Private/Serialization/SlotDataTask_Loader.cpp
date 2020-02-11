@@ -92,6 +92,7 @@ void USlotDataTask_Loader::OnMapLoaded()
 	const UWorld* World = GetWorld();
 	if (World->GetFName() == NewSlotInfo->Map)
 	{
+		Filter.BakeAllowedClasses();
 		bLoadingMap = false;
 
 		if(IsDataLoaded())
@@ -303,11 +304,12 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 		{
 			AActor* const Actor{ *ActorItr };
-			if (Filter.ShouldSave(Actor))
-			{
-				// Remove records which actors do exist
-				const bool bFoundActorRecord = ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
 
+			// Remove records which actors do exist
+			const bool bFoundActorRecord = ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
+
+			if (Actor && Filter.ShouldSave(Actor))
+			{
 				if (!bFoundActorRecord) // Don't destroy level actors
 				{
 					// If the actor wasn't found, mark it for destruction
@@ -377,7 +379,7 @@ void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* const Actor, const FLe
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor);
 
-	if (Filter.ShouldSave(Actor))
+	if (Actor && Filter.ShouldSave(Actor))
 	{
 		// Find the record
 		const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);

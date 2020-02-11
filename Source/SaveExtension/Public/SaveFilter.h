@@ -59,9 +59,17 @@ public:
 		ComponentFilter     = Preset.GetComponentFilter(true);
 		LoadActorFilter     = Preset.GetActorFilter(false);
 		LoadComponentFilter = Preset.GetComponentFilter(false);
-
+		BakeAllowedClasses();
 		MaxFrameMs       = Preset.GetMaxFrameMs();
 		bStoreComponents = Preset.bStoreComponents;
+	}
+
+	void BakeAllowedClasses()
+	{
+		ActorFilter.BakeAllowedClasses();
+		ComponentFilter.BakeAllowedClasses();
+		LoadActorFilter.BakeAllowedClasses();
+		LoadComponentFilter.BakeAllowedClasses();
 	}
 
 	FORCEINLINE bool ShouldSave(const AActor* Actor) const
