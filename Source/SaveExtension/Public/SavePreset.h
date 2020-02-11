@@ -119,7 +119,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config, meta = (EditCondition = "bUseLoadComponentFilter"))
 	FComponentClassFilter LoadComponentFilter;
 
-protected:
+public:
 
 	/** Serialization will be multi-threaded between all available cores. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Asynchronous")
