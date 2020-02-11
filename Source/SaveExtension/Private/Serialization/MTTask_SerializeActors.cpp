@@ -23,7 +23,7 @@ void FMTTask_SerializeActors::DoWork()
 	for (int32 I = 0; I < Num; ++I)
 	{
 		const AActor* const Actor = (*LevelActors)[StartIndex + I];
-		if (Filter.ShouldSave(Actor))
+		if (Actor && Filter.ShouldSave(Actor))
 		{
 			FActorRecord Record;
 			SerializeActor(Actor, Record);

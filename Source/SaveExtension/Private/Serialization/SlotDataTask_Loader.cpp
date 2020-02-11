@@ -308,7 +308,7 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 			// Remove records which actors do exist
 			const bool bFoundActorRecord = ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
 
-			if (Filter.ShouldSave(Actor))
+			if (Actor && Filter.ShouldSave(Actor))
 			{
 				if (!bFoundActorRecord) // Don't destroy level actors
 				{
@@ -379,7 +379,7 @@ void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* const Actor, const FLe
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor);
 
-	if (Filter.ShouldSave(Actor))
+	if (Actor && Filter.ShouldSave(Actor))
 	{
 		// Find the record
 		const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
