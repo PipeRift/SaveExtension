@@ -256,7 +256,10 @@ void USaveManager::UpdateLevelStreamings()
 
 void USaveManager::SerializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
-	CreateTask<USlotDataTask_LevelSaver>()->Setup(LevelStreaming)->Start();
+	if (!LevelStreaming->GetLoadedLevel()->bIsBeingRemoved)
+	{
+		CreateTask<USlotDataTask_LevelSaver>()->Setup(LevelStreaming)->Start();
+	}
 }
 
 void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
