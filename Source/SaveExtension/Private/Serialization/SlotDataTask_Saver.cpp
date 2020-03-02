@@ -117,7 +117,19 @@ void USlotDataTask_Saver::Tick(float DeltaTime)
 	if (SaveInfoTask && SaveDataTask && 
 		SaveInfoTask->IsDone() && SaveDataTask->IsDone())
 	{
-		Finish(true);
+		if (bSaveThumbnail)
+		{
+			USaveManager* Manager = GetManager();
+			USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
+			if (CurrentInfo->GetThumbnail())
+			{
+				Finish(true);
+			}
+		}
+		else
+		{
+			Finish(true);
+		}
 	}
 }
 
@@ -278,6 +290,10 @@ void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataN
 	{
 		SaveInfoTask->StartSynchronousTask();
 		SaveDataTask->StartSynchronousTask();
-		Finish(true);
+
+		if (!bSaveThumbnail)
+		{
+			Finish(true);
+		}
 	}
 }

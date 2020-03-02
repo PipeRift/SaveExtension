@@ -57,16 +57,16 @@ bool USlotInfo::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height
 		FViewport * Viewport = GameViewport->Viewport;
 		if (Viewport)
 		{
-			FString Previous = ThumbnailPath;
 
 			IFileManager* FM = &IFileManager::Get();
 
-			if (Previous.Len() > 0 && FM->FileExists(*Previous))
+			_SetThumbnailPath(FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), Id, *FString("SaveScreenshot"), TEXT("png")));
+
+			if (ThumbnailPath.Len() > 0 && FM->FileExists(*ThumbnailPath))
 			{
-				FM->Delete(*Previous, false, true, true);
+				FM->Delete(*ThumbnailPath, false, true, true);
 			}
 
-			_SetThumbnailPath(FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), Id, *FString("SaveScreenshot"), TEXT("png")));
 
 			//Set Screenshot path
 			HighResScreenshotConfig.FilenameOverride = ThumbnailPath;
