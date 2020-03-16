@@ -30,7 +30,7 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
 	//AutoLoad
-	if (GetPreset()->bAutoLoad)
+	if (GetPreset() && GetPreset()->bAutoLoad)
 		ReloadCurrentSlot();
 
 	TryInstantiateInfo();
@@ -125,6 +125,15 @@ void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delega
 		Task->CallDelegate();
 	})
 	.StartBackgroundTask();
+}
+
+void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded Delegate)
+{
+	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	.OnFinished([](auto& Task) {
+		Task->CallDelegate();
+	})
+	.StartSynchronousTask();
 }
 
 void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)

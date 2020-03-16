@@ -149,6 +149,7 @@ public:
 	 * @param SaveInfos All saved games found on disk
 	 */
 	void LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate);
+	void LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded Delegate);
 
 	/** Delete a saved game on an specified slot Id
 	 * Performance: Interacts with disk, can be slow
@@ -297,9 +298,14 @@ public:
 	const USavePreset* GetPreset() const {
 		if (!PresetAsset.IsNull())
 		{
-			return PresetAsset.LoadSynchronous();
+			USavePreset* SavePreset = PresetAsset.LoadSynchronous();
+			ensureMsgf(SavePreset, TEXT("Can't load %s"), *PresetAsset.GetLongPackageName());
+			if (SavePreset)
+			{
+				return SavePreset;
+			}
 		}
-		return GetDefault<USavePreset>();
+		return GetDefault<USavePreset>();;
 	}
 
 
