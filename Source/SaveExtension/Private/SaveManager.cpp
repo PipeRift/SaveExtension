@@ -110,11 +110,11 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 	bool bSuccess = false;
 
 	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotId)
-	.OnFinished([bSuccess](auto& Task) mutable {
+	.OnFinished([&bSuccess](auto& Task) mutable {
 		bSuccess = Task->bSuccess;
 	})
 	.StartSynchronousTask();
-
+	MTTasks.Tick();
 	return bSuccess;
 }
 
@@ -134,6 +134,7 @@ void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded De
 		Task->CallDelegate();
 	})
 	.StartSynchronousTask();
+	MTTasks.Tick();
 }
 
 void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
