@@ -43,13 +43,13 @@ public:
 	float MaxFrameMs = 5.f;
 
 	UPROPERTY(SaveGame)
-	bool bStoreGameInstance;
+	bool bStoreGameInstance = false;
 
 	UPROPERTY(SaveGame)
-	bool bStoreLevelBlueprints;
+	bool bStoreLevelBlueprints = false;
 
 	UPROPERTY(SaveGame)
-	bool bStoreControlRotation;
+	bool bStoreControlRotation = true;
 
 
 	FSaveFilter() {}
@@ -62,6 +62,7 @@ public:
 		BakeAllowedClasses();
 		MaxFrameMs       = Preset.GetMaxFrameMs();
 		bStoreComponents = Preset.bStoreComponents;
+		bStoreGameInstance = Preset.bStoreGameInstance;
 	}
 
 	void BakeAllowedClasses()
