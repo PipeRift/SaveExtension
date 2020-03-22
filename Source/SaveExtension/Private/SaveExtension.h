@@ -77,7 +77,6 @@ public:
 
 	virtual void StartupModule() override {
 		RegisterSettings();
-		UE_LOG(LogTemp, Warning, TEXT("SaveExtension: Initializing Plugin."));
 	}
 
 	virtual void ShutdownModule() override {
