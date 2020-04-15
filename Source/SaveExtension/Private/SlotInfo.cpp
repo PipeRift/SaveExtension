@@ -45,37 +45,32 @@ UTexture2D* USlotInfo::GetThumbnail() const
 
 bool USlotInfo::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height /*= 360*/)
 {
-	if (!GEngine)
-		return false;
-
-	UGameViewportClient* GameViewport = GEngine->GameViewport;
-	if (GameViewport)
+	if (!GEngine || !GEngine->GameViewport)
 	{
+		return false;
+	}
+	
+	if (auto* Viewport = GEngine->GameViewport->Viewport)
+	{
+		// TODO: Extract thumbnail path/name format to a function
+		_SetThumbnailPath(FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), Id, *FString("SaveScreenshot"), TEXT("png")));
+
+		// TODO: Removal of a thumbnail should be standarized in a function
+		IFileManager& FM = IFileManager::Get();
+		if (ThumbnailPath.Len() > 0 && FM.FileExists(*ThumbnailPath))
+		{
+			FM.Delete(*ThumbnailPath, false, true, true);
+		}
+
 		FHighResScreenshotConfig& HighResScreenshotConfig = GetHighResScreenshotConfig();
 		HighResScreenshotConfig.SetHDRCapture(false);
-
-		FViewport * Viewport = GameViewport->Viewport;
-		if (Viewport)
-		{
-
-			IFileManager* FM = &IFileManager::Get();
-
-			_SetThumbnailPath(FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), Id, *FString("SaveScreenshot"), TEXT("png")));
-
-			if (ThumbnailPath.Len() > 0 && FM->FileExists(*ThumbnailPath))
-			{
-				FM->Delete(*ThumbnailPath, false, true, true);
-			}
-
-
-			//Set Screenshot path
-			HighResScreenshotConfig.FilenameOverride = ThumbnailPath;
-			//Set Screenshot Resolution
-			GScreenshotResolutionX = Width;
-			GScreenshotResolutionY = Height;
-			Viewport->TakeHighResScreenShot();
-			return true;
-		}
+		//Set Screenshot path
+		HighResScreenshotConfig.FilenameOverride = ThumbnailPath;
+		//Set Screenshot Resolution
+		GScreenshotResolutionX = Width;
+		GScreenshotResolutionY = Height;
+		Viewport->TakeHighResScreenShot();
+		return true;
 	}
 	return false;
 }
