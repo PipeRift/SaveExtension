@@ -305,7 +305,7 @@ public:
 				return SavePreset;
 			}
 		}
-		return GetDefault<USavePreset>();;
+		return GetDefault<USavePreset>();
 	}
 
 
