@@ -1,60 +1,60 @@
 {
-	"FileVersion" : 3,
-	"Version" : 7,
-	"VersionName" : "1.2",
-	"FriendlyName" : "Save Extension",
-	"Description" : "Provides UE4 with a save-game system with support for savegame tags, level streaming and more",
+    "FileVersion": 3,
+    "Version": 7,
+    "VersionName": "1.2",
+    "FriendlyName": "Save Extension",
+    "Description": "Provides UE4 with a save-game system with support for savegame tags, level streaming and more",
     "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/91084f43b68047ac8da6fc88a7467936",
-	"Category" : "Piperift",
-	"CreatedBy" : "Piperift",
-	"CreatedByURL" : "https://piperift.com",
+    "Category": "Piperift",
+    "CreatedBy": "Piperift",
+    "CreatedByURL": "https://piperift.com",
     "DocsURL": "https://piperift.com/SaveExtension/",
-	"SupportURL" : "info@piperift.com",
-	"EngineVersion" : "4.24",
+    "SupportURL": "info@piperift.com",
+    "EngineVersion": "4.24.0",
     "EnabledByDefault": true,
     "CanContainContent": false,
-	"IsBetaVersion" : false,
-	"Modules" : [
-		{
-			"Name" : "SaveExtension",
-			"Type" : "Runtime",
-			"LoadingPhase" : "PreDefault",
-			"WhitelistPlatforms": [
-				"Win64",
-				"Win32",
-				"Linux",
-				"Android",
-				"PS4",
-				"XboxOne",
-				"Switch",
-				"Mac"
-			]
-		},
-		{
-			"Name" : "SaveExtensionEditor",
-			"Type" : "Editor",
-			"LoadingPhase" : "PostEngineInit",
-			"WhitelistPlatforms": [
-				"Win64",
-				"Win32",
-				"Linux",
-				"Android",
-				"PS4",
-				"XboxOne",
-				"Switch",
-				"Mac"
-			]
-		},
-		{
-			"Name" : "SaveExtensionTest",
-			"Type" : "DeveloperTool",
-			"LoadingPhase" : "PreDefault",
-			"WhitelistPlatforms": [
-				"Win64",
-				"Win32",
-				"Linux",
-				"Mac"
-			]
-		}
-	]
+    "IsBetaVersion": false,
+    "Modules": [
+        {
+            "Name": "SaveExtension",
+            "Type": "Runtime",
+            "LoadingPhase": "PreDefault",
+            "WhitelistPlatforms": [
+                "Win64",
+                "Win32",
+                "Linux",
+                "Android",
+                "PS4",
+                "XboxOne",
+                "Switch",
+                "Mac"
+            ]
+        },
+        {
+            "Name": "SaveExtensionEditor",
+            "Type": "Editor",
+            "LoadingPhase": "PostEngineInit",
+            "WhitelistPlatforms": [
+                "Win64",
+                "Win32",
+                "Linux",
+                "Android",
+                "PS4",
+                "XboxOne",
+                "Switch",
+                "Mac"
+            ]
+        },
+        {
+            "Name": "SaveExtensionTest",
+            "Type": "DeveloperTool",
+            "LoadingPhase": "PreDefault",
+            "WhitelistPlatforms": [
+                "Win64",
+                "Win32",
+                "Linux",
+                "Mac"
+            ]
+        }
+    ]
 }

@@ -55,44 +55,44 @@ void USlotDataTask_Saver::OnStart()
 
 		GetManager()->OnSaveBegan(Filter);
 
-		USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
+		SlotInfo = Manager->GetCurrentInfo();
 		SlotData = Manager->GetCurrentData();
 		SlotData->Clean(true);
 
 
-		check(CurrentInfo && SlotData);
+		check(SlotInfo && SlotData);
 
-		const bool bSlotWasDifferent = CurrentInfo->Id != Slot;
-		CurrentInfo->Id = Slot;
+		const bool bSlotWasDifferent = SlotInfo->Id != Slot;
+		SlotInfo->Id = Slot;
 
 		if (bSaveThumbnail)
 		{
-			CurrentInfo->CaptureThumbnail(Width, Height);
+			SlotInfo->CaptureThumbnail(Width, Height);
 		}
 
 		// Time stats
 		{
-			CurrentInfo->SaveDate = FDateTime::Now();
+			SlotInfo->SaveDate = FDateTime::Now();
 
 			// If this info has been loaded ever
-			const bool bWasLoaded = CurrentInfo->LoadDate.GetTicks() > 0;
+			const bool bWasLoaded = SlotInfo->LoadDate.GetTicks() > 0;
 			if (bWasLoaded)
 			{
 				// Now - Loaded
-				const FTimespan SessionTime = CurrentInfo->SaveDate - CurrentInfo->LoadDate;
+				const FTimespan SessionTime = SlotInfo->SaveDate - SlotInfo->LoadDate;
 
-				CurrentInfo->PlayedTime += SessionTime;
+				SlotInfo->PlayedTime += SessionTime;
 
 				if (!bSlotWasDifferent)
-					CurrentInfo->SlotPlayedTime += SessionTime;
+					SlotInfo->SlotPlayedTime += SessionTime;
 				else
-					CurrentInfo->SlotPlayedTime = SessionTime;
+					SlotInfo->SlotPlayedTime = SessionTime;
 			}
 			else
 			{
 				// Slot is new, played time is world seconds
-				CurrentInfo->PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
-				CurrentInfo->SlotPlayedTime = CurrentInfo->PlayedTime;
+				SlotInfo->PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
+				SlotInfo->SlotPlayedTime = SlotInfo->PlayedTime;
 			}
 
 			// Save current game seconds
@@ -100,7 +100,7 @@ void USlotDataTask_Saver::OnStart()
 		}
 
 		//Save Level info in both files
-		CurrentInfo->Map = World->GetFName();
+		SlotInfo->Map = World->GetFName();
 		SlotData->Map = World->GetFName().ToString();
 
 		SerializeSync();
@@ -117,7 +117,17 @@ void USlotDataTask_Saver::Tick(float DeltaTime)
 	if (SaveInfoTask && SaveDataTask && 
 		SaveInfoTask->IsDone() && SaveDataTask->IsDone())
 	{
-		Finish(true);
+		if (bSaveThumbnail)
+		{
+			if (SlotInfo && SlotInfo->GetThumbnail())
+			{
+				Finish(true);
+			}
+		}
+		else
+		{
+			Finish(true);
+		}
 	}
 }
 
@@ -278,6 +288,10 @@ void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataN
 	{
 		SaveInfoTask->StartSynchronousTask();
 		SaveDataTask->StartSynchronousTask();
-		Finish(true);
+
+		if (!bSaveThumbnail)
+		{
+			Finish(true);
+		}
 	}
 }

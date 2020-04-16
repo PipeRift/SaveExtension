@@ -8,6 +8,7 @@
 #include "SavePreset.h"
 #include "SaveManager.h"
 #include "Misc/SlotHelpers.h"
+#include "HAL/FileManager.h"
 
 
 void FDeleteSlotsTask::DoWork()
@@ -17,8 +18,11 @@ void FDeleteSlotsTask::DoWork()
 		// Delete a single slot by id
 		const FString InfoSlot = Manager->GenerateSlotInfoName(SpecificSlotId);
 		const FString DataSlot = Manager->GenerateSlotDataName(SpecificSlotId);
-		bSuccess = FFileAdapter::DeleteFile(InfoSlot) ||
-			       FFileAdapter::DeleteFile(DataSlot);
+		FString ScreenshotPath = FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), SpecificSlotId, *FString("SaveScreenshot"), TEXT("png"));
+		bool bIsDeleteInfoSlotSuccess = FFileAdapter::DeleteFile(InfoSlot);
+		bool bIsDeleteDataSlotSuccess = FFileAdapter::DeleteFile(DataSlot);
+		bool bIsDeleteScreenshotSuccess = IFileManager::Get().Delete(*ScreenshotPath, true);
+		bSuccess = bIsDeleteInfoSlotSuccess || bIsDeleteDataSlotSuccess || bIsDeleteScreenshotSuccess;
 	}
 	else
 	{

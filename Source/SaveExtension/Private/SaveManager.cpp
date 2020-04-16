@@ -30,7 +30,7 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
 	//AutoLoad
-	if (GetPreset()->bAutoLoad)
+	if (GetPreset() && GetPreset()->bAutoLoad)
 		ReloadCurrentSlot();
 
 	TryInstantiateInfo();
@@ -110,11 +110,11 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 	bool bSuccess = false;
 
 	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotId)
-	.OnFinished([bSuccess](auto& Task) mutable {
+	.OnFinished([&bSuccess](auto& Task) mutable {
 		bSuccess = Task->bSuccess;
 	})
 	.StartSynchronousTask();
-
+	MTTasks.Tick();
 	return bSuccess;
 }
 
@@ -125,6 +125,16 @@ void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delega
 		Task->CallDelegate();
 	})
 	.StartBackgroundTask();
+}
+
+void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded Delegate)
+{
+	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	.OnFinished([](auto& Task) {
+		Task->CallDelegate();
+	})
+	.StartSynchronousTask();
+	MTTasks.Tick();
 }
 
 void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
@@ -256,7 +266,10 @@ void USaveManager::UpdateLevelStreamings()
 
 void USaveManager::SerializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
-	CreateTask<USlotDataTask_LevelSaver>()->Setup(LevelStreaming)->Start();
+	if (!LevelStreaming->GetLoadedLevel()->bIsBeingRemoved)
+	{
+		CreateTask<USlotDataTask_LevelSaver>()->Setup(LevelStreaming)->Start();
+	}
 }
 
 void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
