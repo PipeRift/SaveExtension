@@ -28,12 +28,12 @@ UTexture2D* USlotInfo::GetThumbnail() const
 		TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
 		if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num()))
 		{
-			TArray64<uint8> UncompressedBGRA;
+			const TArray<uint8>* UncompressedBGRA = nullptr;
 			if (ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA))
 			{
 				Texture = UTexture2D::CreateTransient(ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), PF_B8G8R8A8);
 				void* TextureData = Texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-				FMemory::Memcpy(TextureData, UncompressedBGRA.GetData(), UncompressedBGRA.Num());
+				FMemory::Memcpy(TextureData, UncompressedBGRA->GetData(), UncompressedBGRA->Num());
 				Texture->PlatformData->Mips[0].BulkData.Unlock();
 				Texture->UpdateResource();
 			}
@@ -49,7 +49,7 @@ bool USlotInfo::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height
 	{
 		return false;
 	}
-
+	
 	if (auto* Viewport = GEngine->GameViewport->Viewport)
 	{
 		// TODO: Extract thumbnail path/name format to a function
