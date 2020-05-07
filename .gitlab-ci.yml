@@ -5,7 +5,7 @@ stages:
 
 variables:
   plugin: SaveExtension
-  engine_version: 24
+  engine_version: 25
 
 cache:
   paths:
