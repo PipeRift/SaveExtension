@@ -1,7 +1,7 @@
 stages:
-  - compile
+  - build
   - test
-  - deploy
+  - package
 
 variables:
   plugin: SaveExtension
@@ -11,18 +11,30 @@ cache:
   paths:
     - Build/
 
-build plugin:
-  stage: compile
-  script:
-    - cmd.exe /c $LIB_PATH/BuildPlugin.bat
+before_script:
+  # Download Piperift's CICD scripts
+  - git clone https://github.com/PipeRift/CICDScripts Lib
 
-unit test:
+build:
+  stage: build
+  script:
+    - cd Lib
+    - cmd.exe /c BuildPlugin.bat
+
+test:
   stage: test
   script:
-    - py $LIB_PATH/test_plugin.py
+    - cd Lib
+    - py test_plugin.py
+  artifacts:
+    paths:
+      - Test/Report.xml
+    reports:
+      junit: Test/Report.xml
 
 upload:
-  stage: deploy
+  stage: package
   script:
-    - cmd.exe /c $LIB_PATH/CompressPlugin.bat
-    - py $LIB_PATH/upload.py
+    - cd Lib
+    - cmd.exe /c CompressPlugin.bat
+    - py upload.py
