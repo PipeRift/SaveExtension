@@ -26,26 +26,32 @@ bool FSlotHelpers::FFindSlotVisitor::Visit(const TCHAR* FilenameOrDirectory, boo
 		FString FullFilePath(FilenameOrDirectory);
 		if (FPaths::GetExtension(FullFilePath) == TEXT("sav"))
 		{
-			FString CleanFilename = FPaths::GetBaseFilename(FullFilePath);
-			CleanFilename.RemoveFromEnd(".sav");
+			FString SaveFilename;
+			FString SaveFolder;
+			FString SaveExtension;
+			FPaths::Split(FullFilePath, SaveFolder, SaveFilename, SaveExtension);
 
 			if (bOnlyInfos)
 			{
-				if (!CleanFilename.EndsWith("_data"))
+				if (!SaveFilename.EndsWith("_data"))
 				{
-					FilesFound.Add(CleanFilename);
+					// Find USlotInfo file if only if it has USlotData file
+					if (FPaths::FileExists(SaveFolder / SaveFilename + TEXT("_data.") + SaveExtension))
+					{
+						FilesFound.Add(SaveFilename);
+					}
 				}
 			}
 			else if (bOnlyDatas)
 			{
-				if (CleanFilename.EndsWith("_data"))
+				if (SaveFilename.EndsWith("_data"))
 				{
-					FilesFound.Add(CleanFilename);
+					FilesFound.Add(SaveFilename);
 				}
 			}
 			else
 			{
-				FilesFound.Add(CleanFilename);
+				FilesFound.Add(SaveFilename);
 			}
 		}
 	}
