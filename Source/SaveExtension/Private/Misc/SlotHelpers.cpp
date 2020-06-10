@@ -24,13 +24,13 @@ bool FSlotHelpers::FFindSlotVisitor::Visit(const TCHAR* FilenameOrDirectory, boo
 	if (!bIsDirectory)
 	{
 		FString FullFilePath(FilenameOrDirectory);
-		if (FPaths::GetExtension(FullFilePath) == TEXT("sav"))
-		{
-			FString SaveFilename;
-			FString SaveFolder;
-			FString SaveExtension;
-			FPaths::Split(FullFilePath, SaveFolder, SaveFilename, SaveExtension);
 
+		FString SaveFilename;
+		FString SaveFolder;
+		FString SaveExtension;
+		FPaths::Split(FullFilePath, SaveFolder, SaveFilename, SaveExtension);
+		if (SaveExtension == TEXT("sav"))
+		{
 			if (bOnlyInfos)
 			{
 				if (!SaveFilename.EndsWith("_data"))
