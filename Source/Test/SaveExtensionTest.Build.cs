@@ -16,7 +16,8 @@ namespace UnrealBuildTool.Rules
 				"Core",
 				"Engine",
 				"CoreUObject",
-				"SaveExtension"
+				"SaveExtension",
+				"EngineSettings"
 			});
 
             if (Target.bBuildEditor == true)

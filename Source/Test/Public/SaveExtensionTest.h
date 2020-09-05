@@ -9,7 +9,7 @@ class FSaveExtensionTest : public IModuleInterface
 {
 public:
 
-	virtual void StartupModule() override {}
+	virtual void StartupModule() override;
 	virtual void ShutdownModule() override {}
 
 	static inline FSaveExtensionTest& Get() {

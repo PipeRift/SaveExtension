@@ -70,9 +70,12 @@ public:
 
 	/** Which save preset to use. Will use Default preset if none */
 	UPROPERTY(EditAnywhere, Category = "Save Extension", Config, meta = (DisplayName = "Preset"))
-	TAssetPtr<USavePreset> PresetAsset;
+	TAssetPtr<USavePreset> DefaultPreset;
 
 private:
+
+	UPROPERTY(Transient)
+	USavePreset* ActivePreset;
 
 	/** Currently loaded SaveInfo. SaveInfo stores basic information about a saved game. Played time, levels, progress, etc. */
 	UPROPERTY()
@@ -121,7 +124,9 @@ public:
 	/** Save the Game to a Slot */
 	bool SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {}) {
 		if (!SlotInfo)
+		{
 			return false;
+		}
 		return SaveSlot(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
 	}
 
@@ -229,6 +234,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension", meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", DisplayName = "Delete All Slots"))
 	void BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentActionInfo LatentInfo);
 
+	UFUNCTION(BlueprintPure, Category = "SaveExtension")
+	USavePreset* BPGetPreset() const
+	{
+		return ActivePreset;
+	}
 
 public:
 
@@ -284,30 +294,9 @@ public:
 	 * @return true if the preset was set successfully
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
-	bool SetActivePreset(TAssetPtr<USavePreset> ActivePreset)
-	{
-		// We can only change a preset if we have no tasks running
-		if (!HasTasks())
-		{
-			PresetAsset = ActivePreset;
-			return true;
-		}
-		return false;
-	}
+	bool SetActivePreset(USavePreset* Preset);
 
-	const USavePreset* GetPreset() const {
-		if (!PresetAsset.IsNull())
-		{
-			USavePreset* SavePreset = PresetAsset.LoadSynchronous();
-			ensureMsgf(SavePreset, TEXT("Can't load %s"), *PresetAsset.GetLongPackageName());
-			if (SavePreset)
-			{
-				return SavePreset;
-			}
-		}
-		return GetDefault<USavePreset>();
-	}
-
+	const USavePreset* GetPreset() const;
 
 	void TryInstantiateInfo(bool bForced = false);
 
@@ -440,6 +429,12 @@ public:
 	/** Get the global save manager */
 	UFUNCTION(BlueprintPure, Category = SaveExtension, meta = (WorldContext = "ContextObject", DeprecatedFunction, DeprecationMessage = "Use 'Get Save Manager' instead"))
 	static USaveManager* GetSaveManager(const UObject* ContextObject)
+	{
+		return Get(ContextObject);
+	}
+
+	/** Get the global save manager */
+	static USaveManager* Get(const UObject* ContextObject)
 	{
 		UWorld* World = GEngine->GetWorldFromContextObject(ContextObject, EGetWorldErrorMode::LogAndReturnNull);
 
