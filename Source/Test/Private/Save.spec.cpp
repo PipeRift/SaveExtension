@@ -1,51 +1,102 @@
-// Copyright 2015-2019 Piperift. All Rights Reserved.
+// Copyright 2015-2020 Piperift. All Rights Reserved.
 
-#include "TestHelpers.h"
+#include "Automatron.h"
 #include "SaveManager.h"
 
-namespace
+#include "Helpers/TestActor.h"
+
+
+class FSavePresetSpec : public Automatron::FTestSpec
 {
-	constexpr uint32 TestFlags = EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter;
-}
+	GENERATE_SPEC(FSavePresetSpec, "SaveExtension", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
-#define BASE_SPEC FSaveSpec
-
-BEGIN_TESTSPEC(FSavePresetSpec, "SaveExtension.Presets", TestFlags)
 	USaveManager* SaveManager = nullptr;
-END_TESTSPEC(FSavePresetSpec)
+	ATestActor* TestActor = nullptr;
+	USavePreset* TestPreset = nullptr;
+
+
+	FSavePresetSpec()
+	{
+		bReuseWorldForAllTests = false;
+		bCanUsePIEWorld = false;
+	}
+
+	USavePreset* CreateTestPreset();
+};
 
 void FSavePresetSpec::Define()
 {
-	PreDefine();
-
-	BeforeEach([this]() {
-		SaveManager = USaveManager::GetSaveManager(GetWorld());
-	});
-
-	It("SaveManager is instanced", [this]() {
+	BeforeEach([this]()
+	{
+		SaveManager = USaveManager::Get(GetMainWorld());
 		TestNotNull(TEXT("SaveManager"), SaveManager);
 	});
 
-	PostDefine();
+	Describe("Presets", [this]()
+	{
+		It("SaveManager is instanced", [this]()
+		{
+			TestNotNull(TEXT("SaveManager"), SaveManager);
+		});
+	});
+
+	Describe("Files", [this]()
+	{
+		xIt("Can save files synchronously", [this]() {});
+		xLatentIt("Can save files asynchronously", [this](auto& Done) {});
+		xIt("Can load files synchronously", [this]() {});
+		xLatentIt("Can load files asynchronously", [this](auto& Done) {});
+	});
+
+	Describe("Serialization", [this]()
+	{
+		BeforeEach([this]()
+		{
+			TestPreset = CreateTestPreset();
+			auto& ActorFilter = TestPreset->ActorFilter.ClassFilter;
+			ActorFilter.AllowedClasses.Add(ATestActor::StaticClass());
+
+			// We dont need Async files are tested independently
+			TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
+
+			SaveManager->SetActivePreset(TestPreset);
+
+			TestActor = GetMainWorld()->SpawnActor<ATestActor>();
+		});
+
+		It("Can save an actor synchronously", [this]()
+		{
+			TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
+
+			TestActor->bMyBool = true;
+
+			TestTrue("Saved", SaveManager->SaveSlot(0));
+			TestTrue("MyBool is true after Save", TestActor->bMyBool);
+
+			TestActor->bMyBool = false;
+
+			TestTrue("Loaded", SaveManager->LoadSlot(0));
+			TestTrue("MyBool is true after Load", TestActor->bMyBool);
+		});
+
+		AfterEach([this]()
+		{
+			if(TestActor)
+			{
+				TestActor->Destroy();
+				TestActor = nullptr;
+			}
+		});
+	});
+
+	AfterEach([this]()
+	{
+		SaveManager = nullptr;
+	});
 }
 
-
-BEGIN_TESTSPEC(FSaveActorSpec, "SaveExtension.Actors", TestFlags)
-	USaveManager* SaveManager = nullptr;
-END_TESTSPEC(FSaveActorSpec)
-
-void FSaveActorSpec::Define()
+USavePreset* FSavePresetSpec::CreateTestPreset()
 {
-	PreDefine();
-
-	BeforeEach([this]() {
-		SaveManager = USaveManager::GetSaveManager(GetWorld());
-		TestNotNull(TEXT("SaveManager"), SaveManager);
-	});
-
-	xIt("Can save an actor", [this]() {
-		TestNotImplemented();
-	});
-
-	PostDefine();
+	USavePreset* Preset = NewObject<USavePreset>(GetMainWorld());
+	return Preset;
 }

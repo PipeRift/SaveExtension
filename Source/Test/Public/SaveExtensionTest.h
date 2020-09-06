@@ -1,4 +1,4 @@
-// Copyright 2015-2019 Piperift. All Rights Reserved.
+// Copyright 2015-2020 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -9,7 +9,7 @@ class FSaveExtensionTest : public IModuleInterface
 {
 public:
 
-	virtual void StartupModule() override {}
+	virtual void StartupModule() override;
 	virtual void ShutdownModule() override {}
 
 	static inline FSaveExtensionTest& Get() {

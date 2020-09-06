@@ -1,4 +1,4 @@
-// Copyright 2015-2019 Piperift. All Rights Reserved.
+// Copyright 2015-2020 Piperift. All Rights Reserved.
 
 using UnrealBuildTool;
 using System.IO;
@@ -16,7 +16,8 @@ namespace UnrealBuildTool.Rules
 				"Core",
 				"Engine",
 				"CoreUObject",
-				"SaveExtension"
+				"SaveExtension",
+				"EngineSettings"
 			});
 
             if (Target.bBuildEditor == true)
