@@ -76,9 +76,9 @@ bool USaveManager::SaveSlot(
 
 	// Launch task, always fail if it didn't finish or wasn't scheduled
 	auto* Task = CreateTask<USlotDataTask_Saver>()
-					 ->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
-					 ->Bind(OnSaved)
-					 ->Start();
+		->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+		->Bind(OnSaved)
+		->Start();
 
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
@@ -93,7 +93,10 @@ bool USaveManager::LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded)
 
 	TryInstantiateInfo();
 
-	auto* Task = CreateTask<USlotDataTask_Loader>()->Setup(SlotId)->Bind(OnLoaded)->Start();
+	auto* Task = CreateTask<USlotDataTask_Loader>()
+		->Setup(SlotId)
+		->Bind(OnLoaded)
+		->Start();
 
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
@@ -362,7 +365,8 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 
 void USaveManager::OnSaveBegan(const FSaveFilter& Filter)
 {
-	IterateSubscribedInterfaces([&Filter](auto* Object) {
+	IterateSubscribedInterfaces([&Filter](auto* Object)
+	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -376,7 +380,8 @@ void USaveManager::OnSaveBegan(const FSaveFilter& Filter)
 
 void USaveManager::OnSaveFinished(const FSaveFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
+	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -395,7 +400,8 @@ void USaveManager::OnSaveFinished(const FSaveFilter& Filter, const bool bError)
 
 void USaveManager::OnLoadBegan(const FSaveFilter& Filter)
 {
-	IterateSubscribedInterfaces([&Filter](auto* Object) {
+	IterateSubscribedInterfaces([&Filter](auto* Object)
+	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -409,7 +415,8 @@ void USaveManager::OnLoadBegan(const FSaveFilter& Filter)
 
 void USaveManager::OnLoadFinished(const FSaveFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
+	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
