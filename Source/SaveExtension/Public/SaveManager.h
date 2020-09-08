@@ -371,7 +371,11 @@ protected:
 	//~ Begin Tickable Object Interface
 	virtual void Tick(float DeltaTime) override;
 	virtual bool IsTickable() const override {
-		return !IsDefaultSubobject() && !IsPendingKill();
+		return !HasAnyFlags(RF_ClassDefaultObject) && !IsPendingKill();
+	}
+	virtual UWorld* GetTickableGameObjectWorld() const override
+	{
+		return GetWorld();
 	}
 	virtual TStatId GetStatId() const override {
 		RETURN_QUICK_DECLARE_CYCLE_STAT(USaveManager, STATGROUP_Tickables);

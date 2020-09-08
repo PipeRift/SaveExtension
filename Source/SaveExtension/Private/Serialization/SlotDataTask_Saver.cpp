@@ -114,7 +114,7 @@ void USlotDataTask_Saver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (SaveInfoTask && SaveDataTask && 
+	if (SaveInfoTask && SaveDataTask &&
 		SaveInfoTask->IsDone() && SaveDataTask->IsDone())
 	{
 		if (bSaveThumbnail)

@@ -33,6 +33,6 @@ void FDeleteSlotsTask::DoWork()
 		{
 			FFileAdapter::DeleteFile(File);
 		}
-		bSuccess = FileNames.Num() > 0;
+		bSuccess = true;
 	}
 }

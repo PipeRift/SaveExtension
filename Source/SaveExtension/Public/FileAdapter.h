@@ -41,7 +41,7 @@ struct FSaveFileHeader
 };
 
 /** Based on GameplayStatics to add multi-threading */
-class FFileAdapter
+class SAVEEXTENSION_API FFileAdapter
 {
 public:
 
