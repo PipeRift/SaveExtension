@@ -6,8 +6,8 @@
 
 class FSavePresetSpec : public Automatron::FTestSpec
 {
-	GENERATE_SPEC(
-		FSavePresetSpec, "SaveExtension", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
+	GENERATE_SPEC(FSavePresetSpec, "SaveExtension",
+		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
 	USaveManager* SaveManager = nullptr;
 	ATestActor* TestActor = nullptr;
@@ -34,59 +34,8 @@ void FSavePresetSpec::Define()
 		TestNotNull(TEXT("SaveManager"), SaveManager);
 	});
 
-	Describe("Presets", [this]() { It("SaveManager is instanced", [this]() { TestNotNull(TEXT("SaveManager"), SaveManager); }); });
-
-	Describe("Files", [this]() {
-		BeforeEach([this]() {
-			TestPreset = CreateTestPreset();
-			TestPreset->ActorFilter.ClassFilter.AllowedClasses.Add(ATestActor::StaticClass());
-			TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
-
-			// We don't need Async files are tested independently
-
-			SaveManager->SetActivePreset(TestPreset);
-		});
-
-		It("Can save files synchronously", [this]() {
-			TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
-
-			TestTrue("Saved", SaveManager->SaveSlot(0));
-
-			TestTrue("Info File exists in disk", FFileAdapter::DoesFileExist("0"));
-			TestTrue("Data File exists in disk", FFileAdapter::DoesFileExist("0_data"));
-		});
-
-		It("Can save files asynchronously", [this]()
-		{
-			TestPreset->MultithreadedFiles = ESaveASyncMode::SaveAsync;
-			bFinishTick = false;
-
-			bool bSaving = SaveManager->SaveSlot(0, true, false, {}, FOnGameSaved::CreateLambda([this](auto* Info) {
-				// Notified that files have been saved asynchronously
-				TestTrue("Info File exists in disk", FFileAdapter::DoesFileExist("0"));
-				TestTrue("Data File exists in disk", FFileAdapter::DoesFileExist("0_data"));
-				bFinishTick = true;
-			}));
-			TestTrue("Started Saving", bSaving);
-
-			// Files shouldn't exist yet
-			TestFalse("Info File exists in disk", FFileAdapter::DoesFileExist("0"));
-			TestFalse("Data File exists in disk", FFileAdapter::DoesFileExist("0_data"));
-
-			TickWorldUntil(GetMainWorld(), true, [this](float)
-			{
-				return !bFinishTick;
-			});
-		});
-
-		It("Can load files synchronously", [this]() {
-			TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
-		});
-
-		LatentIt("Can load files asynchronously", [this](const FDoneDelegate& Done) {
-			TestPreset->MultithreadedFiles = ESaveASyncMode::LoadAsync;
-			Done.Execute();
-		});
+	It("SaveManager is instanced", [this]() {
+		TestNotNull(TEXT("SaveManager"), SaveManager);
 	});
 
 	Describe("Serialization", [this]() {
@@ -105,33 +54,117 @@ void FSavePresetSpec::Define()
 		It("Can save an actor synchronously", [this]() {
 			TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
 
-			TestActor->bMyBool = true;
-
 			TestTrue("Saved", SaveManager->SaveSlot(0));
-			TestTrue("MyBool is true after Save", TestActor->bMyBool);
-
-			TestActor->bMyBool = false;
-
 			TestTrue("Loaded", SaveManager->LoadSlot(0));
-			TestTrue("MyBool is true after Load", TestActor->bMyBool);
 		});
 
 		xIt("Can save an actor asynchronously", [this]() {
-			TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
-
-			TestActor->bMyBool = true;
-
-			TestTrue("Saved", SaveManager->SaveSlot(0));
-			TestTrue("MyBool is true after Save", TestActor->bMyBool);
-
-			TestActor->bMyBool = false;
-
-			TestTrue("Loaded", SaveManager->LoadSlot(0));
-			TestTrue("MyBool is true after Load", TestActor->bMyBool);
+			TestNotImplemented();
 		});
 
 		Describe("Properties", [this]() {
+			BeforeEach([this]() {
+				TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
+			});
 
+			It("bool", [this]()
+			{
+				TestActor->bMyBool = true;
+				SaveManager->SaveSlot(0);
+				TestTrue("bool didn't change after save", TestActor->bMyBool);
+
+				TestActor->bMyBool = false;
+				SaveManager->LoadSlot(0);
+				TestTrue("bool was saved", TestActor->bMyBool);
+			});
+
+			It("uint8", [this]()
+			{
+				TestActor->MyU8 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("uint8 didn't change after save", TestActor->MyU8, 34);
+
+				TestActor->MyU8 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("uint8 was saved", TestActor->MyU8, 34);
+			});
+
+			It("uint16", [this]()
+			{
+				TestActor->MyU16 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("uint16 didn't change after save", TestActor->MyU16, 34);
+
+				TestActor->MyU16 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("uint16 was saved", TestActor->MyU16, 34);
+			});
+
+			It("uint32", [this]()
+			{
+				TestActor->MyU32 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("uint32 didn't change after save", TestActor->MyU32, 34);
+
+				TestActor->MyU32 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("uint32 was saved", TestActor->MyU32, 34);
+			});
+
+			It("uint64", [this]()
+			{
+				TestActor->MyU64 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("uint16 didn't change after save", TestActor->MyU64, 34);
+
+				TestActor->MyU64 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("uint16 was saved", TestActor->MyU64, 34);
+			});
+
+			It("int8", [this]()
+			{
+				TestActor->MyI8 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("int8 didn't change after save", TestActor->MyI8, 34);
+
+				TestActor->MyI8 = 100;
+				SaveManager->LoadSlot(0);
+				TestEqual("int8 was saved", TestActor->MyI8, 34);
+			});
+
+			It("int16", [this]()
+			{
+				TestActor->MyI16 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("int16 didn't change after save", TestActor->MyI16, 34);
+
+				TestActor->MyI16 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("int16 was saved", TestActor->MyI16, 34);
+			});
+
+			It("int32", [this]()
+			{
+				TestActor->MyI32 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("int32 didn't change after save", TestActor->MyI32, 34);
+
+				TestActor->MyI32 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("int32 was saved", TestActor->MyI32, 34);
+			});
+
+			It("int64", [this]()
+			{
+				TestActor->MyI64 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("int64 didn't change after save", TestActor->MyI64, 34);
+
+				TestActor->MyI64 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("int64 was saved", TestActor->MyI64, 34);
+			});
 		});
 
 		AfterEach([this]() {
@@ -147,12 +180,13 @@ void FSavePresetSpec::Define()
 		if (SaveManager)
 		{
 			bFinishTick = false;
-			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]()
-			{
-					bFinishTick = true;
+			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
+				bFinishTick = true;
 			}));
 
-			TickWorldUntil(GetMainWorld(), true, [this](float) { return !bFinishTick; });
+			TickWorldUntil(GetMainWorld(), true, [this](float) {
+				return !bFinishTick;
+			});
 		}
 		SaveManager = nullptr;
 	});

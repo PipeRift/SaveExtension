@@ -16,9 +16,9 @@
 #include <Misc/CoreDelegates.h>
 #include <Misc/Paths.h>
 
-USaveManager::USaveManager() : Super(), MTTasks{}
-{
-}
+
+
+USaveManager::USaveManager() : Super(), MTTasks{} {}
 
 void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -76,9 +76,9 @@ bool USaveManager::SaveSlot(
 
 	// Launch task, always fail if it didn't finish or wasn't scheduled
 	auto* Task = CreateTask<USlotDataTask_Saver>()
-		->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
-		->Bind(OnSaved)
-		->Start();
+					 ->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+					 ->Bind(OnSaved)
+					 ->Start();
 
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
@@ -93,10 +93,7 @@ bool USaveManager::LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded)
 
 	TryInstantiateInfo();
 
-	auto* Task = CreateTask<USlotDataTask_Loader>()
-		->Setup(SlotId)
-		->Bind(OnLoaded)
-		->Start();
+	auto* Task = CreateTask<USlotDataTask_Loader>()->Setup(SlotId)->Bind(OnLoaded)->Start();
 
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
@@ -109,7 +106,9 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 	bool bSuccess = false;
 
 	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotId)
-		.OnFinished([&bSuccess](auto& Task) mutable { bSuccess = Task->bSuccess; })
+		.OnFinished([&bSuccess](auto& Task) mutable {
+			bSuccess = Task->bSuccess;
+		})
 		.StartSynchronousTask();
 	MTTasks.Tick();
 	return bSuccess;
@@ -118,14 +117,18 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate)
 {
 	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
-		.OnFinished([](auto& Task) { Task->CallDelegate(); })
+		.OnFinished([](auto& Task) {
+			Task->CallDelegate();
+		})
 		.StartBackgroundTask();
 }
 
 void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded Delegate)
 {
 	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
-		.OnFinished([](auto& Task) { Task->CallDelegate(); })
+		.OnFinished([](auto& Task) {
+			Task->CallDelegate();
+		})
 		.StartSynchronousTask();
 	MTTasks.Tick();
 }
@@ -133,19 +136,22 @@ void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded De
 void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 {
 	MTTasks.CreateTask<FDeleteSlotsTask>(this)
-		.OnFinished([Delegate](auto& Task) { Delegate.ExecuteIfBound(); })
+		.OnFinished([Delegate](auto& Task) {
+			Delegate.ExecuteIfBound();
+		})
 		.StartBackgroundTask();
 }
 
-void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result,
-	struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
+void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size,
+	ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
 {
 	if (UWorld* World = GetWorld())
 	{
 		Result = ESaveGameResult::Saving;
 
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FSaveGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		if (LatentActionManager.FindExistingAction<FSaveGameAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
 				new FSaveGameAction(this, SlotId, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
@@ -155,30 +161,33 @@ void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreens
 	Result = ESaveGameResult::Failed;
 }
 
-void USaveManager::BPLoadSlotFromId(int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadSlotFromId(
+	int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
 		Result = ELoadGameResult::Loading;
 
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		if (LatentActionManager.FindExistingAction<FLoadGameAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
-			LatentActionManager.AddNewAction(
-				LatentInfo.CallbackTarget, LatentInfo.UUID, new FLoadGameAction(this, SlotId, Result, LatentInfo));
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
+				new FLoadGameAction(this, SlotId, Result, LatentInfo));
 		}
 		return;
 	}
 	Result = ELoadGameResult::Failed;
 }
 
-void USaveManager::BPLoadAllSlotInfos(
-	const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos,
+	ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
 				new FLoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
@@ -191,7 +200,8 @@ void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentAc
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FDeleteSlotsAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		if (LatentActionManager.FindExistingAction<FDeleteSlotsAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(
 				LatentInfo.CallbackTarget, LatentInfo.UUID, new FDeleteSlotsAction(this, Result, LatentInfo));
@@ -276,8 +286,10 @@ void USaveManager::UpdateLevelStreamings()
 	{
 		ULevelStreamingNotifier* Notifier = NewObject<ULevelStreamingNotifier>(this);
 		Notifier->SetLevelStreaming(Level);
-		Notifier->OnLevelShown().BindUFunction(this, GET_FUNCTION_NAME_CHECKED(USaveManager, DeserializeStreamingLevel));
-		Notifier->OnLevelHidden().BindUFunction(this, GET_FUNCTION_NAME_CHECKED(USaveManager, SerializeStreamingLevel));
+		Notifier->OnLevelShown().BindUFunction(
+			this, GET_FUNCTION_NAME_CHECKED(USaveManager, DeserializeStreamingLevel));
+		Notifier->OnLevelHidden().BindUFunction(
+			this, GET_FUNCTION_NAME_CHECKED(USaveManager, SerializeStreamingLevel));
 		LevelStreamingNotifiers.Add(Notifier);
 	}
 }
@@ -365,8 +377,7 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 
 void USaveManager::OnSaveBegan(const FSaveFilter& Filter)
 {
-	IterateSubscribedInterfaces([&Filter](auto* Object)
-	{
+	IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -380,8 +391,7 @@ void USaveManager::OnSaveBegan(const FSaveFilter& Filter)
 
 void USaveManager::OnSaveFinished(const FSaveFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
-	{
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -400,8 +410,7 @@ void USaveManager::OnSaveFinished(const FSaveFilter& Filter, const bool bError)
 
 void USaveManager::OnLoadBegan(const FSaveFilter& Filter)
 {
-	IterateSubscribedInterfaces([&Filter](auto* Object)
-	{
+	IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -415,8 +424,7 @@ void USaveManager::OnLoadBegan(const FSaveFilter& Filter)
 
 void USaveManager::OnLoadFinished(const FSaveFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
-	{
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
