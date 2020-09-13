@@ -27,9 +27,20 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
+	if(!DefaultPreset.IsNull())
+	{
+		if(DefaultPreset.IsValid())
+		{
+			ActivePreset = DefaultPreset.Get();
+		}
+		ActivePreset = DefaultPreset.LoadSynchronous();
+	}
+
 	// AutoLoad
 	if (GetPreset() && GetPreset()->bAutoLoad)
+	{
 		ReloadCurrentSlot();
+	}
 
 	TryInstantiateInfo();
 	UpdateLevelStreamings();
@@ -448,10 +459,9 @@ void USaveManager::OnMapLoadStarted(const FString& MapName)
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)
 {
-	USlotDataTask_Loader* Loader = Cast<USlotDataTask_Loader>(Tasks.Num() ? Tasks[0] : nullptr);
-	if (Loader && Loader->bLoadingMap)
+	if(auto* ActiveLoader = Cast<USlotDataTask_Loader>(Tasks.Num() ? Tasks[0] : nullptr))
 	{
-		Loader->OnMapLoaded();
+		ActiveLoader->OnMapLoaded();
 	}
 
 	UpdateLevelStreamings();

@@ -40,7 +40,7 @@ BraceWrapping:
   AfterControlStatement: Always
   BeforeElse: true
   BeforeCatch: true
-  BeforeLambdaBody: false
+#  BeforeLambdaBody: false  - Waiting for Clang12
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false

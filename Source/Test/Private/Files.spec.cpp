@@ -6,7 +6,8 @@
 
 class FSaveSpec_Files : public Automatron::FTestSpec
 {
-	GENERATE_SPEC(FSaveSpec_Files, "SaveExtension.Files", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
+	GENERATE_SPEC(FSaveSpec_Files, "SaveExtension.Files",
+		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
 	USaveManager* SaveManager = nullptr;
 	ATestActor* TestActor = nullptr;
@@ -24,6 +25,7 @@ class FSaveSpec_Files : public Automatron::FTestSpec
 	USavePreset* CreateTestPreset();
 };
 
+
 void FSaveSpec_Files::Define()
 {
 	BeforeEach([this]() {
@@ -36,8 +38,7 @@ void FSaveSpec_Files::Define()
 		SaveManager->SetActivePreset(TestPreset);
 	});
 
-	It("Can save files synchronously", [this]()
-	{
+	It("Can save files synchronously", [this]() {
 		TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
@@ -46,8 +47,7 @@ void FSaveSpec_Files::Define()
 		TestTrue("Data File exists in disk", FFileAdapter::DoesFileExist("0_data"));
 	});
 
-	It("Can save files asynchronously", [this]()
-	{
+	It("Can save files asynchronously", [this]() {
 		TestPreset->MultithreadedFiles = ESaveASyncMode::SaveAsync;
 		bFinishTick = false;
 
@@ -63,14 +63,12 @@ void FSaveSpec_Files::Define()
 		TestFalse("Info File exists in disk", FFileAdapter::DoesFileExist("0"));
 		TestFalse("Data File exists in disk", FFileAdapter::DoesFileExist("0_data"));
 
-		TickWorldUntil(GetMainWorld(), true, [this](float)
-		{
+		TickWorldUntil(GetMainWorld(), true, [this](float) {
 			return !bFinishTick;
 		});
 	});
 
-	It("Can load files synchronously", [this]()
-	{
+	It("Can load files synchronously", [this]() {
 		TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
@@ -79,16 +77,16 @@ void FSaveSpec_Files::Define()
 		TestNotNull("File data was loaded", FFileAdapter::LoadFile("0_data"));
 	});
 
-	AfterEach([this]()
-	{
+	AfterEach([this]() {
 		if (SaveManager)
 		{
 			bFinishTick = false;
-			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]()
-			{
-					bFinishTick = true;
+			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
+				bFinishTick = true;
 			}));
-			TickWorldUntil(GetMainWorld(), true, [this](float) { return !bFinishTick; });
+			TickWorldUntil(GetMainWorld(), true, [this](float) {
+				return !bFinishTick;
+			});
 		}
 		SaveManager = nullptr;
 	});
