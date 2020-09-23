@@ -4,9 +4,10 @@
 #include "Helpers/TestActor.h"
 #include "SaveManager.h"
 
-class FSavePresetSpec : public Automatron::FTestSpec
+
+class FSaveSpec_Preset : public Automatron::FTestSpec
 {
-	GENERATE_SPEC(FSavePresetSpec, "SaveExtension",
+	GENERATE_SPEC(FSaveSpec_Preset, "SaveExtension",
 		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
 	USaveManager* SaveManager = nullptr;
@@ -16,7 +17,7 @@ class FSavePresetSpec : public Automatron::FTestSpec
 	// Helper for some test delegates
 	bool bFinishTick = false;
 
-	FSavePresetSpec()
+	FSaveSpec_Preset()
 	{
 		bReuseWorldForAllTests = false;
 		bCanUsePIEWorld = false;
@@ -27,7 +28,7 @@ class FSavePresetSpec : public Automatron::FTestSpec
 	USavePreset* CreateTestPreset();
 };
 
-void FSavePresetSpec::Define()
+void FSaveSpec_Preset::Define()
 {
 	BeforeEach([this]() {
 		SaveManager = USaveManager::Get(GetMainWorld());
@@ -192,7 +193,7 @@ void FSavePresetSpec::Define()
 	});
 }
 
-USavePreset* FSavePresetSpec::CreateTestPreset()
+USavePreset* FSaveSpec_Preset::CreateTestPreset()
 {
 	USavePreset* Preset = NewObject<USavePreset>(GetMainWorld());
 	return Preset;

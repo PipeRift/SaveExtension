@@ -64,6 +64,7 @@ namespace Automatron
 
 	struct FTestWorldSettings
 	{
+		TSubclassOf<UGameInstance> GameInstance;
 		TSubclassOf<AGameModeBase> GameMode = AGameModeBase::StaticClass();
 
 		bool bShouldTick = false;
@@ -671,7 +672,7 @@ namespace Automatron
 		void TickWorldUntil(UWorld* World, bool bUseRealtime, TFunction<bool(float)> Delegate);
 		void TickWorld(UWorld* World, float Duration, bool bUseRealtime = false);
 
-		UGameInstance* CreateGameInstance(UObject* Context);
+		UGameInstance* CreateGameInstance(const FTestWorldSettings& Settings, UObject* Context);
 
 		bool DestroyWorld(UWorld* World);
 
@@ -1265,7 +1266,7 @@ namespace Automatron
 
 	inline UWorld* FTestSpec::CreateWorld(FTestWorldSettings Settings)
 	{
-		auto* GameInstance = CreateGameInstance(GEngine);
+		auto* GameInstance = CreateGameInstance(Settings, GEngine);
 		GameInstance->AddToRoot();
 
 		GameInstance->InitializeStandalone(TEXT("FAbilitySpec::World"), nullptr);
@@ -1339,10 +1340,14 @@ namespace Automatron
 		});
 	}
 
-	inline UGameInstance* FTestSpec::CreateGameInstance(UObject* Context)
+	inline UGameInstance* FTestSpec::CreateGameInstance(const FTestWorldSettings& Settings, UObject* Context)
 	{
-		FSoftClassPath GameInstanceClassName = GetDefault<UGameMapsSettings>()->GameInstanceClass;
-		UClass* GameInstanceClass = GameInstanceClassName.TryLoadClass<UGameInstance>();
+		UClass* GameInstanceClass = Settings.GameInstance.Get();
+		if(!GameInstanceClass)
+		{
+			FSoftClassPath GameInstanceClassName = GetDefault<UGameMapsSettings>()->GameInstanceClass;
+			GameInstanceClass = GameInstanceClassName.TryLoadClass<UGameInstance>();
+		}
 
 		if (!GameInstanceClass)
 		{
