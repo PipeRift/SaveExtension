@@ -4,10 +4,11 @@
 
 #include "Modules/ModuleManager.h"
 
+
 class FSaveExtensionTest : public IModuleInterface
 {
 public:
-	virtual void StartupModule() override {}
+	virtual void StartupModule() override;
 	virtual void ShutdownModule() override {}
 
 	static inline FSaveExtensionTest& Get()
@@ -20,5 +21,3 @@ public:
 		return FModuleManager::Get().IsModuleLoaded("SaveExtensionTest");
 	}
 };
-
-IMPLEMENT_MODULE(FSaveExtensionTest, SaveExtensionTest);

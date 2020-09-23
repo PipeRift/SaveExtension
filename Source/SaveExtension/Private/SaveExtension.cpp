@@ -4,3 +4,5 @@
 
 
 DEFINE_LOG_CATEGORY(LogSaveExtension)
+
+IMPLEMENT_MODULE(FSaveExtension, SaveExtension);

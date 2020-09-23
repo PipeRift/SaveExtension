@@ -16,7 +16,7 @@ class FSaveSpec_Files : public Automatron::FTestSpec
 	// Helper for some test delegates
 	bool bFinishTick = false;
 
-	FSaveSpec_Files()
+	FSaveSpec_Files() : Automatron::FTestSpec()
 	{
 		bReuseWorldForAllTests = false;
 		bCanUsePIEWorld = false;

@@ -80,7 +80,8 @@ public:
 	}
 
 	virtual void ShutdownModule() override {
-		if (UObjectInitialized()) {
+		if (UObjectInitialized())
+		{
 			UnregisterSettings();
 		}
 	}
@@ -89,5 +90,3 @@ public:
 };
 
 #undef LOCTEXT_NAMESPACE
-
-IMPLEMENT_GAME_MODULE(FSaveExtension, SaveExtension);

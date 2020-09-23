@@ -17,7 +17,7 @@ class FSaveSpec_Preset : public Automatron::FTestSpec
 	// Helper for some test delegates
 	bool bFinishTick = false;
 
-	FSaveSpec_Preset()
+	FSaveSpec_Preset() : Automatron::FTestSpec()
 	{
 		bReuseWorldForAllTests = false;
 		bCanUsePIEWorld = false;
@@ -44,7 +44,7 @@ void FSaveSpec_Preset::Define()
 			TestPreset = CreateTestPreset();
 			TestPreset->ActorFilter.ClassFilter.AllowedClasses.Add(ATestActor::StaticClass());
 
-			// We dont need Async files are tested independently
+			// We don't need Async files are tested independently
 			TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
 
 			SaveManager->SetActivePreset(TestPreset);
