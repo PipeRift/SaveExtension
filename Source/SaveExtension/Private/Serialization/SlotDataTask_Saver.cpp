@@ -223,10 +223,13 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 	// Empty level record before serializing it
 	LevelRecord->Clean();
 
-	const int32 MinObjectsPerTask = 20;
+	Filter.BakeAllowedClasses();
+
+	const int32 MinObjectsPerTask = 40;
 	const int32 ActorCount = Level->Actors.Num();
 	const int32 NumBalancedPerTask = FMath::CeilToInt((float) ActorCount / AssignedTasks);
 	const int32 NumPerTask = FMath::Max(NumBalancedPerTask, MinObjectsPerTask);
+
 
 	// Split all actors between multi-threaded tasks
 	int32 Index = 0;
@@ -237,7 +240,7 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 
 		// Add new Task
 		Tasks.Emplace(FMTTask_SerializeActors{
-			GetWorld(), SlotData, &Level->Actors, Index, NumToSerialize, LevelRecord, *Preset});
+			GetWorld(), SlotData, &Level->Actors, Index, NumToSerialize, LevelRecord, Filter});
 
 		Index += NumToSerialize;
 	}

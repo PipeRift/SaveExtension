@@ -27,9 +27,6 @@ struct FLevelRecord : public FBaseRecord
 	/** Records of the World Actors */
 	TArray<FActorRecord> Actors;
 
-	/** Records of the AI Controller Actors */
-	TArray<FControllerRecord> AIControllers;
-
 
 	FLevelRecord() : Super() {}
 

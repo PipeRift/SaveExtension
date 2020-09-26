@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Delegates.h"
 #include "LatentActions/DeleteSlotsAction.h"
 #include "LatentActions/LoadGameAction.h"
 #include "LatentActions/SaveGameAction.h"
@@ -12,10 +13,6 @@
 #include "SaveExtensionInterface.h"
 #include "SavePreset.h"
 #include "Serialization/SlotDataTask.h"
-#include "Serialization/SlotDataTask_LevelLoader.h"
-#include "Serialization/SlotDataTask_LevelSaver.h"
-#include "Serialization/SlotDataTask_Loader.h"
-#include "Serialization/SlotDataTask_Saver.h"
 #include "SlotData.h"
 #include "SlotInfo.h"
 
@@ -53,22 +50,17 @@ public:
 /**
  * Controls the complete saving and loading process
  */
-UCLASS(ClassGroup = SaveExtension, Config = Game, meta = (DisplayName = "SaveManager"))
+UCLASS(ClassGroup = SaveExtension, meta = (DisplayName = "SaveManager"))
 class SAVEEXTENSION_API USaveManager : public UGameInstanceSubsystem, public FTickableGameObject
 {
 	GENERATED_BODY()
 
 	friend USlotDataTask;
-	friend USlotDataTask_Loader;
 
 
 	/************************************************************************/
 	/* PROPERTIES														    */
 	/************************************************************************/
-public:
-	/** Which save preset to use. Will use Default preset if none */
-	UPROPERTY(EditAnywhere, Category = "Save Extension", Config, meta = (DisplayName = "Preset"))
-	TAssetPtr<USavePreset> DefaultPreset;
 
 private:
 	UPROPERTY(Transient)
@@ -143,13 +135,13 @@ public:
 	bool LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded = {});
 
 	/** Load game from a SlotInfo */
-	FORCEINLINE bool LoadSlot(const USlotInfo* SlotInfo, FOnGameLoaded OnLoaded = {})
+	bool LoadSlot(const USlotInfo* SlotInfo, FOnGameLoaded OnLoaded = {})
 	{
 		return SlotInfo ? LoadSlot(SlotInfo->Id, MoveTemp(OnLoaded)) : false;
 	}
 
 	/** Reload the currently loaded slot if any */
-	FORCEINLINE bool ReloadCurrentSlot(FOnGameLoaded OnLoaded = {})
+	bool ReloadCurrentSlot(FOnGameLoaded OnLoaded = {})
 	{
 		return LoadSlot(CurrentInfo, MoveTemp(OnLoaded));
 	}
@@ -171,9 +163,8 @@ public:
 	void DeleteAllSlots(FOnSlotsDeleted Delegate);
 
 
-public:
 	/** BLUEPRINT ONLY API */
-
+public:
 	// NOTE: This functions are mostly made to accommodate better Blueprint nodes that directly communicate
 	// with the normal C++ API
 
@@ -271,9 +262,9 @@ public:
 		return ActivePreset;
 	}
 
-public:
-	/** BLUEPRINTS & C++ API */
 
+	/** BLUEPRINTS & C++ API */
+public:
 	/** Delete a saved game on an specified slot
 	 * Performance: Interacts with disk, can be slow
 	 */
@@ -354,11 +345,20 @@ public:
 		return GenerateSlotInfoName(SlotId).Append(TEXT("_data"));
 	}
 
-	FORCEINLINE bool IsValidSlot(const int32 Slot) const
+	bool IsValidSlot(const int32 Slot) const;
+
+	void __SetCurrentInfo(USlotInfo* NewInfo)
 	{
-		const int32 MaxSlots = GetPreset()->GetMaxSlots();
-		return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
+		CurrentInfo = NewInfo;
 	}
+
+	void __SetCurrentData(USlotData* NewData)
+	{
+		CurrentData = NewData;
+	}
+
+	USlotInfo* LoadInfo(uint32 Slot) const;
+	USlotData* LoadData(const USlotInfo* Info) const;
 
 protected:
 	bool CanLoadOrSave();
@@ -372,9 +372,6 @@ private:
 	UFUNCTION()
 	void DeserializeStreamingLevel(ULevelStreaming* LevelStreaming);
 	//~ End LevelStreaming
-
-	USlotInfo* LoadInfo(uint32 Slot) const;
-	USlotData* LoadData(const USlotInfo* Info) const;
 
 	void OnLevelLoaded(ULevelStreaming* StreamingLevel) {}
 
@@ -396,16 +393,12 @@ public:
 
 	/** @return true when saving or loading anything, including levels */
 	UFUNCTION(BlueprintPure, Category = SaveExtension)
-	FORCEINLINE bool IsSavingOrLoading() const
+	bool IsSavingOrLoading() const
 	{
 		return HasTasks();
 	}
 
-	FORCEINLINE bool IsLoading() const
-	{
-		return HasTasks() &&
-			   (Tasks[0]->IsA<USlotDataTask_Loader>() || Tasks[0]->IsA<USlotDataTask_LevelLoader>());
-	}
+	bool IsLoading() const;
 
 protected:
 	//~ Begin Tickable Object Interface
@@ -424,9 +417,13 @@ protected:
 	}
 	//~ End Tickable Object Interface
 
+	//~ Begin UObject Interface
+	virtual UWorld* GetWorld() const override;
+	//~ End UObject Interface
+
 
 	/***********************************************************************/
-	/* EVENTS															  */
+	/* EVENTS                                                              */
 	/***********************************************************************/
 public:
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
@@ -444,7 +441,6 @@ public:
 	UFUNCTION(Category = SaveExtension, BlueprintCallable)
 	void UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface);
 
-
 	void OnSaveBegan(const FSaveFilter& Filter);
 	void OnSaveFinished(const FSaveFilter& Filter, const bool bError);
 	void OnLoadBegan(const FSaveFilter& Filter);
@@ -454,38 +450,41 @@ private:
 	void OnMapLoadStarted(const FString& MapName);
 	void OnMapLoadFinished(UWorld* LoadedWorld);
 
-	void IterateSubscribedInterfaces(TFunction<void(UObject*)>&& Callback)
-	{
-		for (const TScriptInterface<ISaveExtensionInterface>& Interface : SubscribedInterfaces)
-		{
-			if (UObject* const Object = Interface.GetObject())
-				Callback(Object);
-		}
-	}
-
-	//~ Begin UObject Interface
-	virtual UWorld* GetWorld() const override;
-	//~ End UObject Interface
+	void IterateSubscribedInterfaces(TFunction<void(UObject*)>&& Callback);
 
 
-	/** STATIC */
+	/***********************************************************************/
+	/* STATIC                                                              */
+	/***********************************************************************/
 public:
 	/** Get the global save manager */
-	UFUNCTION(BlueprintPure, Category = SaveExtension,
-		meta = (WorldContext = "ContextObject", DeprecatedFunction,
-			DeprecationMessage = "Use 'Get Save Manager' instead"))
-	static USaveManager* GetSaveManager(const UObject* ContextObject)
-	{
-		return Get(ContextObject);
-	}
-
-	/** Get the global save manager */
-	static USaveManager* Get(const UObject* ContextObject)
-	{
-		UWorld* World =
-			GEngine->GetWorldFromContextObject(ContextObject, EGetWorldErrorMode::LogAndReturnNull);
-
-		const UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-		return UGameInstance::GetSubsystem<USaveManager>(GI);
-	}
+	static USaveManager* Get(const UObject* ContextObject);
 };
+
+
+inline bool USaveManager::IsValidSlot(const int32 Slot) const
+{
+	const int32 MaxSlots = GetPreset()->GetMaxSlots();
+	return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
+}
+
+inline void USaveManager::IterateSubscribedInterfaces(TFunction<void(UObject*)>&& Callback)
+{
+	for (const TScriptInterface<ISaveExtensionInterface>& Interface : SubscribedInterfaces)
+	{
+		if (UObject* const Object = Interface.GetObject())
+		{
+			Callback(Object);
+		}
+	}
+}
+
+inline USaveManager* USaveManager::Get(const UObject* Context)
+{
+	UWorld* World = GEngine->GetWorldFromContextObject(Context, EGetWorldErrorMode::LogAndReturnNull);
+	if (World)
+	{
+		return UGameInstance::GetSubsystem<USaveManager>(World->GetGameInstance());
+	}
+	return nullptr;
+}

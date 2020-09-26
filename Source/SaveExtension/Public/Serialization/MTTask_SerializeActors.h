@@ -38,21 +38,19 @@ class FMTTask_SerializeActors : public FMTTask
 
 	FActorRecord LevelScriptRecord;
 	TArray<FActorRecord> ActorRecords;
-	TArray<FControllerRecord> AIControllerRecords;
 
 
 public:
 	FMTTask_SerializeActors(const UWorld* World, USlotData* SlotData,
 		const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum,
-		FLevelRecord* InLevelRecord, const USavePreset& Preset)
-		: FMTTask(false, World, SlotData, Preset)
+		FLevelRecord* InLevelRecord, const FSaveFilter& Filter)
+		: FMTTask(false, World, SlotData, Filter)
 		, LevelActors(InLevelActors)
 		, StartIndex(InStartIndex)
 		, Num(InNum)
 		, LevelRecord(InLevelRecord)
 		, LevelScriptRecord{}
 		, ActorRecords{}
-		, AIControllerRecords{}
 	{
 		// No apparent performance benefit
 		// ActorRecords.Reserve(Num);
@@ -67,7 +65,6 @@ public:
 
 		// Shrink not needed. Move wont keep reserved space
 		LevelRecord->Actors.Append(MoveTemp(ActorRecords));
-		LevelRecord->AIControllers.Append(MoveTemp(AIControllerRecords));
 	}
 
 	FORCEINLINE TStatId GetStatId() const

@@ -14,6 +14,14 @@ class SSaveActorEditorWidget
 {
 	static const TArray<FTagInfo> TagList;
 
+	TWeakPtr<FBlueprintEditor> WeakBlueprintEditor;
+	TArray<TSharedRef<SSaveActorSettingsItem>> SettingItems;
+	bool bRefreshingVisuals;
+
+	FDelegateHandle OnBlueprintPreCompileHandle;
+	FDelegateHandle OnObjectSavedHandle;
+
+
 public:
 
 	SLATE_BEGIN_ARGS(SSaveActorEditorWidget){}
@@ -39,31 +47,18 @@ private:
 	TSharedPtr<SWidget> GenerateSettingsWidget();
 	void RefreshVisuals();
 
-	EVisibility GetContentVisibility() const {
+	EVisibility GetContentVisibility() const
+	{
 		return GetDefaultActor() ? EVisibility::Visible : EVisibility::Collapsed;
 	}
 
-	bool IsSaveEnabled() const {
-		if (AActor* actor = GetDefaultActor()) {
-			return !actor->ActorHasTag("!Save");
-		}
-		return false;
-	}
-
 	bool IsTransformEnabled() const {
-		if (AActor* actor = GetDefaultActor()) {
+		if (AActor* actor = GetDefaultActor())
+		{
 			return !actor->ActorHasTag("!SaveTransform");
 		}
 		return false;
 	}
-
-
-	TWeakPtr<FBlueprintEditor> WeakBlueprintEditor;
-	TArray<TSharedRef<SSaveActorSettingsItem>> SettingItems;
-	bool bRefreshingVisuals;
-
-	FDelegateHandle OnBlueprintPreCompileHandle;
-	FDelegateHandle OnObjectSavedHandle;
 };
 
 

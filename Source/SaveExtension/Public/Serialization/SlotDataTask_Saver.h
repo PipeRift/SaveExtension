@@ -2,8 +2,13 @@
 
 #pragma once
 
-#include "SlotDataTask.h"
+#include "Delegates.h"
 #include "ISaveExtension.h"
+#include "MTTask_SerializeActors.h"
+#include "Multithreading/SaveFileTask.h"
+#include "SavePreset.h"
+#include "SlotData.h"
+#include "SlotDataTask.h"
 
 #include <Engine/Level.h>
 #include <Engine/LevelStreaming.h>
@@ -13,18 +18,7 @@
 #include <AIController.h>
 #include <Async/AsyncWork.h>
 
-#include "SavePreset.h"
-#include "SlotData.h"
-
-#include "MTTask_SerializeActors.h"
-#include "Multithreading/SaveFileTask.h"
 #include "SlotDataTask_Saver.generated.h"
-
-
-/** Called when game has been saved
- * @param SlotInfo the saved slot. Null if save failed
- */
-DECLARE_DELEGATE_OneParam(FOnGameSaved, USlotInfo*);
 
 
 /**

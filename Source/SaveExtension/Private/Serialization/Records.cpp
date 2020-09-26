@@ -57,12 +57,3 @@ bool FActorRecord::Serialize(FArchive& Ar)
 	Ar << ComponentRecords;
 	return true;
 }
-
-bool FControllerRecord::Serialize(FArchive& Ar)
-{
-	Super::Serialize(Ar);
-
-	Ar << ControlRotation;
-
-	return true;
-}

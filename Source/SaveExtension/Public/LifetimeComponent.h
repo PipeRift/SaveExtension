@@ -47,9 +47,9 @@ public:
 	virtual void OnLoadFinished(const FSaveFilter& Filter, bool bError);
 
 
-	FORCEINLINE USaveManager* GetManager() const
+	USaveManager* GetManager() const
 	{
-		return USaveManager::GetSaveManager(GetWorld());
+		return USaveManager::Get(GetWorld());
 	}
 
 

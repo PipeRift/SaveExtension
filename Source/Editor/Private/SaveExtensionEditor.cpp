@@ -6,7 +6,6 @@
 
 #include "Asset/AssetTypeAction_SlotInfo.h"
 #include "Asset/AssetTypeAction_SlotData.h"
-#include "Asset/AssetTypeAction_SavePreset.h"
 
 #include "Customizations/SavePresetDetails.h"
 #include "Customizations/ClassFilterCustomization.h"
@@ -22,16 +21,8 @@ void FSaveExtensionEditor::StartupModule()
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
 	AssetCategory = AssetTools.RegisterAdvancedAssetCategory(FName("SaveExtension"), LOCTEXT("Category", "Save Extension"));
 
-	{
-		TSharedRef<IAssetTypeActions> SaveInfoAction = MakeShareable(new FAssetTypeAction_SlotInfo);
-		AssetTools.RegisterAssetTypeActions(SaveInfoAction);
-
-		TSharedRef<IAssetTypeActions> SaveDataAction = MakeShareable(new FAssetTypeAction_SlotData);
-		AssetTools.RegisterAssetTypeActions(SaveDataAction);
-
-		TSharedRef<IAssetTypeActions> SavePresetAction = MakeShareable(new FAssetTypeAction_SavePreset);
-		AssetTools.RegisterAssetTypeActions(SavePresetAction);
-	}
+	AssetTools.RegisterAssetTypeActions(MakeShared<FAssetTypeAction_SlotInfo>());
+	AssetTools.RegisterAssetTypeActions(MakeShared<FAssetTypeAction_SlotData>());
 
 	RegisterPropertyTypeCustomizations();
 

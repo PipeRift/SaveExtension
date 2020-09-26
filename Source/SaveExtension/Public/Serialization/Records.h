@@ -101,19 +101,3 @@ struct FActorRecord : public FObjectRecord
 
 	virtual bool Serialize(FArchive& Ar) override;
 };
-
-
-/** Represents a serialized Controller */
-USTRUCT()
-struct FControllerRecord : public FActorRecord
-{
-	GENERATED_BODY()
-
-	FRotator ControlRotation;
-
-
-	FControllerRecord() : Super() {}
-	FControllerRecord(const AActor* Actor) : Super(Actor) {}
-
-	virtual bool Serialize(FArchive& Ar) override;
-};

@@ -25,9 +25,8 @@ void FMTTask_SerializeActors::DoWork()
 		const AActor* const Actor = (*LevelActors)[StartIndex + I];
 		if (Actor && Filter.ShouldSave(Actor))
 		{
-			FActorRecord Record;
+			FActorRecord& Record = ActorRecords.AddDefaulted_GetRef();
 			SerializeActor(Actor, Record);
-			ActorRecords.Add(MoveTemp(Record));
 		}
 	}
 }

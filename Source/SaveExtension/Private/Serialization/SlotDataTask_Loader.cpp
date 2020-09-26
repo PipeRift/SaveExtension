@@ -133,8 +133,6 @@ void USlotDataTask_Loader::OnMapLoaded()
 	const UWorld* World = GetWorld();
 	if (World->GetFName() == NewSlotInfo->Map)
 	{
-		Filter.BakeAllowedClasses();
-
 		if(IsDataLoaded())
 		{
 			StartDeserialization();
@@ -165,7 +163,7 @@ void USlotDataTask_Loader::StartDeserialization()
 	Manager->OnLoadBegan(Filter);
 
 	//Apply current Info if succeeded
-	Manager->CurrentInfo = NewSlotInfo;
+	Manager->__SetCurrentInfo(NewSlotInfo);
 
 	BeforeDeserialize();
 
@@ -197,11 +195,15 @@ void USlotDataTask_Loader::BeforeDeserialize()
 {
 	UWorld* World = GetWorld();
 
+	Filter.BakeAllowedClasses();
+
 	// Set current game time to the saved value
 	World->TimeSeconds = SlotData->TimeSeconds;
 
-	if (Preset->bStoreGameInstance)
+	if (Filter.bStoreGameInstance)
+	{
 		DeserializeGameInstance();
+	}
 }
 
 void USlotDataTask_Loader::DeserializeSync()
@@ -378,7 +380,7 @@ void USlotDataTask_Loader::FinishedDeserializing()
 {
 	// Clean serialization data
 	SlotData->Clean(true);
-	GetManager()->CurrentData = SlotData;
+	GetManager()->__SetCurrentData(SlotData);
 
 	Finish(true);
 }

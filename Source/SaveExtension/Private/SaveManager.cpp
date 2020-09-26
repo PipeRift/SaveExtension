@@ -5,6 +5,11 @@
 #include "FileAdapter.h"
 #include "LatentActions/LoadInfosAction.h"
 #include "Multithreading/LoadSlotInfoTask.h"
+#include "SaveSettings.h"
+#include "Serialization/SlotDataTask_LevelLoader.h"
+#include "Serialization/SlotDataTask_LevelSaver.h"
+#include "Serialization/SlotDataTask_Loader.h"
+#include "Serialization/SlotDataTask_Saver.h"
 
 #include <Engine/GameViewportClient.h>
 #include <Engine/LevelStreaming.h>
@@ -17,7 +22,6 @@
 #include <Misc/Paths.h>
 
 
-
 USaveManager::USaveManager() : Super(), MTTasks{} {}
 
 void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
@@ -27,14 +31,7 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
-	if(!DefaultPreset.IsNull())
-	{
-		if(DefaultPreset.IsValid())
-		{
-			ActivePreset = DefaultPreset.Get();
-		}
-		ActivePreset = DefaultPreset.LoadSynchronous();
-	}
+	ActivePreset = GetDefault<USaveSettings>()->CreatePreset(this);
 
 	// AutoLoad
 	if (GetPreset() && GetPreset()->bAutoLoad)
@@ -358,7 +355,15 @@ void USaveManager::FinishTask(USlotDataTask* Task)
 
 	// Start next task
 	if (Tasks.Num() > 0)
+	{
 		Tasks[0]->Start();
+	}
+}
+
+bool USaveManager::IsLoading() const
+{
+	return HasTasks() &&
+		   (Tasks[0]->IsA<USlotDataTask_Loader>() || Tasks[0]->IsA<USlotDataTask_LevelLoader>());
 }
 
 void USaveManager::Tick(float DeltaTime)

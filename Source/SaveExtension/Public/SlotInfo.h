@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Engine/Texture2D.h"
-#include "GameFramework/SaveGame.h"
+#include <CoreMinimal.h>
+#include <Engine/Texture2D.h>
+#include <GameFramework/SaveGame.h>
 
 #include "SlotInfo.generated.h"
 

@@ -2,7 +2,13 @@
 
 #pragma once
 
+#include "Delegates.h"
 #include "ISaveExtension.h"
+#include "Multithreading/LoadFileTask.h"
+#include "SavePreset.h"
+#include "SlotInfo.h"
+#include "SlotData.h"
+#include "SlotDataTask.h"
 
 #include <Engine/Level.h>
 #include <Engine/LevelStreaming.h>
@@ -10,19 +16,7 @@
 #include <Engine/LevelScriptActor.h>
 #include <GameFramework/Controller.h>
 
-#include "SavePreset.h"
-#include "SlotInfo.h"
-#include "SlotData.h"
-
-#include "SlotDataTask.h"
-#include "Multithreading/LoadFileTask.h"
 #include "SlotDataTask_Loader.generated.h"
-
-
-/** Called when game has been loaded
- * @param SlotInfo the loaded slot. Null if load failed
- */
-DECLARE_DELEGATE_OneParam(FOnGameLoaded, USlotInfo*);
 
 
 enum class ELoadDataTaskState : uint8
