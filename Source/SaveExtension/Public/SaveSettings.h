@@ -5,6 +5,7 @@
 #include "SavePreset.h"
 
 #include <CoreMinimal.h>
+#include <Engine/DeveloperSettings.h>
 
 #include "SaveSettings.generated.h"
 

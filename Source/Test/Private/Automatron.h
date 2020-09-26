@@ -39,6 +39,7 @@
 
 #include <CoreMinimal.h>
 #include <Engine/GameInstance.h>
+#include <Engine/Engine.h>
 #include <EngineUtils.h>
 #include <GameFramework/GameModeBase.h>
 #include <GameMapsSettings.h>
