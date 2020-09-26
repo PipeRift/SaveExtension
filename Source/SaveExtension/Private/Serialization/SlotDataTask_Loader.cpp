@@ -6,7 +6,7 @@
 #include <Serialization/MemoryReader.h>
 #include <Kismet/GameplayStatics.h>
 #include <Components/PrimitiveComponent.h>
-#include <UObjectGlobals.h>
+#include <UObject/UObjectGlobals.h>
 
 #include "SavePreset.h"
 #include "SaveManager.h"
