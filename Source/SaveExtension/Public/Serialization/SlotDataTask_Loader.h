@@ -2,7 +2,13 @@
 
 #pragma once
 
+#include "Delegates.h"
 #include "ISaveExtension.h"
+#include "Multithreading/LoadFileTask.h"
+#include "SavePreset.h"
+#include "SlotInfo.h"
+#include "SlotData.h"
+#include "SlotDataTask.h"
 
 #include <Engine/Level.h>
 #include <Engine/LevelStreaming.h>
@@ -10,20 +16,20 @@
 #include <Engine/LevelScriptActor.h>
 #include <GameFramework/Controller.h>
 
-#include "SavePreset.h"
-#include "SlotInfo.h"
-#include "SlotData.h"
-
-#include "SlotDataTask.h"
-#include "Multithreading/LoadFileTask.h"
 #include "SlotDataTask_Loader.generated.h"
 
 
-/** Called when game has been loaded
- * @param SlotInfo the loaded slot. Null if load failed
- */
-DECLARE_DELEGATE_OneParam(FOnGameLoaded, USlotInfo*);
+enum class ELoadDataTaskState : uint8
+{
+	NotStarted,
 
+	// Once loading starts we either load the map
+	LoadingMap,
+	WaitingForData,
+
+	RestoringActors,
+	Deserializing
+};
 
 /**
 * Manages the loading process of a SaveData file
@@ -46,27 +52,19 @@ protected:
 	TWeakObjectPtr<ULevel> CurrentLevel;
 	TWeakObjectPtr<ULevelStreaming> CurrentSLevel;
 
-	int32 CurrentActorIndex;
+	int32 CurrentActorIndex = 0;
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
 
 	/** Start AsyncTasks */
 	FAsyncTask<FLoadFileTask>* LoadDataTask;
 	/** End AsyncTasks */
 
-	bool bDeserializing;
+	ELoadDataTaskState LoadState = ELoadDataTaskState::NotStarted;
+
 
 public:
 
-	bool bLoadingMap;
-
-
-	USlotDataTask_Loader()
-		: Super()
-		, CurrentActorIndex(0)
-		, LoadDataTask(nullptr)
-		, bDeserializing(false)
-		, bLoadingMap(false)
-	{}
+	USlotDataTask_Loader() : Super() {}
 
 	auto Setup(int32 InSlot)
 	{
@@ -89,7 +87,7 @@ private:
 	void StartDeserialization();
 
 	/** Spawns Actors hat were saved but which actors are not in the world. */
-	void RespawnActors(const TArray<FActorRecord>& Records, const ULevel* Level);
+	void RespawnActors(const TArray<FActorRecord*>& Records, const ULevel* Level);
 
 protected:
 
@@ -114,7 +112,7 @@ protected:
 	void FinishedDeserializing();
 
 	void PrepareAllLevels();
-	void PrepareLevel(const ULevel* Level, const FLevelRecord& LevelRecord);
+	void PrepareLevel(const ULevel* Level, FLevelRecord& LevelRecord);
 
 	/** Deserializes all Level actors. */
 	inline void DeserializeLevel_Actor(AActor* const Actor, const FLevelRecord& LevelRecord);

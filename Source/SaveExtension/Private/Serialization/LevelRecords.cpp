@@ -16,7 +16,6 @@ bool FLevelRecord::Serialize(FArchive& Ar)
 
 	Ar << LevelScript;
 	Ar << Actors;
-	Ar << AIControllers;
 
 	return true;
 }
@@ -25,5 +24,4 @@ void FLevelRecord::Clean()
 {
 	LevelScript = {};
 	Actors.Empty();
-	AIControllers.Empty();
 }

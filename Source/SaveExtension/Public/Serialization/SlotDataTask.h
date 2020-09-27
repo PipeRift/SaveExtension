@@ -47,7 +47,7 @@ public:
 	{
 		SlotData = InSaveData;
 		Preset = &InPreset;
-		Filter = { InPreset };
+		Filter = InPreset.ToFilter();
 	}
 
 	USlotDataTask* Start();

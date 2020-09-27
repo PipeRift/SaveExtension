@@ -8,17 +8,16 @@
 class FSaveExtensionTest : public IModuleInterface
 {
 public:
-
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override {}
 
-	static inline FSaveExtensionTest& Get() {
+	static inline FSaveExtensionTest& Get()
+	{
 		return FModuleManager::LoadModuleChecked<FSaveExtensionTest>("SaveExtensionTest");
 	}
 
-	static inline bool IsAvailable() {
+	static inline bool IsAvailable()
+	{
 		return FModuleManager::Get().IsModuleLoaded("SaveExtensionTest");
 	}
 };
-
-IMPLEMENT_MODULE(FSaveExtensionTest, SaveExtensionTest);

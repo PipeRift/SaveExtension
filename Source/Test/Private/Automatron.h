@@ -11,7 +11,8 @@
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 //
-// 1. Redistributions of source code must retain the above copyright notice, this
+// 1. Redistributions of source code must retain the above copyright notice,
+// this
 //   list of conditions and the following disclaimer.
 //
 // 2. Redistributions in binary form must reproduce the above copyright notice,
@@ -24,66 +25,85 @@
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 // AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
 #include <CoreMinimal.h>
+#include <Engine/GameInstance.h>
+#include <Engine/Engine.h>
 #include <EngineUtils.h>
+#include <GameFramework/GameModeBase.h>
+#include <GameMapsSettings.h>
 #include <Misc/AutomationTest.h>
 #include <Tests/AutomationCommon.h>
-#include <GameFramework/GameModeBase.h>
-#include <Engine/GameInstance.h>
-#include <GameMapsSettings.h>
 
-
-#ifndef WITH_DEV_AUTOMATION_TESTS
-#    define WITH_DEV_AUTOMATION_TESTS 1
-#endif
 
 #if WITH_EDITOR
-#    include <Editor.h>
-#    include <Tests/AutomationEditorPromotionCommon.h>
+#	include <Editor.h>
+#	include <Tests/AutomationEditorPromotionCommon.h>
 #endif
-
 
 ////////////////////////////////////////////////////////////////
 // DEFINITIONS
 
-#if WITH_DEV_AUTOMATION_TESTS
 namespace Automatron
 {
 	class FTestSpecBase;
 
-
 	struct FTestWorldSettings
 	{
+		TSubclassOf<UGameInstance> GameInstance;
 		TSubclassOf<AGameModeBase> GameMode = AGameModeBase::StaticClass();
-	};
 
+		bool bShouldTick = false;
+	};
 
 	namespace Spec
 	{
+		class FRegister
+		{
+		public:
+			DECLARE_EVENT(FRegister, FOnSetup);
+
+			static FOnSetup& OnSetup()
+			{
+				static FOnSetup Delegate{};
+				return Delegate;
+			}
+		};
+
 		/////////////////////////////////////////////////////
 		// Initializes an spec instance at global execution time
 		// and registers it to the system
 		template <typename T>
-		struct TRegister
+		class TRegister : public FRegister
 		{
-			static TRegister<T> Register;
+		public:
 
-			T Instance;
+			// Just by existing, this instance will define the class and register the spec
+			static TRegister<T> Instance;
 
-			TRegister() : Instance{}
+
+			TRegister()
 			{
-				Instance.Setup();
+				OnSetup().AddStatic(&TRegister<T>::Setup);
+			}
+
+		private:
+
+			static void Setup()
+			{
+				static T Spec{};
+				Spec.Setup();
 			}
 		};
 
@@ -95,9 +115,7 @@ namespace Automatron
 			int32 Id = 0;
 
 		public:
-			FContext(int32 Id = 0) : Id(Id)
-			{
-			}
+			FContext(int32 Id = 0) : Id(Id) {}
 
 			FContext NextContext() const
 			{
@@ -130,14 +148,14 @@ namespace Automatron
 			int32 LineNumber;
 			TSharedRef<IAutomationLatentCommand> Command;
 
-			FIt(FString InDescription, FString InId, FString InFilename, int32 InLineNumber, TSharedRef<IAutomationLatentCommand> InCommand)
+			FIt(FString InDescription, FString InId, FString InFilename, int32 InLineNumber,
+				TSharedRef<IAutomationLatentCommand> InCommand)
 				: Description(MoveTemp(InDescription))
 				, Id(MoveTemp(InId))
 				, Filename(MoveTemp(InFilename))
 				, LineNumber(MoveTemp(InLineNumber))
 				, Command(MoveTemp(InCommand))
-			{
-			}
+			{}
 		};
 	};	  // namespace Spec
 
@@ -151,13 +169,13 @@ namespace Automatron
 			const bool bSkipIfErrored = false;
 
 		public:
-			FSingleExecuteLatent(const FTestSpecBase& InSpec, TFunction<void()> InPredicate, bool bInSkipIfErrored = false)
-				: Spec(InSpec), Predicate(MoveTemp(InPredicate)), bSkipIfErrored(bInSkipIfErrored)
-			{
-			}
-			virtual ~FSingleExecuteLatent()
-			{
-			}
+			FSingleExecuteLatent(
+				const FTestSpecBase& InSpec, TFunction<void()> InPredicate, bool bInSkipIfErrored = false)
+				: Spec(InSpec)
+				, Predicate(MoveTemp(InPredicate))
+				, bSkipIfErrored(bInSkipIfErrored)
+			{}
+			virtual ~FSingleExecuteLatent() {}
 
 			virtual bool Update() override;
 		};
@@ -175,14 +193,14 @@ namespace Automatron
 			FDateTime StartedRunning;
 
 		public:
-			FUntilDoneLatent(FTestSpecBase& InSpec, TFunction<void(const FDoneDelegate&)> InPredicate, const FTimespan& InTimeout,
-				bool bInSkipIfErrored = false)
-				: Spec(InSpec), Predicate(MoveTemp(InPredicate)), Timeout(InTimeout), bSkipIfErrored(bInSkipIfErrored)
-			{
-			}
-			virtual ~FUntilDoneLatent()
-			{
-			}
+			FUntilDoneLatent(FTestSpecBase& InSpec, TFunction<void(const FDoneDelegate&)> InPredicate,
+				const FTimespan& InTimeout, bool bInSkipIfErrored = false)
+				: Spec(InSpec)
+				, Predicate(MoveTemp(InPredicate))
+				, Timeout(InTimeout)
+				, bSkipIfErrored(bInSkipIfErrored)
+			{}
+			virtual ~FUntilDoneLatent() {}
 
 			virtual bool Update() override;
 
@@ -208,18 +226,16 @@ namespace Automatron
 			FDateTime StartedRunning;
 
 		public:
-			FAsyncUntilDoneLatent(FTestSpecBase& InSpec, EAsyncExecution InExecution, TFunction<void(const FDoneDelegate&)> InPredicate,
-				const FTimespan& InTimeout, bool bInSkipIfErrored = false)
+			FAsyncUntilDoneLatent(FTestSpecBase& InSpec, EAsyncExecution InExecution,
+				TFunction<void(const FDoneDelegate&)> InPredicate, const FTimespan& InTimeout,
+				bool bInSkipIfErrored = false)
 				: Spec(InSpec)
 				, Execution(InExecution)
 				, Predicate(MoveTemp(InPredicate))
 				, Timeout(InTimeout)
 				, bSkipIfErrored(bInSkipIfErrored)
-			{
-			}
-			virtual ~FAsyncUntilDoneLatent()
-			{
-			}
+			{}
+			virtual ~FAsyncUntilDoneLatent() {}
 
 			virtual bool Update() override;
 
@@ -245,18 +261,15 @@ namespace Automatron
 			TFuture<void> Future;
 
 		public:
-			FAsyncLatent(FTestSpecBase& InSpec, EAsyncExecution InExecution, TFunction<void()> InPredicate, const FTimespan& InTimeout,
-				bool bInSkipIfErrored = false)
+			FAsyncLatent(FTestSpecBase& InSpec, EAsyncExecution InExecution, TFunction<void()> InPredicate,
+				const FTimespan& InTimeout, bool bInSkipIfErrored = false)
 				: Spec(InSpec)
 				, Execution(InExecution)
 				, Predicate(MoveTemp(InPredicate))
 				, Timeout(InTimeout)
 				, bSkipIfErrored(bInSkipIfErrored)
-			{
-			}
-			virtual ~FAsyncLatent()
-			{
-			}
+			{}
+			virtual ~FAsyncLatent() {}
 
 			virtual bool Update() override;
 
@@ -293,10 +306,12 @@ namespace Automatron
 		};
 
 	protected:
-		/* The timespan for how long a block should be allowed to execute before giving up and failing the test */
+		/* The timespan for how long a block should be allowed to execute before
+		 * giving up and failing the test */
 		FTimespan DefaultTimeout = FTimespan::FromSeconds(30);
 
-		/* Whether or not BeforeEach and It blocks should skip execution if the test has already failed */
+		/* Whether or not BeforeEach and It blocks should skip execution if the test
+		 * has already failed */
 		bool bEnableSkipIfError = true;
 
 	private:
@@ -316,15 +331,14 @@ namespace Automatron
 		Spec::FContext CurrentContext;
 
 	public:
-		FTestSpecBase(const FString& InName, const bool bInComplexTask)
-			: FAutomationTestBase(InName, bInComplexTask), RootDefinitionScope(MakeShared<FSpecDefinitionScope>())
+		FTestSpecBase()
+			: FAutomationTestBase("", false)
+			, RootDefinitionScope(MakeShared<FSpecDefinitionScope>())
 		{
 			DefinitionScopeStack.Push(RootDefinitionScope.ToSharedRef());
 		}
 
-		virtual ~FTestSpecBase()
-		{
-		}
+		virtual ~FTestSpecBase() {}
 
 		virtual bool RunTest(const FString& InParameters) override;
 
@@ -342,7 +356,8 @@ namespace Automatron
 		virtual FString GetTestSourceFileName(const FString& InTestName) const override;
 		virtual int32 GetTestSourceFileLine(const FString& InTestName) const override;
 
-		virtual void GetTests(TArray<FString>& OutBeautifiedNames, TArray<FString>& OutTestCommands) const override;
+		virtual void GetTests(
+			TArray<FString>& OutBeautifiedNames, TArray<FString>& OutTestCommands) const override;
 
 		// BEGIN Enabled Scopes
 		void Describe(const FString& InDescription, TFunction<void()> DoWork);
@@ -354,18 +369,22 @@ namespace Automatron
 
 			PushDescription(InDescription);
 			auto Command = MakeShared<Commands::FSingleExecuteLatent>(*this, DoWork, bEnableSkipIfError);
-			CurrentScope->It.Push(MakeShared<Spec::FIt>(GetDescription(), GetId(), Stack[0].Filename, Stack[0].LineNumber, Command));
+			CurrentScope->It.Push(MakeShared<Spec::FIt>(
+				GetDescription(), GetId(), Stack[0].Filename, Stack[0].LineNumber, Command));
 			PopDescription(InDescription);
 		}
 
-		void It(const FString& InDescription, EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void()> DoWork)
+		void It(const FString& InDescription, EAsyncExecution Execution, const FTimespan& Timeout,
+			TFunction<void()> DoWork)
 		{
 			const TSharedRef<FSpecDefinitionScope> CurrentScope = DefinitionScopeStack.Last();
 			const TArray<FProgramCounterSymbolInfo> Stack = FPlatformStackWalk::GetStack(1, 1);
 
 			PushDescription(InDescription);
-			auto Command = MakeShared<Commands::FAsyncLatent>(*this, Execution, DoWork, Timeout, bEnableSkipIfError);
-			CurrentScope->It.Push(MakeShared<Spec::FIt>(GetDescription(), GetId(), Stack[0].Filename, Stack[0].LineNumber, Command));
+			auto Command =
+				MakeShared<Commands::FAsyncLatent>(*this, Execution, DoWork, Timeout, bEnableSkipIfError);
+			CurrentScope->It.Push(MakeShared<Spec::FIt>(
+				GetDescription(), GetId(), Stack[0].Filename, Stack[0].LineNumber, Command));
 			PopDescription(InDescription);
 		}
 
@@ -374,14 +393,16 @@ namespace Automatron
 			It(InDescription, Execution, DefaultTimeout, DoWork);
 		}
 
-		void LatentIt(const FString& InDescription, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
+		void LatentIt(const FString& InDescription, const FTimespan& Timeout,
+			TFunction<void(const FDoneDelegate&)> DoWork)
 		{
 			const TSharedRef<FSpecDefinitionScope> CurrentScope = DefinitionScopeStack.Last();
 			const TArray<FProgramCounterSymbolInfo> Stack = FPlatformStackWalk::GetStack(1, 1);
 
 			PushDescription(InDescription);
 			auto Command = MakeShared<Commands::FUntilDoneLatent>(*this, DoWork, Timeout, bEnableSkipIfError);
-			CurrentScope->It.Push(MakeShared<Spec::FIt>(GetDescription(), GetId(), Stack[0].Filename, Stack[0].LineNumber, Command));
+			CurrentScope->It.Push(MakeShared<Spec::FIt>(
+				GetDescription(), GetId(), Stack[0].Filename, Stack[0].LineNumber, Command));
 			PopDescription(InDescription);
 		}
 
@@ -397,19 +418,23 @@ namespace Automatron
 			const TArray<FProgramCounterSymbolInfo> Stack = FPlatformStackWalk::GetStack(1, 1);
 
 			PushDescription(InDescription);
-			auto Command = MakeShared<Commands::FAsyncUntilDoneLatent>(*this, Execution, DoWork, Timeout, bEnableSkipIfError);
-			CurrentScope->It.Push(MakeShared<Spec::FIt>(GetDescription(), GetId(), Stack[0].Filename, Stack[0].LineNumber, Command));
+			auto Command = MakeShared<Commands::FAsyncUntilDoneLatent>(
+				*this, Execution, DoWork, Timeout, bEnableSkipIfError);
+			CurrentScope->It.Push(MakeShared<Spec::FIt>(
+				GetDescription(), GetId(), Stack[0].Filename, Stack[0].LineNumber, Command));
 			PopDescription(InDescription);
 		}
 
-		void LatentIt(const FString& InDescription, EAsyncExecution Execution, TFunction<void(const FDoneDelegate&)> DoWork)
+		void LatentIt(const FString& InDescription, EAsyncExecution Execution,
+			TFunction<void(const FDoneDelegate&)> DoWork)
 		{
 			LatentIt(InDescription, Execution, DefaultTimeout, DoWork);
 		}
 
 		void BeforeEach(TFunction<void()> DoWork)
 		{
-			DefinitionScopeStack.Last()->BeforeEach.Push(MakeShared<Commands::FSingleExecuteLatent>(*this, DoWork, bEnableSkipIfError));
+			DefinitionScopeStack.Last()->BeforeEach.Push(
+				MakeShared<Commands::FSingleExecuteLatent>(*this, DoWork, bEnableSkipIfError));
 		}
 
 		void BeforeEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void()> DoWork)
@@ -434,10 +459,11 @@ namespace Automatron
 			LatentBeforeEach(DefaultTimeout, DoWork);
 		}
 
-		void LatentBeforeEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
+		void LatentBeforeEach(
+			EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
 		{
-			DefinitionScopeStack.Last()->BeforeEach.Push(
-				MakeShared<Commands::FAsyncUntilDoneLatent>(*this, Execution, DoWork, Timeout, bEnableSkipIfError));
+			DefinitionScopeStack.Last()->BeforeEach.Push(MakeShared<Commands::FAsyncUntilDoneLatent>(
+				*this, Execution, DoWork, Timeout, bEnableSkipIfError));
 		}
 
 		void LatentBeforeEach(EAsyncExecution Execution, TFunction<void(const FDoneDelegate&)> DoWork)
@@ -447,12 +473,14 @@ namespace Automatron
 
 		void AfterEach(TFunction<void()> DoWork)
 		{
-			DefinitionScopeStack.Last()->AfterEach.Push(MakeShared<Commands::FSingleExecuteLatent>(*this, DoWork));
+			DefinitionScopeStack.Last()->AfterEach.Push(
+				MakeShared<Commands::FSingleExecuteLatent>(*this, DoWork));
 		}
 
 		void AfterEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void()> DoWork)
 		{
-			DefinitionScopeStack.Last()->AfterEach.Push(MakeShared<Commands::FAsyncLatent>(*this, Execution, DoWork, Timeout));
+			DefinitionScopeStack.Last()->AfterEach.Push(
+				MakeShared<Commands::FAsyncLatent>(*this, Execution, DoWork, Timeout));
 		}
 
 		void AfterEach(EAsyncExecution Execution, TFunction<void()> DoWork)
@@ -462,7 +490,8 @@ namespace Automatron
 
 		void LatentAfterEach(const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
 		{
-			DefinitionScopeStack.Last()->AfterEach.Push(MakeShared<Commands::FUntilDoneLatent>(*this, DoWork, Timeout));
+			DefinitionScopeStack.Last()->AfterEach.Push(
+				MakeShared<Commands::FUntilDoneLatent>(*this, DoWork, Timeout));
 		}
 
 		void LatentAfterEach(TFunction<void(const FDoneDelegate&)> DoWork)
@@ -470,9 +499,11 @@ namespace Automatron
 			LatentAfterEach(DefaultTimeout, DoWork);
 		}
 
-		void LatentAfterEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
+		void LatentAfterEach(
+			EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
 		{
-			DefinitionScopeStack.Last()->AfterEach.Push(MakeShared<Commands::FAsyncUntilDoneLatent>(*this, Execution, DoWork, Timeout));
+			DefinitionScopeStack.Last()->AfterEach.Push(
+				MakeShared<Commands::FAsyncUntilDoneLatent>(*this, Execution, DoWork, Timeout));
 		}
 
 		void LatentAfterEach(EAsyncExecution Execution, TFunction<void(const FDoneDelegate&)> DoWork)
@@ -482,79 +513,46 @@ namespace Automatron
 		// END Enabled Scopes
 
 		// BEGIN Disabled Scopes
-		void xDescribe(const FString& InDescription, TFunction<void()> DoWork)
-		{
-		}
+		void xDescribe(const FString& InDescription, TFunction<void()> DoWork) {}
 
-		void xIt(const FString& InDescription, TFunction<void()> DoWork)
-		{
-		}
-		void xIt(const FString& InDescription, EAsyncExecution Execution, TFunction<void()> DoWork)
-		{
-		}
-		void xIt(const FString& InDescription, EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void()> DoWork)
-		{
-		}
+		void xIt(const FString& InDescription, TFunction<void()> DoWork) {}
+		void xIt(const FString& InDescription, EAsyncExecution Execution, TFunction<void()> DoWork) {}
+		void xIt(const FString& InDescription, EAsyncExecution Execution, const FTimespan& Timeout,
+			TFunction<void()> DoWork)
+		{}
 
-		void xLatentIt(const FString& InDescription, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
-		void xLatentIt(const FString& InDescription, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
-		void xLatentIt(const FString& InDescription, EAsyncExecution Execution, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
+		void xLatentIt(const FString& InDescription, TFunction<void(const FDoneDelegate&)> DoWork) {}
+		void xLatentIt(const FString& InDescription, const FTimespan& Timeout,
+			TFunction<void(const FDoneDelegate&)> DoWork)
+		{}
+		void xLatentIt(const FString& InDescription, EAsyncExecution Execution,
+			TFunction<void(const FDoneDelegate&)> DoWork)
+		{}
 		void xLatentIt(const FString& InDescription, EAsyncExecution Execution, const FTimespan& Timeout,
 			TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
+		{}
 
-		void xBeforeEach(TFunction<void()> DoWork)
-		{
-		}
-		void xBeforeEach(EAsyncExecution Execution, TFunction<void()> DoWork)
-		{
-		}
-		void xBeforeEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void()> DoWork)
-		{
-		}
+		void xBeforeEach(TFunction<void()> DoWork) {}
+		void xBeforeEach(EAsyncExecution Execution, TFunction<void()> DoWork) {}
+		void xBeforeEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void()> DoWork) {}
 
-		void xLatentBeforeEach(TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
-		void xLatentBeforeEach(const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
-		void xLatentBeforeEach(EAsyncExecution Execution, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
-		void xLatentBeforeEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
+		void xLatentBeforeEach(TFunction<void(const FDoneDelegate&)> DoWork) {}
+		void xLatentBeforeEach(const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork) {}
+		void xLatentBeforeEach(EAsyncExecution Execution, TFunction<void(const FDoneDelegate&)> DoWork) {}
+		void xLatentBeforeEach(
+			EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
+		{}
 
-		void xAfterEach(TFunction<void()> DoWork)
-		{
-		}
-		void xAfterEach(EAsyncExecution Execution, TFunction<void()> DoWork)
-		{
-		}
-		void xAfterEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void()> DoWork)
-		{
-		}
+		void xAfterEach(TFunction<void()> DoWork) {}
+		void xAfterEach(EAsyncExecution Execution, TFunction<void()> DoWork) {}
+		void xAfterEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void()> DoWork) {}
 
-		void xLatentAfterEach(TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
-		void xLatentAfterEach(const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
-		void xLatentAfterEach(EAsyncExecution Execution, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
-		void xLatentAfterEach(EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
-		{
-		}
+		void xLatentAfterEach(TFunction<void(const FDoneDelegate&)> DoWork) {}
+		void xLatentAfterEach(const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork) {}
+		void xLatentAfterEach(EAsyncExecution Execution, TFunction<void(const FDoneDelegate&)> DoWork) {}
+		void xLatentAfterEach(
+			EAsyncExecution Execution, const FTimespan& Timeout, TFunction<void(const FDoneDelegate&)> DoWork)
+		{}
 		// END Disabled Scopes
 
 		int32 GetNumTests() const
@@ -633,19 +631,14 @@ namespace Automatron
 		uint32 Flags = 0;
 
 		bool bInitializedWorld = false;
-	#if WITH_EDITOR
+#	if WITH_EDITOR
 		bool bInitializedPIE = false;
-	#endif
+#	endif
 
 		TWeakObjectPtr<UWorld> MainWorld;
 
-
-
 	public:
-
-		FTestSpec() : FTestSpecBase("", false)
-		{
-		}
+		FTestSpec() : FTestSpecBase() {}
 
 		virtual FString GetTestSourceFileName() const override
 		{
@@ -695,7 +688,10 @@ namespace Automatron
 		// @return world that was created
 		UWorld* CreateWorld(FTestWorldSettings Settings = {});
 
-		UGameInstance* CreateGameInstance(UObject* Context);
+		void TickWorldUntil(UWorld* World, bool bUseRealtime, TFunction<bool(float)> Delegate);
+		void TickWorld(UWorld* World, float Duration, bool bUseRealtime = false);
+
+		UGameInstance* CreateGameInstance(const FTestWorldSettings& Settings, UObject* Context);
 
 		bool DestroyWorld(UWorld* World);
 
@@ -717,64 +713,51 @@ namespace Automatron
 
 		static bool SetGameMode(UWorld* World, FTestWorldSettings& Settings);
 	};
+
+	namespace Spec
+	{
+		template <typename T>
+		TRegister<T> TRegister<T>::Instance{};
+	}
+
+	static void RegisterSpecs()
+	{
+		Spec::FRegister::OnSetup().Broadcast();
+	}
 }	 // namespace Automatron
 
-#endif	  // WITH_DEV_AUTOMATION_TESTS
 
 ////////////////////////////////////////////////////////////////
 // GENERATION MACROS
 
-#define DEFINE_AUTOMATRON()                    \
-namespace Automatron                           \
-{                                              \
-	namespace Spec                             \
-	{                                          \
-		template <typename T>                  \
-		TRegister<T> TRegister<T>::Register{}; \
-	}                                          \
-}	 // namespace Automatron
-
-#if WITH_DEV_AUTOMATION_TESTS
-
-#define GENERATE_SPEC(TClass, PrettyName, TFlags) GENERATE_SPEC_PRIVATE(TClass, PrettyName, TFlags, __FILE__, __LINE__)
+#define GENERATE_SPEC(TClass, PrettyName, TFlags) \
+		GENERATE_SPEC_PRIVATE(TClass, PrettyName, TFlags, __FILE__, __LINE__)
 
 #define GENERATE_SPEC_PRIVATE(TClass, PrettyName, TFlags, FileName, LineNumber)          \
-private:                                                                                 \
-	void Setup()                                                                         \
-	{                                                                                    \
-		FTestSpec::Setup<TFlags>(TEXT(#TClass), TEXT(PrettyName), FileName, LineNumber); \
-	}                                                                                    \
-	static Automatron::Spec::TRegister<TClass>& __meta_register()                        \
-	{                                                                                    \
-		return Automatron::Spec::TRegister<TClass>::Register;                            \
-	}                                                                                    \
-	friend Automatron::Spec::TRegister<TClass>;                                          \
-																						 \
-	virtual void Define() override
+	private:                                                                                 \
+		void Setup()                                                                         \
+		{                                                                                    \
+			FTestSpec::Setup<TFlags>(TEXT(#TClass), TEXT(PrettyName), FileName, LineNumber); \
+		}                                                                                    \
+		static Automatron::Spec::TRegister<TClass>& __meta_register()                        \
+		{                                                                                    \
+			return Automatron::Spec::TRegister<TClass>::Instance;                            \
+		}                                                                                    \
+		friend Automatron::Spec::TRegister<TClass>;                                          \
+                                                                                             \
+		virtual void Define() override
 
 #define SPEC(TClass, TParent, PrettyName, TFlags)  \
-	class TClass : public TParent                  \
-	{                                              \
-		GENERATE_SPEC(TClass, PrettyName, TFlags); \
-	};                                             \
-	void TClass::Define()
+		class TClass : public TParent                  \
+		{                                              \
+			GENERATE_SPEC(TClass, PrettyName, TFlags); \
+		};                                             \
+		void TClass::Define()
 
-#else	 // WITH_DEV_AUTOMATION_TESTS
-
-#define GENERATE_SPEC(TClass, PrettyName, TFlags)
-#define SPEC(TClass, TParent, PrettyName, TFlags) \
-	class TClass                                  \
-	{                                             \
-		void Define();                            \
-	};                                            \
-	void TClass::Define()
-
-#endif	  // WITH_DEV_AUTOMATION_TESTS
 
 ////////////////////////////////////////////////////////////////
 // DECLARATIONS
 
-#if WITH_DEV_AUTOMATION_TESTS
 namespace Automatron
 {
 	namespace Commands
@@ -835,7 +818,9 @@ namespace Automatron
 					return true;
 				}
 
-				Future = Async(Execution, [this]() { Predicate(FDoneDelegate::CreateRaw(this, &FAsyncUntilDoneLatent::Done)); });
+				Future = Async(Execution, [this]() {
+					Predicate(FDoneDelegate::CreateRaw(this, &FAsyncUntilDoneLatent::Done));
+				});
 
 				StartedRunning = FDateTime::UtcNow();
 			}
@@ -931,7 +916,8 @@ namespace Automatron
 			{
 				for (int32 Index = 0; Index < (*SpecToRun)->Commands.Num(); ++Index)
 				{
-					FAutomationTestFramework::GetInstance().EnqueueLatentCommand((*SpecToRun)->Commands[Index]);
+					FAutomationTestFramework::GetInstance().EnqueueLatentCommand(
+						(*SpecToRun)->Commands[Index]);
 				}
 			}
 		}
@@ -944,7 +930,8 @@ namespace Automatron
 			{
 				for (int32 CommandIndex = 0; CommandIndex < Specs[SpecIndex]->Commands.Num(); ++CommandIndex)
 				{
-					FAutomationTestFramework::GetInstance().EnqueueLatentCommand(Specs[SpecIndex]->Commands[CommandIndex]);
+					FAutomationTestFramework::GetInstance().EnqueueLatentCommand(
+						Specs[SpecIndex]->Commands[CommandIndex]);
 				}
 			}
 		}
@@ -987,7 +974,8 @@ namespace Automatron
 		return GetTestSourceFileLine();
 	}
 
-	inline void FTestSpecBase::GetTests(TArray<FString>& OutBeautifiedNames, TArray<FString>& OutTestCommands) const
+	inline void FTestSpecBase::GetTests(
+		TArray<FString>& OutBeautifiedNames, TArray<FString>& OutTestCommands) const
 	{
 		EnsureDefinitions();
 
@@ -1022,7 +1010,9 @@ namespace Automatron
 
 	inline void FTestSpecBase::PreDefine()
 	{
-		BeforeEach([this]() { CurrentContext = CurrentContext.NextContext(); });
+		BeforeEach([this]() {
+			CurrentContext = CurrentContext.NextContext();
+		});
 	}
 
 	inline void FTestSpecBase::PostDefine()
@@ -1091,12 +1081,14 @@ namespace Automatron
 
 					if (PoppedScope->BeforeEach.Num() > 0)
 					{
-						BeforeEach.RemoveAt(BeforeEach.Num() - PoppedScope->BeforeEach.Num(), PoppedScope->BeforeEach.Num());
+						BeforeEach.RemoveAt(
+							BeforeEach.Num() - PoppedScope->BeforeEach.Num(), PoppedScope->BeforeEach.Num());
 					}
 
 					if (PoppedScope->AfterEach.Num() > 0)
 					{
-						AfterEach.RemoveAt(AfterEach.Num() - PoppedScope->AfterEach.Num(), PoppedScope->AfterEach.Num());
+						AfterEach.RemoveAt(
+							AfterEach.Num() - PoppedScope->AfterEach.Num(), PoppedScope->AfterEach.Num());
 					}
 				}
 			}
@@ -1131,13 +1123,14 @@ namespace Automatron
 				CompleteDescription = Description[Index];
 			}
 			else if (FChar::IsWhitespace(CompleteDescription[CompleteDescription.Len() - 1]) ||
-					FChar::IsWhitespace(Description[Index][0]))
+					 FChar::IsWhitespace(Description[Index][0]))
 			{
 				CompleteDescription = CompleteDescription + TEXT(".") + Description[Index];
 			}
 			else
 			{
-				CompleteDescription = FString::Printf(TEXT("%s.%s"), *CompleteDescription, *Description[Index]);
+				CompleteDescription =
+					FString::Printf(TEXT("%s.%s"), *CompleteDescription, *Description[Index]);
 			}
 		}
 
@@ -1152,7 +1145,8 @@ namespace Automatron
 			ItDescription.RemoveAt(ItDescription.Len() - 1);
 
 			int32 StartingBraceIndex = INDEX_NONE;
-			if (ItDescription.FindLastChar(TEXT('['), StartingBraceIndex) && StartingBraceIndex != ItDescription.Len() - 1)
+			if (ItDescription.FindLastChar(TEXT('['), StartingBraceIndex) &&
+				StartingBraceIndex != ItDescription.Len() - 1)
 			{
 				FString CommandId = ItDescription.RightChop(StartingBraceIndex + 1);
 				return CommandId;
@@ -1171,7 +1165,8 @@ namespace Automatron
 			{
 				CompleteId = Description[Index];
 			}
-			else if (FChar::IsWhitespace(CompleteId[CompleteId.Len() - 1]) || FChar::IsWhitespace(Description[Index][0]))
+			else if (FChar::IsWhitespace(CompleteId[CompleteId.Len() - 1]) ||
+					 FChar::IsWhitespace(Description[Index][0]))
 			{
 				CompleteId = CompleteId + Description[Index];
 			}
@@ -1193,8 +1188,8 @@ namespace Automatron
 			return;
 		}
 
-		LatentBeforeEach(EAsyncExecution::TaskGraphMainThread, [this](const auto& Done) {
-			PrepareTestWorld([this, &Done](UWorld* InWorld) {
+		LatentBeforeEach(EAsyncExecution::TaskGraphMainThread, [this](const auto Done) {
+			PrepareTestWorld([this, Done](UWorld* InWorld) {
 				MainWorld = InWorld;
 				Done.Execute();
 			});
@@ -1203,8 +1198,7 @@ namespace Automatron
 
 	inline void FTestSpec::PostDefine()
 	{
-		AfterEach([this]()
-		{
+		AfterEach([this]() {
 			// If this spec initialized a PIE world, tear it down
 			if (!bReuseWorldForAllTests || IsLastTest())
 			{
@@ -1221,12 +1215,12 @@ namespace Automatron
 
 		UWorld* SelectedWorld = FindGameWorld();
 
-	#if WITH_EDITOR
+#	if WITH_EDITOR
 		// If there was no PIE world, start it and try again
 		if (bCanUsePIEWorld && !SelectedWorld && GIsEditor)
 		{
-			FDelegateHandle PIEStartedHandle =
-				FEditorDelegates::PostPIEStarted.AddLambda([this, OnWorldReady, PIEStartedHandle](const bool bIsSimulating) {
+			FDelegateHandle PIEStartedHandle = FEditorDelegates::PostPIEStarted.AddLambda(
+				[this, OnWorldReady, PIEStartedHandle](const bool bIsSimulating) {
 					FEditorDelegates::PostPIEStarted.Remove(PIEStartedHandle);
 
 					UWorld* SelectedWorld = FindGameWorld();
@@ -1238,20 +1232,12 @@ namespace Automatron
 			FEditorPromotionTestUtilities::StartPIE(false);
 			return;
 		}
-	#endif
+#	endif
 
 		if (!SelectedWorld)
 		{
 			SelectedWorld = CreateWorld(DefaultWorldSettings);
 			bInitializedWorld = true;
-
-			/*SelectedWorld = GWorld;
-	#if WITH_EDITOR
-			if (GIsEditor)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Test using GWorld. Not correct for PIE"));
-			}
-	#endif*/
 		}
 
 		OnWorldReady(SelectedWorld);
@@ -1261,11 +1247,13 @@ namespace Automatron
 	{
 		if (!IsInGameThread())
 		{
-			AsyncTask(ENamedThreads::GameThread, [this, World]() { ReleaseTestWorld(World); });
+			AsyncTask(ENamedThreads::GameThread, [this, World]() {
+				ReleaseTestWorld(World);
+			});
 			return;
 		}
 
-	#if WITH_EDITOR
+#	if WITH_EDITOR
 		if (bInitializedPIE)
 		{
 			FEditorPromotionTestUtilities::EndPIE();
@@ -1273,7 +1261,7 @@ namespace Automatron
 			bInitializedWorld = false;
 			return;
 		}
-	#endif
+#	endif
 
 		if (!bInitializedWorld)
 		{
@@ -1287,18 +1275,19 @@ namespace Automatron
 
 	inline UWorld* FTestSpec::CreateWorld(FTestWorldSettings Settings)
 	{
-		auto* GameInstance = CreateGameInstance(GEngine);
+		auto* GameInstance = CreateGameInstance(Settings, GEngine);
 		GameInstance->AddToRoot();
 
 		GameInstance->InitializeStandalone(TEXT("FAbilitySpec::World"), nullptr);
 		UWorld* World = GameInstance->GetWorld();
 
 		const bool bInformEngineOfWorld = true;
-		if(GEngine && bInformEngineOfWorld)
+		if (GEngine && bInformEngineOfWorld)
 		{
 			GEngine->WorldAdded(World);
 		}
 
+		World->SetShouldTick(Settings.bShouldTick);
 		SetGameMode(World, Settings);
 
 		FURL URL;
@@ -1309,10 +1298,65 @@ namespace Automatron
 		return World;
 	}
 
-	inline UGameInstance* FTestSpec::CreateGameInstance(UObject* Context)
+	inline void FTestSpec::TickWorldUntil(UWorld* World, bool bUseRealtime, TFunction<bool(float)> Delegate)
 	{
-		FSoftClassPath GameInstanceClassName = GetDefault<UGameMapsSettings>()->GameInstanceClass;
-		UClass* GameInstanceClass = GameInstanceClassName.TryLoadClass<UGameInstance>();
+		check(IsInGameThread());
+
+		const float Step = 1.f / 60.f;	  // 60 fps
+
+		if (!bUseRealtime)
+		{
+			while (IsValid(World) && Delegate(Step))
+			{
+				World->Tick(ELevelTick::LEVELTICK_All, Step);
+
+				// This is terrible but required for subticking like this.
+				// we could always cache the real GFrameCounter at the start of our tests
+				// and restore it when finished.
+				++GFrameCounter;
+			}
+			return;
+		}
+
+		float DeltaTime = Step;
+		while (IsValid(World) && Delegate(DeltaTime))
+		{
+			int32 TickCycles = 0;
+			CLOCK_CYCLES(TickCycles);
+			World->Tick(ELevelTick::LEVELTICK_All, DeltaTime);
+			UNCLOCK_CYCLES(TickCycles);
+
+			// This is terrible but required for subticking like this.
+			// we could always cache the real GFrameCounter at the start of our tests
+			// and restore it when finished.
+			++GFrameCounter;
+
+			const float TickDuration = FPlatformTime::ToSeconds(TickCycles);
+			if (TickDuration < Step)
+			{
+				FPlatformProcess::Sleep(Step - TickDuration);
+			}
+
+			DeltaTime = FMath::Max(TickDuration, Step);
+		}
+	}
+
+	inline void FTestSpec::TickWorld(UWorld* World, float Duration, bool bUseRealtime)
+	{
+		TickWorldUntil(World, bUseRealtime, [&Duration](float DeltaTime) {
+			Duration -= DeltaTime;
+			return Duration > 0.f;
+		});
+	}
+
+	inline UGameInstance* FTestSpec::CreateGameInstance(const FTestWorldSettings& Settings, UObject* Context)
+	{
+		UClass* GameInstanceClass = Settings.GameInstance.Get();
+		if(!GameInstanceClass)
+		{
+			FSoftClassPath GameInstanceClassName = GetDefault<UGameMapsSettings>()->GameInstanceClass;
+			GameInstanceClass = GameInstanceClassName.TryLoadClass<UGameInstance>();
+		}
 
 		if (!GameInstanceClass)
 		{
@@ -1396,17 +1440,21 @@ namespace Automatron
 	}
 
 	template <uint32 TFlags>
-	inline void FTestSpec::Setup(FString&& InName, FString&& InPrettyName, FString&& InFileName, int32 InLineNumber)
+	inline void FTestSpec::Setup(
+		FString&& InName, FString&& InPrettyName, FString&& InFileName, int32 InLineNumber)
 	{
 		static_assert(TFlags & EAutomationTestFlags::ApplicationContextMask,
-			"AutomationTest has no application flag. It shouldn't run. See AutomationTest.h.");
-		static_assert(((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::SmokeFilter) ||
-						((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::EngineFilter) ||
-						((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::ProductFilter) ||
-						((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::PerfFilter) ||
-						((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::StressFilter) ||
-						((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::NegativeFilter),
-			"All AutomationTests must have exactly 1 filter type specified.  See AutomationTest.h.");
+			"AutomationTest has no application flag. It shouldn't run. See "
+			"AutomationTest.h.");
+		static_assert(
+			((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::SmokeFilter) ||
+				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::EngineFilter) ||
+				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::ProductFilter) ||
+				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::PerfFilter) ||
+				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::StressFilter) ||
+				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::NegativeFilter),
+			"All AutomationTests must have exactly 1 filter type "
+			"specified.  See AutomationTest.h.");
 
 		ClassName = InName;
 		PrettyName = MoveTemp(InPrettyName);
@@ -1417,5 +1465,3 @@ namespace Automatron
 		Reregister(InName);
 	}
 }	 // namespace Automatron
-
-#endif	  // WITH_DEV_AUTOMATION_TESTS

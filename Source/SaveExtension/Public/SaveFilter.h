@@ -45,22 +45,16 @@ public:
 	UPROPERTY(SaveGame)
 	bool bStoreGameInstance = false;
 
-	UPROPERTY(SaveGame)
-	bool bStoreLevelBlueprints = false;
-
-	UPROPERTY(SaveGame)
-	bool bStoreControlRotation = true;
-
 
 	FSaveFilter() {}
-	FSaveFilter(const USavePreset& Preset)
+	void FromPreset(const USavePreset& Preset)
 	{
-		ActorFilter         = Preset.GetActorFilter(true);
-		ComponentFilter     = Preset.GetComponentFilter(true);
-		LoadActorFilter     = Preset.GetActorFilter(false);
+		ActorFilter = Preset.GetActorFilter(true);
+		ComponentFilter = Preset.GetComponentFilter(true);
+		LoadActorFilter = Preset.GetActorFilter(false);
 		LoadComponentFilter = Preset.GetComponentFilter(false);
-		BakeAllowedClasses();
-		MaxFrameMs       = Preset.GetMaxFrameMs();
+
+		MaxFrameMs = Preset.GetMaxFrameMs();
 		bStoreComponents = Preset.bStoreComponents;
 		bStoreGameInstance = Preset.bStoreGameInstance;
 	}

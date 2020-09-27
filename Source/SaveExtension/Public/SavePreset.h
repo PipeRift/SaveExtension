@@ -28,8 +28,8 @@ class USlotData;
 /**
  * What to save, how to save it, when, every x minutes, what info file, what data file, save by level streaming?
  */
-UCLASS(ClassGroup = SaveExtension, BlueprintType, Config = Game)
-class SAVEEXTENSION_API USavePreset : public UDataAsset
+UCLASS(ClassGroup = SaveExtension, Blueprintable)
+class SAVEEXTENSION_API USavePreset : public UObject
 {
 	GENERATED_BODY()
 
@@ -38,47 +38,47 @@ public:
 	/**
 	* Specify the SaveInfo object to be used with this preset
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	TSubclassOf<USlotInfo> SlotInfoTemplate;
 
 	/**
 	* Specify the SaveData object to be used with this preset
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	TSubclassOf<USlotData> SlotDataTemplate;
 
 	/** Maximum amount of saved slots at the same time */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Gameplay, Config, meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Gameplay, meta = (ClampMin = "0"))
 	int32 MaxSlots = 0;
 
 	/** If checked, will attempt to Save Game to first Slot found, timed event. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	bool bAutoSave = true;
 
 	/** Interval in seconds for auto saving */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config, meta = (EditCondition = "bAutoSave", UIMin = "15", UIMax = "3600"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, meta = (EditCondition = "bAutoSave", UIMin = "15", UIMax = "3600"))
 	int32 AutoSaveInterval = 120.f;
 
 	/** If checked, will attempt to Save Game to first Slot found, timed event. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config, meta = (EditCondition = "bAutoSave"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, meta = (EditCondition = "bAutoSave"))
 	bool bSaveOnExit = false;
 
 	/** If checked, will attempt to Load Game from last Slot found, when game starts */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	bool bAutoLoad = true;
 
 	/**
 	 * If checked, will print messages to Log, and Viewport if DebugInScreen is enabled.
 	 * Ignored in package or Shipping mode.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config, AdvancedDisplay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, AdvancedDisplay)
 	bool bDebug = false;
 
 	/**
 	 * If checked and Debug is enabled, will print messages to Viewport.
 	 * Ignored in package or Shipping mode.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, Config, AdvancedDisplay, meta = (EditCondition = "bDebug"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, AdvancedDisplay, meta = (EditCondition = "bDebug"))
 	bool bDebugInScreen = true;
 
 
@@ -86,35 +86,35 @@ public:
 	/** If true save files will be compressed
 	 * Performance: Can add from 10ms to 20ms to loading and saving (estimate) but reduce file sizes making them up to 30x smaller
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization)
 	bool bUseCompression = true;
 
 	/** If true will store the game instance */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization, Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization)
 	bool bStoreGameInstance = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors")
 	FActorClassFilter ActorFilter;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", Config, meta = (PinHiddenByDefault, InlineEditConditionToggle))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", meta = (PinHiddenByDefault, InlineEditConditionToggle))
 	bool bUseLoadActorFilter = false;
 
 	/** If enabled, this filter will be used while loading instead of "ActorFilter" */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", Config, meta = (EditCondition="bUseLoadActorFilter"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", meta = (EditCondition="bUseLoadActorFilter"))
 	FActorClassFilter LoadActorFilter;
 
 	/** If true will store ActorComponents depending on the filters */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components")
 	bool bStoreComponents = true;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components")
 	FComponentClassFilter ComponentFilter;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config, meta = (PinHiddenByDefault, InlineEditConditionToggle))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", meta = (PinHiddenByDefault, InlineEditConditionToggle))
 	bool bUseLoadComponentFilter = false;
 
 	/** If enabled, this filter will be used while loading instead of "ComponentFilter" */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", Config, meta = (EditCondition = "bUseLoadComponentFilter"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", meta = (EditCondition = "bUseLoadComponentFilter"))
 	FComponentClassFilter LoadComponentFilter;
 
 public:
@@ -205,4 +205,5 @@ public:
 		return MultithreadedFiles == ESaveASyncMode::SaveAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
 	}
 
+	struct FSaveFilter ToFilter() const;
 };

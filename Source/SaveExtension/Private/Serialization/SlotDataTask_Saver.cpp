@@ -114,7 +114,7 @@ void USlotDataTask_Saver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (SaveInfoTask && SaveDataTask && 
+	if (SaveInfoTask && SaveDataTask &&
 		SaveInfoTask->IsDone() && SaveDataTask->IsDone())
 	{
 		if (bSaveThumbnail)
@@ -223,21 +223,26 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 	// Empty level record before serializing it
 	LevelRecord->Clean();
 
+	Filter.BakeAllowedClasses();
+
+	const int32 MinObjectsPerTask = 40;
 	const int32 ActorCount = Level->Actors.Num();
-	const int32 MaxObjectsPerTask = FMath::CeilToInt((float)ActorCount / AssignedTasks);
+	const int32 NumBalancedPerTask = FMath::CeilToInt((float) ActorCount / AssignedTasks);
+	const int32 NumPerTask = FMath::Max(NumBalancedPerTask, MinObjectsPerTask);
+
 
 	// Split all actors between multi-threaded tasks
-	int32 Index{ 0 };
-	bool bStoreMainActors = Level->IsPersistentLevel();
+	int32 Index = 0;
 	while (Index < ActorCount)
 	{
-		const int32 ObjectsCount = FMath::Min(ActorCount - Index, MaxObjectsPerTask);
+		const int32 NumRemaining = ActorCount - Index;
+		const int32 NumToSerialize = FMath::Min(NumRemaining, NumPerTask);
 
 		// Add new Task
-		Tasks.Emplace(bStoreMainActors, GetWorld(), SlotData, &Level->Actors, Index, ObjectsCount, LevelRecord, *Preset);
+		Tasks.Emplace(FMTTask_SerializeActors{
+			GetWorld(), SlotData, &Level->Actors, Index, NumToSerialize, LevelRecord, Filter});
 
-		Index += ObjectsCount;
-		bStoreMainActors = false;
+		Index += NumToSerialize;
 	}
 }
 

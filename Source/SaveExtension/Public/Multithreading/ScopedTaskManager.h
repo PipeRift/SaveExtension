@@ -2,94 +2,119 @@
 
 #pragma once
 
-#include <Async/AsyncWork.h>
 #include "Misc/TypeTraits.h"
 
+#include <Async/AsyncWork.h>
 
-class ITaskHolder {
+class ITaskHolder
+{
 public:
 	virtual bool Tick() = 0;
 	virtual void Cancel(bool bFinishSynchronously) = 0;
-	virtual ~ITaskHolder() {}
+	virtual ~ITaskHolder()
+	{
+	}
 };
 
-template<class TaskType>
-class FTaskHolder : public FAsyncTask<TaskType>, public ITaskHolder {
+template <class TaskType>
+class FTaskHolder : public FAsyncTask<TaskType>, public ITaskHolder
+{
 	using Super = FAsyncTask<TaskType>;
 
 public:
 	DECLARE_EVENT_OneParam(FTaskHolder<TaskType>, FFinishedEvent, FTaskHolder<TaskType>&);
 
+	bool bNotified = false;
 	FFinishedEvent _OnFinished;
 
-
-	FTaskHolder() : ITaskHolder(), Super() {}
-	virtual ~FTaskHolder() {}
+	FTaskHolder() : ITaskHolder(), Super()
+	{
+	}
+	virtual ~FTaskHolder()
+	{
+	}
 
 	template <typename... ArgTypes>
-	FTaskHolder(ArgTypes&&... CtrArgs) : Super(Forward<ArgTypes>(CtrArgs)...), ITaskHolder() {}
+	FTaskHolder(ArgTypes&&... CtrArgs) : Super(Forward<ArgTypes>(CtrArgs)...), ITaskHolder()
+	{
+	}
 
-	auto& OnFinished(TFunction<void(FTaskHolder<TaskType>&)> Delegate) {
+	auto& OnFinished(TFunction<void(FTaskHolder<TaskType>&)> Delegate)
+	{
 		_OnFinished.AddLambda(Delegate);
 		return *this;
 	}
 
-	virtual bool Tick() override {
+	virtual bool Tick() override
+	{
 		if (Super::IsDone())
 		{
-			_OnFinished.Broadcast(*this);
+			TryNotifyFinish();
 			return true;
 		}
 		return false;
 	}
 
-	virtual void Cancel(bool bFinishSynchronously) override {
+	virtual void Cancel(bool bFinishSynchronously) override
+	{
 		if (!Super::IsIdle())
 		{
 			Super::EnsureCompletion(bFinishSynchronously);
-			_OnFinished.Broadcast(*this);
+			TryNotifyFinish();
+		}
+		else if (Super::IsDone())
+		{
+			TryNotifyFinish();
 		}
 	}
 
-	TaskType* operator->() {
+	TaskType* operator->()
+	{
 		return &Super::GetTask();
+	}
+
+private:
+
+	void TryNotifyFinish()
+	{
+		if (!bNotified)
+		{
+			_OnFinished.Broadcast(*this);
+			bNotified = true;
+		}
 	}
 };
 
-
 /** Manages the lifetime of many multi-threaded tasks */
-class FScopedTaskList {
-
-	TArray<ITaskHolder*> Tasks;
-
+class FScopedTaskList
+{
+	TArray<TUniquePtr<ITaskHolder>> Tasks;
 
 public:
-
-	FScopedTaskList() {}
-	FScopedTaskList(FScopedTaskList&& other) {}
-
-	template<class TaskType, typename... ArgTypes>
-	inline FTaskHolder<TaskType>& CreateTask(ArgTypes&&... CtrArgs) {
-		auto* NewTask = new FTaskHolder<TaskType>(Forward<ArgTypes>(CtrArgs)...);
-		Tasks.Add(NewTask);
-		return *NewTask;
+	FScopedTaskList()
+	{
 	}
 
-	void Tick() {
+	template <class TaskType, typename... ArgTypes>
+	inline FTaskHolder<TaskType>& CreateTask(ArgTypes&&... CtrArgs)
+	{
+		auto NewTask = MakeUnique<FTaskHolder<TaskType>>(Forward<ArgTypes>(CtrArgs)...);
+		auto* TaskPtr = NewTask.Get();
+		Tasks.Add(MoveTemp(NewTask));
+		return *TaskPtr;
+	}
+
+	void Tick()
+	{
 		// Tick all running tasks and remove the ones that finished
-		Tasks.RemoveAllSwap([](auto* Task) {
-			bool bFinished = Task->Tick();
-			if (bFinished)
-				delete Task;
-			return bFinished;
-		});
+		Tasks.RemoveAllSwap([](auto& Task) { return Task->Tick(); });
 	}
 
-	void CancelAll() {
-		for (auto* Task : Tasks)
+	void CancelAll()
+	{
+		for (auto& Task : Tasks)
 		{
-			Task->Cancel(false);
-			delete Task;
+			Task->Cancel(true);
 		}
 		Tasks.Empty();
 	}

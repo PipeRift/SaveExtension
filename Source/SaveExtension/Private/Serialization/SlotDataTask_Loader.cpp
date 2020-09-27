@@ -6,10 +6,36 @@
 #include <Serialization/MemoryReader.h>
 #include <Kismet/GameplayStatics.h>
 #include <Components/PrimitiveComponent.h>
+#include <UObject/UObjectGlobals.h>
 
 #include "SavePreset.h"
 #include "SaveManager.h"
 #include "Serialization/SEArchive.h"
+
+
+/////////////////////////////////////////////////////
+// Helpers
+
+namespace Loader
+{
+	static int32 RemoveSingleRecordPtrSwap(TArray<FActorRecord*>& Records, AActor* Actor, bool bAllowShrinking = true)
+	{
+		if(!Actor)
+		{
+			return 0;
+		}
+
+		const int32 I = Records.IndexOfByPredicate([Records, Actor](auto* Record) {
+			return *Record == Actor;
+		});
+		if (I != INDEX_NONE)
+		{
+			Records.RemoveAtSwap(I, 1, bAllowShrinking);
+			return 1;
+		}
+		return 0;
+	}
+}
 
 
 /////////////////////////////////////////////////////
@@ -29,39 +55,48 @@ void USlotDataTask_Loader::OnStart()
 		return;
 	}
 
-	// Load data while level loads
+	// We load data while the map opens or GC runs
 	StartLoadingData();
 
-	// Cross-Level loading
 	const UWorld* World = GetWorld();
+
+	// Cross-Level loading
 	if (World->GetFName() != NewSlotInfo->Map)
 	{
-		bLoadingMap = true;
+		LoadState = ELoadDataTaskState::LoadingMap;
 
 		//Keep loaded Info for loading
 		UGameplayStatics::OpenLevel(this, NewSlotInfo->Map);
 
 		SELog(Preset, "Slot '" + FString::FromInt(Slot) + "' is recorded on another Map. Loading before charging slot.", FColor::White, false, 1);
+		return;
 	}
-	else if(IsDataLoaded())
+	else if (IsDataLoaded())
 	{
-		// Will only continue if data has been loaded. Otherwise, it will check on tick
 		StartDeserialization();
+	}
+	else
+	{
+		LoadState = ELoadDataTaskState::WaitingForData;
 	}
 }
 
 void USlotDataTask_Loader::Tick(float DeltaTime)
 {
-	if (bDeserializing)
+	switch(LoadState)
 	{
+	case ELoadDataTaskState::Deserializing:
 		if (CurrentLevel.IsValid())
+		{
 			DeserializeASyncLoop();
-	}
-	else
-	{
-		// If Map load finished or didn't start and Data is loaded
-		if (!bLoadingMap && IsDataLoaded())
+		}
+		break;
+
+	case ELoadDataTaskState::WaitingForData:
+		if (IsDataLoaded())
+		{
 			StartDeserialization();
+		}
 	}
 }
 
@@ -79,7 +114,8 @@ void USlotDataTask_Loader::OnFinish(bool bSuccess)
 
 void USlotDataTask_Loader::BeginDestroy()
 {
-	if (LoadDataTask) {
+	if (LoadDataTask)
+	{
 		LoadDataTask->EnsureCompletion(false);
 		delete LoadDataTask;
 	}
@@ -89,14 +125,22 @@ void USlotDataTask_Loader::BeginDestroy()
 
 void USlotDataTask_Loader::OnMapLoaded()
 {
+	if(LoadState != ELoadDataTaskState::LoadingMap)
+	{
+		return;
+	}
+
 	const UWorld* World = GetWorld();
 	if (World->GetFName() == NewSlotInfo->Map)
 	{
-		Filter.BakeAllowedClasses();
-		bLoadingMap = false;
-
 		if(IsDataLoaded())
+		{
 			StartDeserialization();
+		}
+		else
+		{
+			LoadState = ELoadDataTaskState::WaitingForData;
+		}
 	}
 }
 
@@ -104,7 +148,7 @@ void USlotDataTask_Loader::StartDeserialization()
 {
 	check(NewSlotInfo);
 
-	bDeserializing = true;
+	LoadState = ELoadDataTaskState::Deserializing;
 	NewSlotInfo->LoadDate = FDateTime::Now();
 
 	USaveManager* Manager = GetManager();
@@ -119,7 +163,7 @@ void USlotDataTask_Loader::StartDeserialization()
 	Manager->OnLoadBegan(Filter);
 
 	//Apply current Info if succeeded
-	Manager->CurrentInfo = NewSlotInfo;
+	Manager->__SetCurrentInfo(NewSlotInfo);
 
 	BeforeDeserialize();
 
@@ -151,11 +195,15 @@ void USlotDataTask_Loader::BeforeDeserialize()
 {
 	UWorld* World = GetWorld();
 
+	Filter.BakeAllowedClasses();
+
 	// Set current game time to the saved value
 	World->TimeSeconds = SlotData->TimeSeconds;
 
-	if (Preset->bStoreGameInstance)
+	if (Filter.bStoreGameInstance)
+	{
 		DeserializeGameInstance();
+	}
 }
 
 void USlotDataTask_Loader::DeserializeSync()
@@ -289,7 +337,7 @@ void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 	FinishedDeserializing();
 }
 
-void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord& LevelRecord)
+void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, FLevelRecord& LevelRecord)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_PrepareLevel);
 
@@ -297,16 +345,20 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, const FLevelRecord&
 	// Scene Actors not contained in loaded records  => Actors to be Destroyed
 	// The rest									     => Just deserialize
 
-	TArray<FActorRecord> ActorsToSpawn = LevelRecord.Actors;
+	TArray<FActorRecord*> ActorsToSpawn;
+	ActorsToSpawn.Reserve(LevelRecord.Actors.Num());
+	for(FActorRecord& Record : LevelRecord.Actors)
+	{
+		ActorsToSpawn.Add(&Record);
+	}
+
 	TArray<AActor*> ActorsToDestroy{};
 	{
 		// O(M*Log(N))
-		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
+		for (AActor* const Actor : Level->Actors)
 		{
-			AActor* const Actor{ *ActorItr };
-
 			// Remove records which actors do exist
-			const bool bFoundActorRecord = ActorsToSpawn.RemoveSingleSwap(Actor, false) > 0;
+			const bool bFoundActorRecord = Loader::RemoveSingleRecordPtrSwap(ActorsToSpawn, Actor, false) > 0;
 
 			if (Actor && Filter.ShouldSave(Actor))
 			{
@@ -328,7 +380,7 @@ void USlotDataTask_Loader::FinishedDeserializing()
 {
 	// Clean serialization data
 	SlotData->Clean(true);
-	GetManager()->CurrentData = SlotData;
+	GetManager()->__SetCurrentData(SlotData);
 
 	Finish(true);
 }
@@ -349,7 +401,7 @@ void USlotDataTask_Loader::PrepareAllLevels()
 	{
 		if (Level->IsLevelLoaded())
 		{
-			const FLevelRecord* LevelRecord = FindLevelRecord(Level);
+			FLevelRecord* LevelRecord = FindLevelRecord(Level);
 			if (LevelRecord)
 			{
 				PrepareLevel(Level->GetLoadedLevel(), *LevelRecord);
@@ -358,20 +410,24 @@ void USlotDataTask_Loader::PrepareAllLevels()
 	}
 }
 
-void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord>& Records, const ULevel* Level)
+void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord*>& Records, const ULevel* Level)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_RespawnActors);
 
 	FActorSpawnParameters SpawnInfo{};
 	SpawnInfo.OverrideLevel = const_cast<ULevel*>(Level);
+	SpawnInfo.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
 
-	UWorld* World = GetWorld();
+	UWorld* const World = GetWorld();
 
 	// Respawn all procedural actors
-	for (const auto& Record : Records)
+	for (auto* Record : Records)
 	{
-		SpawnInfo.Name = Record.Name;
-		World->SpawnActor(Record.Class, &Record.Transform, SpawnInfo);
+		SpawnInfo.Name = Record->Name;
+		auto* NewActor = World->SpawnActor(Record->Class, &Record->Transform, SpawnInfo);
+
+		// We update the name on the record in case it changed
+		Record->Name = NewActor->GetFName();
 	}
 }
 

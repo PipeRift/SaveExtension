@@ -1,62 +1,50 @@
 // Copyright 2015-2020 Piperift. All Rights Reserved.
 
 #include "Automatron.h"
+#include "Helpers/TestActor.h"
 #include "SaveManager.h"
 
-#include "Helpers/TestActor.h"
 
-
-class FSavePresetSpec : public Automatron::FTestSpec
+class FSaveSpec_Preset : public Automatron::FTestSpec
 {
-	GENERATE_SPEC(FSavePresetSpec, "SaveExtension", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
+	GENERATE_SPEC(FSaveSpec_Preset, "SaveExtension",
+		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
 	USaveManager* SaveManager = nullptr;
 	ATestActor* TestActor = nullptr;
 	USavePreset* TestPreset = nullptr;
 
+	// Helper for some test delegates
+	bool bFinishTick = false;
 
-	FSavePresetSpec()
+	FSaveSpec_Preset() : Automatron::FTestSpec()
 	{
 		bReuseWorldForAllTests = false;
 		bCanUsePIEWorld = false;
+
+		DefaultWorldSettings.bShouldTick = true;
 	}
 
 	USavePreset* CreateTestPreset();
 };
 
-void FSavePresetSpec::Define()
+void FSaveSpec_Preset::Define()
 {
-	BeforeEach([this]()
-	{
+	BeforeEach([this]() {
 		SaveManager = USaveManager::Get(GetMainWorld());
 		TestNotNull(TEXT("SaveManager"), SaveManager);
 	});
 
-	Describe("Presets", [this]()
-	{
-		It("SaveManager is instanced", [this]()
-		{
-			TestNotNull(TEXT("SaveManager"), SaveManager);
-		});
+	It("SaveManager is instanced", [this]() {
+		TestNotNull(TEXT("SaveManager"), SaveManager);
 	});
 
-	Describe("Files", [this]()
-	{
-		xIt("Can save files synchronously", [this]() {});
-		xLatentIt("Can save files asynchronously", [this](auto& Done) {});
-		xIt("Can load files synchronously", [this]() {});
-		xLatentIt("Can load files asynchronously", [this](auto& Done) {});
-	});
-
-	Describe("Serialization", [this]()
-	{
-		BeforeEach([this]()
-		{
+	Describe("Serialization", [this]() {
+		BeforeEach([this]() {
 			TestPreset = CreateTestPreset();
-			auto& ActorFilter = TestPreset->ActorFilter.ClassFilter;
-			ActorFilter.AllowedClasses.Add(ATestActor::StaticClass());
+			TestPreset->ActorFilter.ClassFilter.AllowedClasses.Add(ATestActor::StaticClass());
 
-			// We dont need Async files are tested independently
+			// We don't need Async files are tested independently
 			TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
 
 			SaveManager->SetActivePreset(TestPreset);
@@ -64,24 +52,124 @@ void FSavePresetSpec::Define()
 			TestActor = GetMainWorld()->SpawnActor<ATestActor>();
 		});
 
-		It("Can save an actor synchronously", [this]()
-		{
+		It("Can save an actor synchronously", [this]() {
 			TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
 
-			TestActor->bMyBool = true;
-
 			TestTrue("Saved", SaveManager->SaveSlot(0));
-			TestTrue("MyBool is true after Save", TestActor->bMyBool);
-
-			TestActor->bMyBool = false;
-
 			TestTrue("Loaded", SaveManager->LoadSlot(0));
-			TestTrue("MyBool is true after Load", TestActor->bMyBool);
 		});
 
-		AfterEach([this]()
-		{
-			if(TestActor)
+		xIt("Can save an actor asynchronously", [this]() {
+			TestNotImplemented();
+		});
+
+		Describe("Properties", [this]() {
+			BeforeEach([this]() {
+				TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
+			});
+
+			It("bool", [this]()
+			{
+				TestActor->bMyBool = true;
+				SaveManager->SaveSlot(0);
+				TestTrue("bool didn't change after save", TestActor->bMyBool);
+
+				TestActor->bMyBool = false;
+				SaveManager->LoadSlot(0);
+				TestTrue("bool was saved", TestActor->bMyBool);
+			});
+
+			It("uint8", [this]()
+			{
+				TestActor->MyU8 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("uint8 didn't change after save", TestActor->MyU8, 34);
+
+				TestActor->MyU8 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("uint8 was saved", TestActor->MyU8, 34);
+			});
+
+			It("uint16", [this]()
+			{
+				TestActor->MyU16 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("uint16 didn't change after save", TestActor->MyU16, 34);
+
+				TestActor->MyU16 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("uint16 was saved", TestActor->MyU16, 34);
+			});
+
+			It("uint32", [this]()
+			{
+				TestActor->MyU32 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("uint32 didn't change after save", TestActor->MyU32, 34);
+
+				TestActor->MyU32 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("uint32 was saved", TestActor->MyU32, 34);
+			});
+
+			It("uint64", [this]()
+			{
+				TestActor->MyU64 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("uint16 didn't change after save", TestActor->MyU64, 34);
+
+				TestActor->MyU64 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("uint16 was saved", TestActor->MyU64, 34);
+			});
+
+			It("int8", [this]()
+			{
+				TestActor->MyI8 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("int8 didn't change after save", TestActor->MyI8, 34);
+
+				TestActor->MyI8 = 100;
+				SaveManager->LoadSlot(0);
+				TestEqual("int8 was saved", TestActor->MyI8, 34);
+			});
+
+			It("int16", [this]()
+			{
+				TestActor->MyI16 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("int16 didn't change after save", TestActor->MyI16, 34);
+
+				TestActor->MyI16 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("int16 was saved", TestActor->MyI16, 34);
+			});
+
+			It("int32", [this]()
+			{
+				TestActor->MyI32 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("int32 didn't change after save", TestActor->MyI32, 34);
+
+				TestActor->MyI32 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("int32 was saved", TestActor->MyI32, 34);
+			});
+
+			It("int64", [this]()
+			{
+				TestActor->MyI64 = 34;
+				SaveManager->SaveSlot(0);
+				TestEqual("int64 didn't change after save", TestActor->MyI64, 34);
+
+				TestActor->MyI64 = 212;
+				SaveManager->LoadSlot(0);
+				TestEqual("int64 was saved", TestActor->MyI64, 34);
+			});
+		});
+
+		AfterEach([this]() {
+			if (TestActor)
 			{
 				TestActor->Destroy();
 				TestActor = nullptr;
@@ -89,13 +177,23 @@ void FSavePresetSpec::Define()
 		});
 	});
 
-	AfterEach([this]()
-	{
+	AfterEach([this]() {
+		if (SaveManager)
+		{
+			bFinishTick = false;
+			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
+				bFinishTick = true;
+			}));
+
+			TickWorldUntil(GetMainWorld(), true, [this](float) {
+				return !bFinishTick;
+			});
+		}
 		SaveManager = nullptr;
 	});
 }
 
-USavePreset* FSavePresetSpec::CreateTestPreset()
+USavePreset* FSaveSpec_Preset::CreateTestPreset()
 {
 	USavePreset* Preset = NewObject<USavePreset>(GetMainWorld());
 	return Preset;

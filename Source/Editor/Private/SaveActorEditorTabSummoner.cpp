@@ -19,11 +19,9 @@
 
 const TArray<FTagInfo> SSaveActorEditorWidget::TagList
 {
-	{ TEXT("Save"),       TEXT("!Save"),           true,  LOCTEXT("save_tooltip", "Should this actor be saved?")   },
-	{ TEXT("Components"), TEXT("!SaveComponents"), true, LOCTEXT("components_tooltip", "Should save components?") },
-	{ TEXT("Transform"),  TEXT("!SaveTransform"),  true, LOCTEXT("transform_tooltip", "Should save position, rotation and scale?") },
-	{ TEXT("Physics"),    TEXT("!SavePhysics"),    true, LOCTEXT("physics_tooltip", "Should save physics?")       },
-	{ TEXT("Tags"),       TEXT("!SaveTags"),       true, LOCTEXT("tags_tooltip", "Should save tags?")             }
+	{ TEXT("Save Tags"),       TEXT("!SaveTags"),       true, LOCTEXT("tags_tooltip", "Should save tags?")                              },
+	{ TEXT("Save Transform"),  TEXT("!SaveTransform"),  true, LOCTEXT("transform_tooltip", "Should save position, rotation and scale?") },
+	{ TEXT("Save Physics"),    TEXT("!SavePhysics"),    true, LOCTEXT("physics_tooltip", "Should save physics?")                        }
 };
 
 void SSaveActorEditorWidget::Construct(const FArguments&, TWeakPtr<FBlueprintEditor> InBlueprintEditor)
@@ -121,8 +119,6 @@ TSharedPtr<SWidget> SSaveActorEditorWidget::GenerateSettingsWidget()
 	SettingItems.Add(SNew(SSaveActorSettingsItem).TagInfo(TagList[0]).OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
 	SettingItems.Add(SNew(SSaveActorSettingsItem).TagInfo(TagList[1]).OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
 	SettingItems.Add(SNew(SSaveActorSettingsItem).TagInfo(TagList[2]).OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
-	SettingItems.Add(SNew(SSaveActorSettingsItem).TagInfo(TagList[3]).OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
-	SettingItems.Add(SNew(SSaveActorSettingsItem).TagInfo(TagList[4]).OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
 
 	AActor* Actor = GetDefaultActor();
 	if (Actor)
@@ -134,75 +130,23 @@ TSharedPtr<SWidget> SSaveActorEditorWidget::GenerateSettingsWidget()
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Padding(2)
 			[
 				SettingItems[0]
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SettingItems[1]
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(6)
 			[
 				SNew(SBorder)
-				.BorderImage(FEditorStyle::GetBrush("Docking.Tab.ContentAreaBrush"))
+				.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
 				.Padding(0)
-				.IsEnabled(this, &SSaveActorEditorWidget::IsSaveEnabled)
 				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(FMargin{ 6, 2, 6, 1 })
-					[
-						SNew(SBorder)
-						.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
-						.Padding(0)
-						[
-							SettingItems[1]
-						]
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(FMargin{ 6, 1, 6, 1 })
-					[
-						SNew(SBorder)
-						.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
-						.Padding(0)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							[
-								SettingItems[2]
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(6)
-							[
-								SNew(SBorder)
-								.BorderImage(FEditorStyle::GetBrush("Docking.Tab.ContentAreaBrush"))
-								.Padding(FMargin { 6, 2 })
-								.IsEnabled(this, &SSaveActorEditorWidget::IsTransformEnabled)
-								[
-									SNew(SBorder)
-									.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
-									.Padding(0)
-									[
-										SettingItems[3]
-									]
-								]
-							]
-						]
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(FMargin{ 6, 1, 6, 2 })
-					[
-						SNew(SBorder)
-						.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
-						.Padding(2)
-						[
-							SettingItems[4]
-						]
-					]
+					SettingItems[2]
 				]
 			]
 		];

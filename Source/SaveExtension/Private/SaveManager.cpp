@@ -5,6 +5,11 @@
 #include "FileAdapter.h"
 #include "LatentActions/LoadInfosAction.h"
 #include "Multithreading/LoadSlotInfoTask.h"
+#include "SaveSettings.h"
+#include "Serialization/SlotDataTask_LevelLoader.h"
+#include "Serialization/SlotDataTask_LevelSaver.h"
+#include "Serialization/SlotDataTask_Loader.h"
+#include "Serialization/SlotDataTask_Saver.h"
 
 #include <Engine/GameViewportClient.h>
 #include <Engine/LevelStreaming.h>
@@ -16,9 +21,8 @@
 #include <Misc/CoreDelegates.h>
 #include <Misc/Paths.h>
 
-USaveManager::USaveManager() : Super(), MTTasks{}
-{
-}
+
+USaveManager::USaveManager() : Super(), MTTasks{} {}
 
 void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -27,9 +31,13 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
+	ActivePreset = GetDefault<USaveSettings>()->CreatePreset(this);
+
 	// AutoLoad
 	if (GetPreset() && GetPreset()->bAutoLoad)
+	{
 		ReloadCurrentSlot();
+	}
 
 	TryInstantiateInfo();
 	UpdateLevelStreamings();
@@ -106,7 +114,9 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 	bool bSuccess = false;
 
 	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotId)
-		.OnFinished([&bSuccess](auto& Task) mutable { bSuccess = Task->bSuccess; })
+		.OnFinished([&bSuccess](auto& Task) mutable {
+			bSuccess = Task->bSuccess;
+		})
 		.StartSynchronousTask();
 	MTTasks.Tick();
 	return bSuccess;
@@ -115,14 +125,18 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate)
 {
 	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
-		.OnFinished([](auto& Task) { Task->CallDelegate(); })
+		.OnFinished([](auto& Task) {
+			Task->CallDelegate();
+		})
 		.StartBackgroundTask();
 }
 
 void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded Delegate)
 {
 	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
-		.OnFinished([](auto& Task) { Task->CallDelegate(); })
+		.OnFinished([](auto& Task) {
+			Task->CallDelegate();
+		})
 		.StartSynchronousTask();
 	MTTasks.Tick();
 }
@@ -130,19 +144,22 @@ void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded De
 void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 {
 	MTTasks.CreateTask<FDeleteSlotsTask>(this)
-		.OnFinished([Delegate](auto& Task) { Delegate.ExecuteIfBound(); })
+		.OnFinished([Delegate](auto& Task) {
+			Delegate.ExecuteIfBound();
+		})
 		.StartBackgroundTask();
 }
 
-void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result,
-	struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
+void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size,
+	ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
 {
 	if (UWorld* World = GetWorld())
 	{
 		Result = ESaveGameResult::Saving;
 
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FSaveGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		if (LatentActionManager.FindExistingAction<FSaveGameAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
 				new FSaveGameAction(this, SlotId, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
@@ -152,30 +169,33 @@ void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreens
 	Result = ESaveGameResult::Failed;
 }
 
-void USaveManager::BPLoadSlotFromId(int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadSlotFromId(
+	int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
 		Result = ELoadGameResult::Loading;
 
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadGameAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		if (LatentActionManager.FindExistingAction<FLoadGameAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
-			LatentActionManager.AddNewAction(
-				LatentInfo.CallbackTarget, LatentInfo.UUID, new FLoadGameAction(this, SlotId, Result, LatentInfo));
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
+				new FLoadGameAction(this, SlotId, Result, LatentInfo));
 		}
 		return;
 	}
 	Result = ELoadGameResult::Failed;
 }
 
-void USaveManager::BPLoadAllSlotInfos(
-	const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos,
+	ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
 				new FLoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
@@ -188,7 +208,8 @@ void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentAc
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FDeleteSlotsAction>(LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		if (LatentActionManager.FindExistingAction<FDeleteSlotsAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(
 				LatentInfo.CallbackTarget, LatentInfo.UUID, new FDeleteSlotsAction(this, Result, LatentInfo));
@@ -273,8 +294,10 @@ void USaveManager::UpdateLevelStreamings()
 	{
 		ULevelStreamingNotifier* Notifier = NewObject<ULevelStreamingNotifier>(this);
 		Notifier->SetLevelStreaming(Level);
-		Notifier->OnLevelShown().BindUFunction(this, GET_FUNCTION_NAME_CHECKED(USaveManager, DeserializeStreamingLevel));
-		Notifier->OnLevelHidden().BindUFunction(this, GET_FUNCTION_NAME_CHECKED(USaveManager, SerializeStreamingLevel));
+		Notifier->OnLevelShown().BindUFunction(
+			this, GET_FUNCTION_NAME_CHECKED(USaveManager, DeserializeStreamingLevel));
+		Notifier->OnLevelHidden().BindUFunction(
+			this, GET_FUNCTION_NAME_CHECKED(USaveManager, SerializeStreamingLevel));
 		LevelStreamingNotifiers.Add(Notifier);
 	}
 }
@@ -332,7 +355,15 @@ void USaveManager::FinishTask(USlotDataTask* Task)
 
 	// Start next task
 	if (Tasks.Num() > 0)
+	{
 		Tasks[0]->Start();
+	}
+}
+
+bool USaveManager::IsLoading() const
+{
+	return HasTasks() &&
+		   (Tasks[0]->IsA<USlotDataTask_Loader>() || Tasks[0]->IsA<USlotDataTask_LevelLoader>());
 }
 
 void USaveManager::Tick(float DeltaTime)
@@ -433,10 +464,9 @@ void USaveManager::OnMapLoadStarted(const FString& MapName)
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)
 {
-	USlotDataTask_Loader* Loader = Cast<USlotDataTask_Loader>(Tasks.Num() ? Tasks[0] : nullptr);
-	if (Loader && Loader->bLoadingMap)
+	if(auto* ActiveLoader = Cast<USlotDataTask_Loader>(Tasks.Num() ? Tasks[0] : nullptr))
 	{
-		Loader->OnMapLoaded();
+		ActiveLoader->OnMapLoaded();
 	}
 
 	UpdateLevelStreamings();

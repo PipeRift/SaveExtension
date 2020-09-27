@@ -29,6 +29,13 @@ void FClassFilter::Merge(const FClassFilter& Other)
 
 void FClassFilter::BakeAllowedClasses() const
 {
+	BakedAllowedClasses.Empty();
+
+	if(AllowedClasses.Num() <= 0)
+	{
+		return;
+	}
+
 	for (TObjectIterator<UClass> It; It; ++It)
 	{
 		UClass* const Class = *It;
@@ -37,6 +44,12 @@ void FClassFilter::BakeAllowedClasses() const
 		const UClass* CurrentClass = Class;
 		while (CurrentClass)
 		{
+			// Early out if this class has been explored and allowed
+			if (BakedAllowedClasses.Contains(CurrentClass))
+			{
+				break;
+			}
+
 			if (AllowedClasses.Contains(CurrentClass))
 			{
 				// First parent allowed class marks it as allowed
