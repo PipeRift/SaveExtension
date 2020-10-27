@@ -6,12 +6,12 @@
 
 #include "AssetTypeActions_Base.h"
 
-#include "SlotInfo.h"
+#include "SavePreset.h"
 
 #define LOCTEXT_NAMESPACE "SaveExtensionEditor"
 
 
-class FAssetTypeAction_SlotInfo : public FAssetTypeActions_Base
+class FAssetTypeAction_SavePreset : public FAssetTypeActions_Base
 {
 public:
 
@@ -22,7 +22,7 @@ public:
 	virtual FText GetName() const override;
 	virtual FColor GetTypeColor() const override;
 
-	virtual UClass* GetSupportedClass() const override { return USlotInfo::StaticClass(); }
+	virtual UClass* GetSupportedClass() const override { return USavePreset::StaticClass(); }
 };
 
 #undef LOCTEXT_NAMESPACE

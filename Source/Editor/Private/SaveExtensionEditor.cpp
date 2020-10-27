@@ -6,6 +6,7 @@
 
 #include "Asset/AssetTypeAction_SlotInfo.h"
 #include "Asset/AssetTypeAction_SlotData.h"
+#include "Asset/AssetTypeAction_SavePreset.h"
 
 #include "Customizations/SavePresetDetails.h"
 #include "Customizations/ClassFilterCustomization.h"
@@ -23,6 +24,7 @@ void FSaveExtensionEditor::StartupModule()
 
 	AssetTools.RegisterAssetTypeActions(MakeShared<FAssetTypeAction_SlotInfo>());
 	AssetTools.RegisterAssetTypeActions(MakeShared<FAssetTypeAction_SlotData>());
+	AssetTools.RegisterAssetTypeActions(MakeShared<FAssetTypeAction_SavePreset>());
 
 	RegisterPropertyTypeCustomizations();
 
