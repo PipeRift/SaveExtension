@@ -1,6 +1,6 @@
-# Quick Start
+# First Steps
 
-Quick Start will show the basic steps to follow to setup the plugin and start using it at a base level.
+First Steps will show the basic steps to follow to setup the plugin and start using it at a base level.
 
 ## Setting Up the Project
 
@@ -10,7 +10,7 @@ If everything went right, we should see the plugin enabled under *Edit->Plugins-
 
 ![Plugin Enabled](img/plugin_enabled.png)
 
-## Using the Plugin
+## Save and Load from Keys
 
 Save Extension requires minimum setup. The only thing you have to do is to call Saving and Loading. Therefore **as an example** we will make a level-blueprint **save** when we press **R** and **load** with **T**.
 
@@ -28,13 +28,25 @@ Then we add the following functions:
 
 **Load Slot from Id** will load world from slot 0
 
-### Something to save
+## Selecting Actors and Components to save
 
-Player's rotation and location will always be saved (unless you disable it from [Configuration](docs/configuration.md)) but we can also add to the scene some actors to be saved. They could save variables, physics, positions, etc.
+**SaveExtension** doesn't save any actor class or component **by default**.
 
-### Saving a variable
+*I  know. It is confusing that a save system by default doesn't save, but it will make sense by the end of this page, I promise.*
 
-To save any variable inside an Actor or Component we can just tick "*SaveGame*" on its properties:
+To be able to save, we will need to:
+
+1. Create a [**SavePreset**](presets.md) blueprint (that inherits ***USavePreset***)
+2. Add actor and component classes relevant to be saved in the game to preset filters
+   ![Filters](img/example-filters.png)
+3. Assign the preset inside Project Settings
+   ![Assign Preset](img/default-preset.png)
+
+{% hint style='hint' %} For detailed info see [**Save Presets**](presets.md) and [**Filters**](filters.md) {% endhint %}
+
+## Marking variables to be saved
+
+To save any variable inside an Actor or Component we can just tick "*SaveGame*" on its properties (*however remember that his actor or component class must on the filter*)
 
 ![A simple Variable](img/variable.png)
 

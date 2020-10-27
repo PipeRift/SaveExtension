@@ -1,9 +1,12 @@
 # Save Extension Documentation
 
-* [1 Installation](installation.md)
-* [2 Quick Start](quick-start.md)
-- 3 Documentation
-  * [Asynchronous](docs/asynchronous.md)
+* Quick Start
+  * [Installation](quick-start/installation.md)
+  * [First Steps](quick-start/first-steps.md)
+  * [Presets](quick-start/presets.md)
+  * [Filters](quick-start/filters.md)
+- Documentation
+  * [Multi-threading](docs/multi-threading.md)
   * [Configuration](docs/configuration.md)
   * [Level Streaming](docs/level-streaming.md)
   * [Saving And Loading](docs/saving-and-loading.md)
