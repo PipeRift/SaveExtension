@@ -5,10 +5,9 @@
   * [First Steps](quick-start/first-steps.md)
   * [Presets](quick-start/presets.md)
   * [Filters](quick-start/filters.md)
+  * [Slots](quick-start/slots.md)
 - Documentation
-  * [Multi-threading](docs/multi-threading.md)
+  * [Multithreading](docs/multithreading.md)
   * [Configuration](docs/configuration.md)
   * [Level Streaming](docs/level-streaming.md)
-  * [Saving And Loading](docs/saving-and-loading.md)
-  * [Slot Templates](docs/slot-templates.md)
   * [Lifetime Components](docs/lifetime-components.md)

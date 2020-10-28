@@ -24,22 +24,6 @@ This default settings page is useful in case you have many presets, or in case y
 * **Asynchronous**: Should save & load be [asynchronous](asynchronous.md)?
 * **Level Streaming**: Configures [Level Streaming](level-streaming.md) serialization
 
-### Custom Presets
-
-#### Setting a custom Preset
-
-You can define which preset to use in editor inside *Project Settings* -> *Game* -> *Save Extension* 
-
-![Active Preset](img/active_preset.png)
-
-Because presets are assets, the active preset can be switched in runtime allowing different saving setups for different maps or game modes.
-
-#### Creating a Custom Preset
-
-![Creating a Preset](img\creating_preset.png)
-
-You can create a new preset by right-clicking on the content browser -> *Save Extension* -> *Preset*
-
 ## Per-actor settings
 
 ---
