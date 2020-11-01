@@ -8,30 +8,30 @@
 
 class IPropertyHandle;
 
-struct FClassFilterItem {
+struct FSEClassFilterItem {
 	FString ClassName;
 	bool bAllowed;
 
-	FClassFilterItem(FString ClassName, bool bAllowed)
+	FSEClassFilterItem(FString ClassName, bool bAllowed)
 		: ClassName{ClassName}, bAllowed{bAllowed}
 	{}
 };
 
 
-class FClassFilterCustomization : public IPropertyTypeCustomization, public FEditorUndoClient
+class FSEClassFilterCustomization : public IPropertyTypeCustomization, public FEditorUndoClient
 {
 protected:
 
 	/** Filters this customization edits */
 	TArray<SClassFilter::FEditableClassFilterDatum> EditableFilters;
-	TArray<TSharedPtr<FClassFilterItem>> PreviewClasses;
+	TArray<TSharedPtr<FSEClassFilterItem>> PreviewClasses;
 
 	TSharedPtr<IPropertyHandle> StructHandle;
 	TSharedPtr<IPropertyHandle> FilterHandle;
 
 	TSharedPtr<class SComboButton> EditButton;
 
-	TSharedPtr<SListView<TSharedPtr<FClassFilterItem>>> PreviewList;
+	TSharedPtr<SListView<TSharedPtr<FSEClassFilterItem>>> PreviewList;
 
 	TWeakPtr<SClassFilter> LastFilterPopup;
 
@@ -44,10 +44,10 @@ public:
 	*/
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance()
 	{
-		return MakeShared<FClassFilterCustomization>();
+		return MakeShared<FSEClassFilterCustomization>();
 	}
 
-	~FClassFilterCustomization();
+	~FSEClassFilterCustomization();
 
 protected:
 
@@ -80,7 +80,7 @@ protected:
 
 	TSharedRef<SWidget> GetClassPreview();
 
-	TSharedRef<ITableRow> OnGeneratePreviewRow(TSharedPtr<FClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable);
+	TSharedRef<ITableRow> OnGeneratePreviewRow(TSharedPtr<FSEClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable);
 
 
 	void RefreshClassList();

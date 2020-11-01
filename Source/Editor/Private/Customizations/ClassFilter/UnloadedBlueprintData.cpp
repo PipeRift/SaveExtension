@@ -4,7 +4,7 @@
 #include "Engine/BlueprintGeneratedClass.h"
 
 
-FUnloadedBlueprintData::FUnloadedBlueprintData(TWeakPtr<FClassFilterNode> InClassViewerNode)
+FUnloadedBlueprintData::FUnloadedBlueprintData(TWeakPtr<FSEClassFilterNode> InClassViewerNode)
 	: ClassViewerNode(InClassViewerNode)
 {
 }
@@ -26,7 +26,7 @@ void FUnloadedBlueprintData::SetClassFlags(uint32 InFlags)
 
 bool FUnloadedBlueprintData::IsChildOf(const UClass * InClass) const
 {
-	TSharedPtr<FClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
+	TSharedPtr<FSEClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 
 	// Keep going through parents till you find an invalid.
 	while (CurrentNode.IsValid())
@@ -53,7 +53,7 @@ bool FUnloadedBlueprintData::ImplementsInterface(const UClass * InInterface) con
 	}
 
 	// If not, does a parent class implement the interface?
-	TSharedPtr<FClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
+	TSharedPtr<FSEClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 	while (CurrentNode.IsValid())
 	{
 		if (CurrentNode->Class.IsValid() && CurrentNode->Class->ImplementsInterface(InInterface))
@@ -78,7 +78,7 @@ bool FUnloadedBlueprintData::IsA(const UClass * InClass) const
 
 const UClass* FUnloadedBlueprintData::GetClassWithin() const
 {
-	TSharedPtr<FClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
+	TSharedPtr<FSEClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 
 	while (CurrentNode.IsValid())
 	{
@@ -98,7 +98,7 @@ const UClass* FUnloadedBlueprintData::GetClassWithin() const
 
 const UClass* FUnloadedBlueprintData::GetNativeParent() const
 {
-	TSharedPtr<FClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
+	TSharedPtr<FSEClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 
 	while (CurrentNode.IsValid())
 	{
@@ -136,7 +136,7 @@ FName FUnloadedBlueprintData::GetClassPath() const
 	return FName();
 }
 
-const TWeakPtr<FClassFilterNode>& FUnloadedBlueprintData::GetClassViewerNode() const
+const TWeakPtr<FSEClassFilterNode>& FUnloadedBlueprintData::GetClassViewerNode() const
 {
 	return ClassViewerNode;
 }

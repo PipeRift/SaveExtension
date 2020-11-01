@@ -44,7 +44,7 @@ public:
 		struct FEditableClassFilterDatum
 	{
 		/** Constructor */
-		FEditableClassFilterDatum(class UObject* InOwner, struct FClassFilter* InFilter)
+		FEditableClassFilterDatum(class UObject* InOwner, struct FSEClassFilter* InFilter)
 			: Owner(InOwner)
 			, Filter(InFilter)
 		{}
@@ -53,7 +53,7 @@ public:
 		TWeakObjectPtr<class UObject> Owner;
 
 		/** Tag container to edit */
-		struct FClassFilter* Filter;
+		struct FSEClassFilter* Filter;
 	};
 
 	/** Construct the actual widget */
@@ -68,7 +68,7 @@ public:
 	void OnSearchTextChanged(const FText& SearchText);
 
 	/** Returns true if this TagNode has any children that match the current filter */
-	bool FilterChildrenCheck(const FClassFilterNodePtr& Class);
+	bool FilterChildrenCheck(const FSEClassFilterNodePtr& Class);
 
 	/** Gets the widget to focus once the menu opens. */
 	TSharedPtr<SWidget> GetWidgetToFocusOnOpen();
@@ -90,16 +90,16 @@ private:
 	bool bNeedsRefresh;
 
 	/* Array of tags to be displayed in the TreeView */
-	TArray<FClassFilterNodePtr> RootClasses;
+	TArray<FSEClassFilterNodePtr> RootClasses;
 
 	/* Array of tags filtered in the TreeView */
-	TArray<FClassFilterNodePtr> FilteredClasses;
+	TArray<FSEClassFilterNodePtr> FilteredClasses;
 
 	/** Container widget holding the tag tree */
 	TSharedPtr<SBorder> TreeContainerWidget;
 
 	/** Tree widget showing the gameplay tag library */
-	TSharedPtr<STreeView<FClassFilterNodePtr>> TreeWidget;
+	TSharedPtr<STreeView<FSEClassFilterNodePtr>> TreeWidget;
 
 	/** Allows for the user to find a specific gameplay tag in the tree */
 	TSharedPtr<SSearchBox> SearchBox;
@@ -121,7 +121,7 @@ private:
 	 *
 	 * @return Generated row widget for the item node
 	 */
-	TSharedRef<ITableRow> OnGenerateRow(FClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable);
+	TSharedRef<ITableRow> OnGenerateRow(FSEClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable);
 
 	/**
 	 * Get children nodes of the specified node
@@ -129,7 +129,7 @@ private:
 	 * @param InItem		Node to get children of
 	 * @param OutChildren	[OUT] Array of children nodes, if any
 	 */
-	void OnGetChildren(FClassFilterNodePtr Class, TArray<FClassFilterNodePtr>& OutChildren);
+	void OnGetChildren(FSEClassFilterNodePtr Class, TArray<FSEClassFilterNodePtr>& OutChildren);
 
 	/**
 	 * Called via delegate when the status of a check box in a row changes
@@ -137,14 +137,14 @@ private:
 	 * @param NewCheckState	New check box state
 	 * @param NodeChanged	Node that was checked/unchecked
 	 */
-	FReply OnClassClicked(FClassFilterNodePtr Class);
+	FReply OnClassClicked(FSEClassFilterNodePtr Class);
 
-	FText GetClassIconText(FClassFilterNodePtr Class) const;
-	FSlateColor GetClassIconColor(FClassFilterNodePtr Class) const;
+	FText GetClassIconText(FSEClassFilterNodePtr Class) const;
+	FSlateColor GetClassIconColor(FSEClassFilterNodePtr Class) const;
 
-	void MarkClass(FClassFilterNodePtr Class, EClassFilterState State);
+	void MarkClass(FSEClassFilterNodePtr Class, EClassFilterState State);
 
-	FSlateColor GetClassBackgroundColor(FClassFilterNodePtr Class) const;
+	FSlateColor GetClassBackgroundColor(FSEClassFilterNodePtr Class) const;
 
 	/** Called when the user clicks the "Clear All" button; Clears all tags */
 	FReply OnClickedClearAll();
@@ -168,27 +168,27 @@ private:
 	 * @param Node		Node to set the expansion state of
 	 * @param bExapnd	If true, expand the node; Otherwise, collapse the node
 	 */
-	void SetTreeItemExpansion(FClassFilterNodePtr Node, bool bExpand);
+	void SetTreeItemExpansion(FSEClassFilterNodePtr Node, bool bExpand);
 
 	/** Recursive function to go through all tags in the tree and set the expansion to default*/
-	void SetDefaultTreeItemExpansion(FClassFilterNodePtr Node);
+	void SetDefaultTreeItemExpansion(FSEClassFilterNodePtr Node);
 
 	/** Helper function to determine the visibility of the Clear Selection button */
 	EVisibility DetermineClearSelectionVisibility() const;
 
 	/** Expansion changed callback */
-	void OnExpansionChanged(FClassFilterNodePtr Class, bool bIsExpanded);
+	void OnExpansionChanged(FSEClassFilterNodePtr Class, bool bIsExpanded);
 
 	/** Returns true if the user can select tags from the widget */
 	bool CanSelectClasses() const;
 
-	void SetFilter(FClassFilter* OriginalContainer, FClassFilter* EditedContainer, UObject* OwnerObj);
+	void SetFilter(FSEClassFilter* OriginalContainer, FSEClassFilter* EditedContainer, UObject* OwnerObj);
 
 	/** Sends a requests to the Class Viewer to refresh itself the next chance it gets */
 	void Refresh();
 
 	/** Count the number of tree items in the specified hierarchy*/
-	int32 CountTreeItems(FClassFilterNode* Node);
+	int32 CountTreeItems(FSEClassFilterNode* Node);
 
 	/** Populates the tree with items based on the current filter. */
 	void Populate();

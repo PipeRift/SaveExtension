@@ -9,7 +9,7 @@
 
 
 USTRUCT(BlueprintType)
-struct SAVEEXTENSION_API FClassFilter
+struct SAVEEXTENSION_API FSEClassFilter
 {
 	GENERATED_BODY()
 
@@ -37,11 +37,11 @@ protected:
 
 public:
 
-	FClassFilter() : FClassFilter(UObject::StaticClass()) {}
-	FClassFilter(UClass* const BaseClass);
+	FSEClassFilter() : FSEClassFilter(UObject::StaticClass()) {}
+	FSEClassFilter(UClass* const BaseClass);
 
 	// Merges another filter into this one. Other has priority.
-	void Merge(const FClassFilter& Other);
+	void Merge(const FSEClassFilter& Other);
 
 	/** Bakes a set of allowed classes based on the current settings */
 	void BakeAllowedClasses() const;
@@ -57,23 +57,23 @@ public:
 	FString ToString();
 	void FromString(FString String);
 
-	bool operator==(const FClassFilter& Other) const;
+	bool operator==(const FSEClassFilter& Other) const;
 };
 
 
 USTRUCT(BlueprintType)
-struct FActorClassFilter
+struct FSEActorClassFilter
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
-	FClassFilter ClassFilter;
+	FSEClassFilter ClassFilter;
 
 
-	FActorClassFilter()
+	FSEActorClassFilter()
 		: ClassFilter(AActor::StaticClass())
 	{}
-	FActorClassFilter(TSubclassOf<AActor> actorClass) : ClassFilter(actorClass) {}
+	FSEActorClassFilter(TSubclassOf<AActor> actorClass) : ClassFilter(actorClass) {}
 
 	/** Bakes a set of allowed classes based on the current settings */
 	void BakeAllowedClasses() const { ClassFilter.BakeAllowedClasses(); }
@@ -86,18 +86,18 @@ struct FActorClassFilter
 
 
 USTRUCT(BlueprintType)
-struct FComponentClassFilter
+struct FSEComponentClassFilter
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
-	FClassFilter ClassFilter;
+	FSEClassFilter ClassFilter;
 
 
-	FComponentClassFilter()
+	FSEComponentClassFilter()
 		: ClassFilter(UActorComponent::StaticClass())
 	{}
-	FComponentClassFilter(TSubclassOf<UActorComponent> compClass) : ClassFilter(compClass) {}
+	FSEComponentClassFilter(TSubclassOf<UActorComponent> compClass) : ClassFilter(compClass) {}
 
 	/** Bakes a set of allowed classes based on the current settings */
 	void BakeAllowedClasses() const { ClassFilter.BakeAllowedClasses(); }

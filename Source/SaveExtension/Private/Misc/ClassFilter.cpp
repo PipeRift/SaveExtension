@@ -6,12 +6,12 @@
 #include <UObject/UObjectIterator.h>
 
 
-FClassFilter::FClassFilter(UClass* BaseClass)
+FSEClassFilter::FSEClassFilter(UClass* BaseClass)
 	: BaseClass{ BaseClass }
 	, IgnoredClasses {}
 {}
 
-void FClassFilter::Merge(const FClassFilter& Other)
+void FSEClassFilter::Merge(const FSEClassFilter& Other)
 {
 	// Remove conflicts
 	for (const auto& IgnoredClass : Other.IgnoredClasses)
@@ -27,7 +27,7 @@ void FClassFilter::Merge(const FClassFilter& Other)
 	IgnoredClasses.Append(Other.IgnoredClasses);
 }
 
-void FClassFilter::BakeAllowedClasses() const
+void FSEClassFilter::BakeAllowedClasses() const
 {
 	BakedAllowedClasses.Empty();
 
@@ -68,14 +68,14 @@ void FClassFilter::BakeAllowedClasses() const
 	}
 }
 
-FString FClassFilter::ToString()
+FString FSEClassFilter::ToString()
 {
 	FString ExportString;
-	FClassFilter::StaticStruct()->ExportText(ExportString, this, this, nullptr, 0, nullptr);
+	FSEClassFilter::StaticStruct()->ExportText(ExportString, this, this, nullptr, 0, nullptr);
 	return ExportString;
 }
 
-void FClassFilter::FromString(FString String)
+void FSEClassFilter::FromString(FString String)
 {
 	if (String.StartsWith(TEXT("(")) && String.EndsWith(TEXT(")")))
 	{
@@ -115,7 +115,7 @@ void FClassFilter::FromString(FString String)
 	}
 }
 
-bool FClassFilter::operator==(const FClassFilter& Other) const
+bool FSEClassFilter::operator==(const FSEClassFilter& Other) const
 {
 	// Do all classes match?
 	return AllowedClasses.Difference(Other.AllowedClasses).Num() <= 0 &&

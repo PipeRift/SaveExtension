@@ -19,11 +19,11 @@ enum class EClassFilterState : uint8
 };
 
 
-class FClassFilterNode : public TSharedFromThis<FClassFilterNode>
+class FSEClassFilterNode : public TSharedFromThis<FSEClassFilterNode>
 {
 public:
 
-	using FPtr = TSharedPtr<FClassFilterNode>;
+	using FPtr = TSharedPtr<FSEClassFilterNode>;
 
 	/**
 	 * Creates a node for the widget's tree.
@@ -32,9 +32,9 @@ public:
 	 * @param	InClassDisplayName				The display name of the class this node represents
 	 * @param	bInIsPlaceable					true if the class is a placeable class.
 	 */
-	FClassFilterNode( const FString& InClassName, const FString& InClassDisplayName );
+	FSEClassFilterNode( const FString& InClassName, const FString& InClassDisplayName );
 
-	FClassFilterNode( const FClassFilterNode& InCopyObject);
+	FSEClassFilterNode( const FSEClassFilterNode& InCopyObject);
 
 	/**
 	 * Adds the specified child to the node.
@@ -73,7 +73,7 @@ public:
 
 	/** Filter states */
 	void SetOwnFilterState(EClassFilterState State);
-	void SetStateFromFilter(const struct FClassFilter& Filter);
+	void SetStateFromFilter(const struct FSEClassFilter& Filter);
 	EClassFilterState GetOwnFilterState() const { return FilterState; }
 	EClassFilterState GetParentFilterState() const;
 
@@ -92,7 +92,7 @@ private:
 
 public:
 
-	TWeakPtr<FClassFilterNode> ParentNode;
+	TWeakPtr<FSEClassFilterNode> ParentNode;
 
 	/** The class this node is associated with. */
 	TWeakObjectPtr<UClass> Class;
@@ -119,4 +119,4 @@ public:
 	TSharedPtr<class IUnloadedBlueprintData> UnloadedBlueprintData;
 };
 
-using FClassFilterNodePtr = FClassFilterNode::FPtr;
+using FSEClassFilterNodePtr = FSEClassFilterNode::FPtr;

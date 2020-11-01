@@ -62,7 +62,7 @@ TSharedRef<SWidget> SClassFilterGraphPin::SelectedTags()
 {
 	RefreshPreviewList();
 
-	SAssignNew( PreviewList, SListView<TSharedPtr<FClassFilterItem>> )
+	SAssignNew( PreviewList, SListView<TSharedPtr<FSEClassFilterItem>> )
 		.ListItemsSource(&PreviewClasses)
 		.SelectionMode(ESelectionMode::None)
 		.OnGenerateRow(this, &SClassFilterGraphPin::OnGeneratePreviewRow);
@@ -70,7 +70,7 @@ TSharedRef<SWidget> SClassFilterGraphPin::SelectedTags()
 	return PreviewList->AsShared();
 }
 
-TSharedRef<ITableRow> SClassFilterGraphPin::OnGeneratePreviewRow(TSharedPtr<FClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable)
+TSharedRef<ITableRow> SClassFilterGraphPin::OnGeneratePreviewRow(TSharedPtr<FSEClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	FLinearColor StateColor;
 	FText StateText;
@@ -85,7 +85,7 @@ TSharedRef<ITableRow> SClassFilterGraphPin::OnGeneratePreviewRow(TSharedPtr<FCla
 		StateText = FText::FromString(FString(TEXT("\xf00d"))) /*fa-times*/;
 	}
 
-	return SNew(STableRow<TSharedPtr<FClassFilterItem>>, OwnerTable)
+	return SNew(STableRow<TSharedPtr<FSEClassFilterItem>>, OwnerTable)
 	[
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
@@ -115,11 +115,11 @@ void SClassFilterGraphPin::RefreshPreviewList()
 	// Add classes to preview
 	for (const auto& Class : Filter.AllowedClasses)
 	{
-		PreviewClasses.Add(MakeShared<FClassFilterItem>(Class.GetAssetName(), true));
+		PreviewClasses.Add(MakeShared<FSEClassFilterItem>(Class.GetAssetName(), true));
 	}
 	for (const auto& Class : Filter.IgnoredClasses)
 	{
-		PreviewClasses.Add(MakeShared<FClassFilterItem>(Class.GetAssetName(), false));
+		PreviewClasses.Add(MakeShared<FSEClassFilterItem>(Class.GetAssetName(), false));
 	}
 
 	// Set Pin Data

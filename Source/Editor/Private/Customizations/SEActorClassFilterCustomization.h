@@ -1,12 +1,12 @@
 // Copyright 2015-2020 Piperift. All Rights Reserved.
 #pragma once
 
-#include "ClassFilterCustomization.h"
+#include "SEClassFilterCustomization.h"
 
 
 class IPropertyHandle;
 
-class FComponentClassFilterCustomization : public FClassFilterCustomization
+class FSEActorClassFilterCustomization : public FSEClassFilterCustomization
 {
 public:
 
@@ -17,7 +17,7 @@ public:
 	*/
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance()
 	{
-		return MakeShared<FComponentClassFilterCustomization>();
+		return MakeShared<FSEActorClassFilterCustomization>();
 	}
 
 protected:

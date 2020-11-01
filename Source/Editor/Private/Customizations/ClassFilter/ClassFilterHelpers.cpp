@@ -63,10 +63,10 @@ namespace ClassFilter
 		FModuleManager::Get().OnModulesChanged().RemoveAll(this);
 	}
 
-	static FClassFilterNodePtr CreateNodeForClass(UClass* Class, const TMultiMap<FName, FAssetData>& BlueprintPackageToAssetDataMap)
+	static FSEClassFilterNodePtr CreateNodeForClass(UClass* Class, const TMultiMap<FName, FAssetData>& BlueprintPackageToAssetDataMap)
 	{
 		// Create the new node so it can be passed to AddChildren, fill it in with if it is placeable, abstract, and/or a brush.
-		TSharedPtr<FClassFilterNode> NewNode = MakeShared<FClassFilterNode>(Class->GetName(), Class->GetDisplayNameText().ToString());
+		TSharedPtr<FSEClassFilterNode> NewNode = MakeShared<FSEClassFilterNode>(Class->GetName(), Class->GetDisplayNameText().ToString());
 		NewNode->Blueprint = ClassFilter::Helpers::GetBlueprint(Class);
 		NewNode->Class = Class;
 		NewNode->ClassPath = FName(*Class->GetPathName());
@@ -83,14 +83,14 @@ namespace ClassFilter
 		ClassFilter::Helpers::RequestPopulateClassHierarchy();
 	}
 
-	void FClassHierarchy::AddChildren_NoFilter(FClassFilterNodePtr& InOutRootNode, const TMultiMap<FName, FAssetData>& BlueprintPackageToAssetDataMap)
+	void FClassHierarchy::AddChildren_NoFilter(FSEClassFilterNodePtr& InOutRootNode, const TMultiMap<FName, FAssetData>& BlueprintPackageToAssetDataMap)
 	{
 		UClass* RootClass = UObject::StaticClass();
 
-		ObjectClassRoot = MakeShared<FClassFilterNode>(RootClass->GetName(), RootClass->GetDisplayNameText().ToString());
+		ObjectClassRoot = MakeShared<FSEClassFilterNode>(RootClass->GetName(), RootClass->GetDisplayNameText().ToString());
 		ObjectClassRoot->Class = RootClass;
 
-		TMap<UClass*, FClassFilterNodePtr> Nodes;
+		TMap<UClass*, FSEClassFilterNodePtr> Nodes;
 
 		Nodes.Add(RootClass, ObjectClassRoot);
 
@@ -109,7 +109,7 @@ namespace ClassFilter
 				continue;
 			}
 
-			FClassFilterNodePtr& Entry = Nodes.FindOrAdd(CurrentClass);
+			FSEClassFilterNodePtr& Entry = Nodes.FindOrAdd(CurrentClass);
 			if (Visited.Contains(CurrentClass))
 			{
 				continue;
@@ -118,13 +118,13 @@ namespace ClassFilter
 			{
 				while (CurrentClass->GetSuperClass() != nullptr)
 				{
-					FClassFilterNodePtr& ParentEntry = Nodes.FindOrAdd(CurrentClass->GetSuperClass());
+					FSEClassFilterNodePtr& ParentEntry = Nodes.FindOrAdd(CurrentClass->GetSuperClass());
 					if (!ParentEntry.IsValid())
 					{
 						ParentEntry = CreateNodeForClass(CurrentClass->GetSuperClass(), BlueprintPackageToAssetDataMap);
 					}
 
-					FClassFilterNodePtr& MyEntry = Nodes.FindOrAdd(CurrentClass);
+					FSEClassFilterNodePtr& MyEntry = Nodes.FindOrAdd(CurrentClass);
 					if (!MyEntry.IsValid())
 					{
 						MyEntry = CreateNodeForClass(CurrentClass, BlueprintPackageToAssetDataMap);
@@ -142,7 +142,7 @@ namespace ClassFilter
 		}
 	}
 
-	FClassFilterNodePtr FClassHierarchy::FindParent(const FClassFilterNodePtr& InRootNode, FName InParentClassname, const UClass* InParentClass)
+	FSEClassFilterNodePtr FClassHierarchy::FindParent(const FSEClassFilterNodePtr& InRootNode, FName InParentClassname, const UClass* InParentClass)
 	{
 		// Check if the current node is the parent class name that is being searched for.
 		if (InRootNode->ClassPath == InParentClassname)
@@ -166,7 +166,7 @@ namespace ClassFilter
 		}
 
 		// Search the children recursively, one of them might have the parent.
-		FClassFilterNodePtr ReturnNode;
+		FSEClassFilterNodePtr ReturnNode;
 		for (const auto& Child : InRootNode->GetChildrenList())
 		{
 			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
@@ -179,7 +179,7 @@ namespace ClassFilter
 		return {};
 	}
 
-	FClassFilterNodePtr FClassHierarchy::FindNodeByClassName(const FClassFilterNodePtr& InRootNode, const FString& InClassName)
+	FSEClassFilterNodePtr FClassHierarchy::FindNodeByClassName(const FSEClassFilterNodePtr& InRootNode, const FString& InClassName)
 	{
 		FString NodeClassName = InRootNode->Class.IsValid() ? InRootNode->Class->GetPathName() : FString();
 		if (NodeClassName == InClassName)
@@ -188,7 +188,7 @@ namespace ClassFilter
 		}
 
 		// Search the children recursively, one of them might have the parent.
-		FClassFilterNodePtr ReturnNode;
+		FSEClassFilterNodePtr ReturnNode;
 		for (const auto& Child : InRootNode->GetChildrenList())
 		{
 			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
@@ -201,7 +201,7 @@ namespace ClassFilter
 		return {};
 	}
 
-	FClassFilterNodePtr FClassHierarchy::FindNodeByClass(const FClassFilterNodePtr& InRootNode, const UClass* Class)
+	FSEClassFilterNodePtr FClassHierarchy::FindNodeByClass(const FSEClassFilterNodePtr& InRootNode, const UClass* Class)
 	{
 		if (InRootNode->Class.IsValid() && InRootNode->Class == Class)
 		{
@@ -209,7 +209,7 @@ namespace ClassFilter
 		}
 
 		// Search the children recursively, one of them might have the parent.
-		FClassFilterNodePtr ReturnNode;
+		FSEClassFilterNodePtr ReturnNode;
 		for (const auto& Child : InRootNode->GetChildrenList())
 		{
 			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
@@ -222,7 +222,7 @@ namespace ClassFilter
 		return {};
 	}
 
-	FClassFilterNodePtr FClassHierarchy::FindNodeByGeneratedClassPath(const FClassFilterNodePtr& InRootNode, FName InGeneratedClassPath)
+	FSEClassFilterNodePtr FClassHierarchy::FindNodeByGeneratedClassPath(const FSEClassFilterNodePtr& InRootNode, FName InGeneratedClassPath)
 	{
 		if (InRootNode->ClassPath == InGeneratedClassPath)
 		{
@@ -230,7 +230,7 @@ namespace ClassFilter
 		}
 
 		// Search the children recursively, one of them might have the parent.
-		FClassFilterNodePtr ReturnNode;
+		FSEClassFilterNodePtr ReturnNode;
 		for (const auto& Child : InRootNode->GetChildrenList())
 		{
 			// Check the child, then check the return to see if it is valid. If it is valid, end the recursion.
@@ -245,7 +245,7 @@ namespace ClassFilter
 
 	void FClassHierarchy::UpdateClassInNode(FName InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint)
 	{
-		FClassFilterNodePtr Node = FindNodeByGeneratedClassPath(ObjectClassRoot, InGeneratedClassPath);
+		FSEClassFilterNodePtr Node = FindNodeByGeneratedClassPath(ObjectClassRoot, InGeneratedClassPath);
 
 		if (Node.IsValid())
 		{
@@ -254,12 +254,12 @@ namespace ClassFilter
 		}
 	}
 
-	bool FClassHierarchy::FindAndRemoveNodeByClassPath(const FClassFilterNodePtr& InRootNode, FName InClassPath)
+	bool FClassHierarchy::FindAndRemoveNodeByClassPath(const FSEClassFilterNodePtr& InRootNode, FName InClassPath)
 	{
 		bool bReturnValue = false;
 
 		// Search the children recursively, one of them might have the parent.
-		FClassFilterNodePtr ReturnNode;
+		FSEClassFilterNodePtr ReturnNode;
 		for (int32 i = 0; i < InRootNode->GetChildrenList().Num(); ++i)
 		{
 			const auto& Child = InRootNode->GetChildrenList()[i];
@@ -313,7 +313,7 @@ namespace ClassFilter
 				// Make sure that the node does not already exist. There is a bit of double adding going on at times and this prevents it.
 				if (!FindNodeByGeneratedClassPath(ObjectClassRoot, FName(*ClassObjectPath)).IsValid())
 				{
-					FClassFilterNodePtr NewNode;
+					FSEClassFilterNodePtr NewNode;
 					LoadUnloadedTagData(NewNode, InAddedAssetData);
 
 					// Find the blueprint if it's loaded.
@@ -322,7 +322,7 @@ namespace ClassFilter
 					// Resolve the parent's class name locally and use it to find the parent's class.
 					FString ParentClassPath = NewNode->ParentClassPath.ToString();
 					UClass* ParentClass = FindObject<UClass>(nullptr, *ParentClassPath);
-					FClassFilterNodePtr ParentNode = FindParent(ObjectClassRoot, NewNode->ParentClassPath, ParentClass);
+					FSEClassFilterNodePtr ParentNode = FindParent(ObjectClassRoot, NewNode->ParentClassPath, ParentClass);
 					if (ParentNode.IsValid())
 					{
 						ParentNode->AddChild(NewNode);
@@ -338,7 +338,7 @@ namespace ClassFilter
 		}
 	}
 
-	FORCEINLINE bool SortClassFilterNodes(const FClassFilterNodePtr& A, const FClassFilterNodePtr& B)
+	FORCEINLINE bool SortClassFilterNodes(const FSEClassFilterNodePtr& A, const FSEClassFilterNodePtr& B)
 	{
 		check(A.IsValid());
 		check(B.IsValid());
@@ -350,9 +350,9 @@ namespace ClassFilter
 		return AString < BString;
 	}
 
-	void FClassHierarchy::SortChildren(FClassFilterNodePtr& InRootNode)
+	void FClassHierarchy::SortChildren(FSEClassFilterNodePtr& InRootNode)
 	{
-		TArray< FClassFilterNodePtr >& ChildList = InRootNode->GetChildrenList();
+		TArray< FSEClassFilterNodePtr >& ChildList = InRootNode->GetChildrenList();
 		for (auto& Child : InRootNode->GetChildrenList())
 		{
 			// Setup the parent weak pointer, useful for going up the tree for unloaded blueprints.
@@ -366,7 +366,7 @@ namespace ClassFilter
 		ChildList.Sort(SortClassFilterNodes);
 	}
 
-	void FClassHierarchy::FindClass(FClassFilterNodePtr InOutClassNode)
+	void FClassHierarchy::FindClass(FSEClassFilterNodePtr InOutClassNode)
 	{
 		UClass* Class = FindObject<UClass>(nullptr, *InOutClassNode->ClassPath.ToString());
 
@@ -377,7 +377,7 @@ namespace ClassFilter
 		}
 	}
 
-	void FClassHierarchy::LoadUnloadedTagData(FClassFilterNodePtr& InOutClassFilterNode, const FAssetData& InAssetData)
+	void FClassHierarchy::LoadUnloadedTagData(FSEClassFilterNodePtr& InOutClassFilterNode, const FAssetData& InAssetData)
 	{
 		const FString ClassName = InAssetData.AssetName.ToString();
 		FString ClassDisplayName = InAssetData.GetTagValueRef<FString>(FBlueprintTags::BlueprintDisplayName);
@@ -386,7 +386,7 @@ namespace ClassFilter
 			ClassDisplayName = ClassName;
 		}
 		// Create the viewer node. We use the name without _C for both
-		InOutClassFilterNode = MakeShared<FClassFilterNode>(ClassName, ClassDisplayName);
+		InOutClassFilterNode = MakeShared<FSEClassFilterNode>(ClassName, ClassDisplayName);
 
 		InOutClassFilterNode->BlueprintAssetPath = InAssetData.ObjectPath;
 
@@ -440,7 +440,7 @@ namespace ClassFilter
 
 	void FClassHierarchy::PopulateClassHierarchy()
 	{
-		TArray< FClassFilterNodePtr > RootLevelClasses;
+		TArray< FSEClassFilterNodePtr > RootLevelClasses;
 
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 
@@ -459,7 +459,7 @@ namespace ClassFilter
 		TMultiMap<FName, FAssetData> BlueprintPackageToAssetDataMap;
 		for (int32 AssetIdx = 0; AssetIdx < BlueprintList.Num(); ++AssetIdx)
 		{
-			FClassFilterNodePtr NewNode;
+			FSEClassFilterNodePtr NewNode;
 			LoadUnloadedTagData(NewNode, BlueprintList[AssetIdx]);
 			RootLevelClasses.Add(NewNode);
 
@@ -485,7 +485,7 @@ namespace ClassFilter
 
 				for (int32 SearchNodeIdx = 0; SearchNodeIdx < RootLevelClasses.Num(); ++SearchNodeIdx)
 				{
-					FClassFilterNodePtr ParentNode = FindParent(RootLevelClasses[SearchNodeIdx], RootLevelClasses[CurrentNodeIdx]->ParentClassPath, ParentClass);
+					FSEClassFilterNodePtr ParentNode = FindParent(RootLevelClasses[SearchNodeIdx], RootLevelClasses[CurrentNodeIdx]->ParentClassPath, ParentClass);
 					if (ParentNode.IsValid())
 					{
 						// AddUniqueChild makes sure that when a node was generated one by EditorClassHierarchy and one from LoadUnloadedTagData - the proper one is selected

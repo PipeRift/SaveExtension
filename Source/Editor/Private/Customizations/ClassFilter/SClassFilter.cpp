@@ -135,7 +135,7 @@ void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableCla
 				SAssignNew(TreeContainerWidget, SBorder)
 				.Padding(FMargin(4.f))
 				[
-					SAssignNew(TreeWidget, STreeView<FClassFilterNodePtr>)
+					SAssignNew(TreeWidget, STreeView<FSEClassFilterNodePtr>)
 					.TreeItemsSource(&RootClasses)
 					.OnGenerateRow(this, &SClassFilter::OnGenerateRow)
 					.OnGetChildren(this, &SClassFilter::OnGetChildren)
@@ -205,7 +205,7 @@ void SClassFilter::OnSearchTextChanged( const FText& SearchText )
 	TreeWidget->RequestTreeRefresh();
 }
 
-bool SClassFilter::FilterChildrenCheck(const FClassFilterNodePtr& Class)
+bool SClassFilter::FilterChildrenCheck(const FSEClassFilterNodePtr& Class)
 {
 	check(Class.IsValid());
 
@@ -231,9 +231,9 @@ bool SClassFilter::FilterChildrenCheck(const FClassFilterNodePtr& Class)
 	return false;
 }
 
-TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable)
+TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FSEClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
-	return SNew(STableRow<FClassFilterNodePtr>, OwnerTable)
+	return SNew(STableRow<FSEClassFilterNodePtr>, OwnerTable)
 	.Style(FEditorStyle::Get(), "GameplayTagTreeView")
 	[
 		SNew(SBorder)
@@ -273,7 +273,7 @@ TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FClassFilterNodePtr Class, con
 	];
 }
 
-void SClassFilter::OnGetChildren(FClassFilterNodePtr Class, TArray<FClassFilterNodePtr>& OutChildren)
+void SClassFilter::OnGetChildren(FSEClassFilterNodePtr Class, TArray<FSEClassFilterNodePtr>& OutChildren)
 {
 	for(auto& ChildClass : Class->GetChildrenList())
 	{
@@ -284,7 +284,7 @@ void SClassFilter::OnGetChildren(FClassFilterNodePtr Class, TArray<FClassFilterN
 	}
 }
 
-FReply SClassFilter::OnClassClicked(FClassFilterNodePtr Class)
+FReply SClassFilter::OnClassClicked(FSEClassFilterNodePtr Class)
 {
 	const EClassFilterState OwnState = Class->GetOwnFilterState();
 	if (OwnState == EClassFilterState::None)
@@ -306,7 +306,7 @@ FReply SClassFilter::OnClassClicked(FClassFilterNodePtr Class)
 	return FReply::Handled();
 }
 
-FText SClassFilter::GetClassIconText(FClassFilterNodePtr Class) const
+FText SClassFilter::GetClassIconText(FSEClassFilterNodePtr Class) const
 {
 	switch (Class->GetOwnFilterState())
 	{
@@ -320,7 +320,7 @@ FText SClassFilter::GetClassIconText(FClassFilterNodePtr Class) const
 	return FText::FromString(FString(TEXT("\xf096"))) /*fa-square-o*/;
 }
 
-FSlateColor SClassFilter::GetClassIconColor(FClassFilterNodePtr Class) const
+FSlateColor SClassFilter::GetClassIconColor(FSEClassFilterNodePtr Class) const
 {
 	switch (Class->GetOwnFilterState())
 	{
@@ -334,7 +334,7 @@ FSlateColor SClassFilter::GetClassIconColor(FClassFilterNodePtr Class) const
 	return FSlateColor::UseForeground();
 }
 
-void SClassFilter::MarkClass(FClassFilterNodePtr Class, EClassFilterState State)
+void SClassFilter::MarkClass(FSEClassFilterNodePtr Class, EClassFilterState State)
 {
 	const TSoftClassPtr<> ClassAsset{ Class->ClassPath.ToString() };
 
@@ -401,18 +401,18 @@ FReply SClassFilter::OnClickedClearAll()
 	for (int32 ContainerIdx = 0; ContainerIdx < Filters.Num(); ++ContainerIdx)
 	{
 		UObject* OwnerObj = Filters[ContainerIdx].Owner.Get();
-		FClassFilter* Container = Filters[ContainerIdx].Filter;
+		FSEClassFilter* Container = Filters[ContainerIdx].Filter;
 
 		if (Container)
 		{
-			FClassFilter EmptyFilter;
+			FSEClassFilter EmptyFilter;
 			SetFilter(Container, &EmptyFilter, OwnerObj);
 		}
 	}
 	return FReply::Handled();
 }
 
-FSlateColor SClassFilter::GetClassBackgroundColor(FClassFilterNodePtr Class) const
+FSlateColor SClassFilter::GetClassBackgroundColor(FSEClassFilterNodePtr Class) const
 {
 	FLinearColor Color;
 	const EClassFilterState OwnState = Class->GetOwnFilterState();
@@ -461,7 +461,7 @@ void SClassFilter::SetTreeItemExpansion(bool bExpand)
 	}
 }
 
-void SClassFilter::SetTreeItemExpansion(FClassFilterNodePtr Node, bool bExpand)
+void SClassFilter::SetTreeItemExpansion(FSEClassFilterNodePtr Node, bool bExpand)
 {
 	if (Node.IsValid() && TreeWidget.IsValid())
 	{
@@ -474,7 +474,7 @@ void SClassFilter::SetTreeItemExpansion(FClassFilterNodePtr Node, bool bExpand)
 	}
 }
 
-void SClassFilter::SetDefaultTreeItemExpansion(FClassFilterNodePtr Node)
+void SClassFilter::SetDefaultTreeItemExpansion(FSEClassFilterNodePtr Node)
 {
 	if (Node.IsValid() && TreeWidget.IsValid())
 	{
@@ -493,7 +493,7 @@ void SClassFilter::SetDefaultTreeItemExpansion(FClassFilterNodePtr Node)
 	}
 }
 
-void SClassFilter::SetFilter(FClassFilter* OriginalFilter, FClassFilter* EditedFilter, UObject* OwnerObj)
+void SClassFilter::SetFilter(FSEClassFilter* OriginalFilter, FSEClassFilter* EditedFilter, UObject* OwnerObj)
 {
 	if (PropertyHandle.IsValid() && bMultiSelect)
 	{
@@ -547,7 +547,7 @@ void SClassFilter::Tick(const FGeometry& AllottedGeometry, const double InCurren
 	}
 }
 
-int32 SClassFilter::CountTreeItems(FClassFilterNode* Node)
+int32 SClassFilter::CountTreeItems(FSEClassFilterNode* Node)
 {
 	if (!Node)
 		return 0;
@@ -577,7 +577,7 @@ void SClassFilter::Populate()
 	for (int i = 0; i < InternalClassNames.Num(); i++)
 	{
 		FString PackageClassName = InternalClassNames[i].ToString();
-		const FClassFilterNodePtr ClassNode = ClassFilter::Helpers::ClassHierarchy->FindNodeByClassName(
+		const FSEClassFilterNodePtr ClassNode = ClassFilter::Helpers::ClassHierarchy->FindNodeByClassName(
 			ClassFilter::Helpers::ClassHierarchy->GetObjectRootNode(), PackageClassName
 		);
 
@@ -589,7 +589,7 @@ void SClassFilter::Populate()
 
 
 	// The root node for the tree, will be "Object" which we will skip.
-	FClassFilterNodePtr RootNode;
+	FSEClassFilterNodePtr RootNode;
 
 	// Get the class tree, passing in certain filter options.
 	ClassFilter::Helpers::GetClassTree(*Filters[0].Filter, RootNode, false, true, false, InternalClasses, InternalPaths);
@@ -619,7 +619,7 @@ EVisibility SClassFilter::DetermineClearSelectionVisibility() const
 	return CanSelectClasses() ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
-void SClassFilter::OnExpansionChanged(FClassFilterNodePtr Class, bool bIsExpanded)
+void SClassFilter::OnExpansionChanged(FSEClassFilterNodePtr Class, bool bIsExpanded)
 {
 
 }

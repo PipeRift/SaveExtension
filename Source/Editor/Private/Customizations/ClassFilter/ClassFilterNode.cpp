@@ -7,7 +7,7 @@
 #include "Misc/ClassFilter.h"
 
 
-FClassFilterNode::FClassFilterNode(const FString& InClassName, const FString& InClassDisplayName)
+FSEClassFilterNode::FSEClassFilterNode(const FString& InClassName, const FString& InClassDisplayName)
 {
 	ClassName = InClassName;
 	ClassDisplayName = InClassDisplayName;
@@ -18,7 +18,7 @@ FClassFilterNode::FClassFilterNode(const FString& InClassName, const FString& In
 	Blueprint = nullptr;
 }
 
-FClassFilterNode::FClassFilterNode( const FClassFilterNode& InCopyObject)
+FSEClassFilterNode::FSEClassFilterNode( const FSEClassFilterNode& InCopyObject)
 {
 	ClassName = InCopyObject.ClassName;
 	ClassDisplayName = InCopyObject.ClassDisplayName;
@@ -44,13 +44,13 @@ FClassFilterNode::FClassFilterNode( const FClassFilterNode& InCopyObject)
  *
  * @param	Child							The child to be added to this node for the tree.
  */
-void FClassFilterNode::AddChild(FClassFilterNodePtr& Child)
+void FSEClassFilterNode::AddChild(FSEClassFilterNodePtr& Child)
 {
 	ChildrenList.Add(Child);
-	Child->ParentNode = TSharedRef<FClassFilterNode>{ AsShared() };
+	Child->ParentNode = TSharedRef<FSEClassFilterNode>{ AsShared() };
 }
 
-void FClassFilterNode::AddUniqueChild(FClassFilterNodePtr& Child)
+void FSEClassFilterNode::AddUniqueChild(FSEClassFilterNodePtr& Child)
 {
 	check(Child.IsValid());
 
@@ -81,7 +81,7 @@ void FClassFilterNode::AddUniqueChild(FClassFilterNodePtr& Child)
 	AddChild(Child);
 }
 
-FString FClassFilterNode::GetClassName(EClassViewerNameTypeToDisplay NameType) const
+FString FSEClassFilterNode::GetClassName(EClassViewerNameTypeToDisplay NameType) const
 {
 	switch (NameType)
 	{
@@ -108,11 +108,11 @@ FString FClassFilterNode::GetClassName(EClassViewerNameTypeToDisplay NameType) c
 		return MoveTemp(CombinedName);
 	}
 
-	ensureMsgf(false, TEXT("FClassFilterNode::GetClassName called with invalid name type."));
+	ensureMsgf(false, TEXT("FSEClassFilterNode::GetClassName called with invalid name type."));
 	return ClassName;
 }
 
-FText FClassFilterNode::GetClassTooltip(bool bShortTooltip) const
+FText FSEClassFilterNode::GetClassTooltip(bool bShortTooltip) const
 {
 	if (Class.IsValid())
 	{
@@ -127,17 +127,17 @@ FText FClassFilterNode::GetClassTooltip(bool bShortTooltip) const
 	return FText::GetEmpty();
 }
 
-bool FClassFilterNode::IsBlueprintClass() const
+bool FSEClassFilterNode::IsBlueprintClass() const
 {
 	return BlueprintAssetPath != NAME_None;
 }
 
-void FClassFilterNode::SetOwnFilterState(EClassFilterState State)
+void FSEClassFilterNode::SetOwnFilterState(EClassFilterState State)
 {
 	FilterState = State;
 }
 
-void FClassFilterNode::SetStateFromFilter(const FClassFilter& Filter)
+void FSEClassFilterNode::SetStateFromFilter(const FSEClassFilter& Filter)
 {
 	const TSoftClassPtr<> ClassAsset{ ClassPath.ToString() };
 
@@ -155,9 +155,9 @@ void FClassFilterNode::SetStateFromFilter(const FClassFilter& Filter)
 	}
 }
 
-EClassFilterState FClassFilterNode::GetParentFilterState() const
+EClassFilterState FSEClassFilterNode::GetParentFilterState() const
 {
-	FClassFilterNodePtr Parent = ParentNode.Pin();
+	FSEClassFilterNodePtr Parent = ParentNode.Pin();
 	while (Parent)
 	{
 		// return first parent found filter

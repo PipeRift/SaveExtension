@@ -11,7 +11,7 @@
 #include "Misc/ClassFilter.h"
 
 
-class FClassFilterGraphPanelPinFactory: public FGraphPanelPinFactory
+class FSEClassFilterGraphPanelPinFactory: public FGraphPanelPinFactory
 {
 	virtual TSharedPtr<class SGraphPin> CreatePin(class UEdGraphPin* InPin) const override
 	{
@@ -19,7 +19,7 @@ class FClassFilterGraphPanelPinFactory: public FGraphPanelPinFactory
 		{
 			if (auto* PinStructType = Cast<UScriptStruct>(InPin->PinType.PinSubCategoryObject.Get()))
 			{
-				if (PinStructType->IsChildOf(FClassFilter::StaticStruct()))
+				if (PinStructType->IsChildOf(FSEClassFilter::StaticStruct()))
 				{
 					return SNew(SClassFilterGraphPin, InPin);
 				}

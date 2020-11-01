@@ -8,7 +8,7 @@
 #include <Widgets/Views/STableRow.h>
 #include "ClassFilter/SClassFilter.h"
 #include "SGraphPin.h"
-#include "ClassFilterCustomization.h"
+#include "SEClassFilterCustomization.h"
 
 
 class SComboButton;
@@ -46,7 +46,7 @@ private:
 	 * Callback for populating rows of the SelectedTags List View.
 	 * @return widget that contains the name of a tag.
 	 */
-	TSharedRef<ITableRow> OnGeneratePreviewRow(TSharedPtr<FClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable);
+	TSharedRef<ITableRow> OnGeneratePreviewRow(TSharedPtr<FSEClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable);
 
 private:
 
@@ -54,14 +54,14 @@ private:
 	TSharedPtr<SComboButton> ComboButton;
 
 	// Tag Container used for the Edit Widget.
-	FClassFilter Filter;
+	FSEClassFilter Filter;
 
 	// Datum uses for the GameplayTagWidget.
 	TArray<SClassFilter::FEditableClassFilterDatum> EditableFilters;
 
 	// Array of names for the read only display of tag names on the node.
-	TArray<TSharedPtr<FClassFilterItem>> PreviewClasses;
+	TArray<TSharedPtr<FSEClassFilterItem>> PreviewClasses;
 
 	// The List View used to display the read only tag names on the node.
-	TSharedPtr<SListView<TSharedPtr<FClassFilterItem>>> PreviewList;
+	TSharedPtr<SListView<TSharedPtr<FSEClassFilterItem>>> PreviewList;
 };

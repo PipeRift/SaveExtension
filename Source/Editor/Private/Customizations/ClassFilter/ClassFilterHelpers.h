@@ -36,7 +36,7 @@ namespace ClassFilter
 	{
 	private:
 		/** The "Object" class node that is used as a rooting point for the Class Viewer. */
-		FClassFilterNodePtr ObjectClassRoot;
+		FSEClassFilterNodePtr ObjectClassRoot;
 
 		/** Handles to various registered RequestPopulateClassHierarchy delegates */
 		FDelegateHandle OnFilesLoadedRequestPopulateClassHierarchyDelegateHandle;
@@ -54,12 +54,12 @@ namespace ClassFilter
 		/** Recursive function to sort a tree.
 		 *	@param InOutRootNode						The current node to sort.
 		 */
-		void SortChildren(FClassFilterNodePtr& InRootNode);
+		void SortChildren(FSEClassFilterNodePtr& InRootNode);
 
 		/**
 		 *	@return The ObjectClassRoot for building a duplicate tree using.
 		 */
-		const FClassFilterNodePtr GetObjectRootNode() const
+		const FSEClassFilterNodePtr GetObjectRootNode() const
 		{
 			// This node should always be valid.
 			check(ObjectClassRoot.IsValid())
@@ -74,7 +74,7 @@ namespace ClassFilter
 		 *
 		 *	@return The parent node.
 		 */
-		FClassFilterNodePtr FindParent(const FClassFilterNodePtr& InRootNode, FName InParentClassname, const UClass* InParentClass);
+		FSEClassFilterNodePtr FindParent(const FSEClassFilterNodePtr& InRootNode, FName InParentClassname, const UClass* InParentClass);
 
 		/** Updates the Class of a node. Uses the generated class package name to find the node.
 		 *	@param InGeneratedClassPath		The path of the generated class to find the node for.
@@ -87,14 +87,14 @@ namespace ClassFilter
 		*
 		*	@return The node.
 		*/
-		FClassFilterNodePtr FindNodeByClassName(const FClassFilterNodePtr& InRootNode, const FString& InClassName);
+		FSEClassFilterNodePtr FindNodeByClassName(const FSEClassFilterNodePtr& InRootNode, const FString& InClassName);
 
 		/** Finds the node, recursively going deeper into the hierarchy. Does so by comparing class names.
 		*	@param InClass The pointer of the class to find the node for.
 		*
 		*	@return The node.
 		*/
-		FClassFilterNodePtr FindNodeByClass(const FClassFilterNodePtr& InRootNode, const UClass* Class);
+		FSEClassFilterNodePtr FindNodeByClass(const FSEClassFilterNodePtr& InRootNode, const UClass* Class);
 
 
 	private:
@@ -102,7 +102,7 @@ namespace ClassFilter
 		 *	@param InOutRootNode						The node that this function will add the children of to the tree.
 		 *  @param PackageNameToAssetDataMap			The asset registry map of blueprint package names to blueprint data
 		 */
-		void AddChildren_NoFilter(FClassFilterNodePtr& InOutRootNode, const TMultiMap<FName, FAssetData>& BlueprintPackageToAssetDataMap);
+		void AddChildren_NoFilter(FSEClassFilterNodePtr& InOutRootNode, const TMultiMap<FName, FAssetData>& BlueprintPackageToAssetDataMap);
 
 		/** Called when hot reload has finished */
 		void OnHotReload(bool bWasTriggeredAutomatically);
@@ -112,7 +112,7 @@ namespace ClassFilter
 		 *
 		 *	@return The node.
 		 */
-		FClassFilterNodePtr FindNodeByGeneratedClassPath(const FClassFilterNodePtr& InRootNode, FName InGeneratedClassPath);
+		FSEClassFilterNodePtr FindNodeByGeneratedClassPath(const FSEClassFilterNodePtr& InRootNode, FName InGeneratedClassPath);
 
 		/**
 		 * Loads the tag data for an unloaded blueprint asset.
@@ -120,14 +120,14 @@ namespace ClassFilter
 		 * @param InOutClassFilterNode		The node to save all the data into.
 		 * @param InAssetData				The asset data to pull the tags from.
 		 */
-		void LoadUnloadedTagData(FClassFilterNodePtr& InOutClassFilterNode, const FAssetData& InAssetData);
+		void LoadUnloadedTagData(FSEClassFilterNodePtr& InOutClassFilterNode, const FAssetData& InAssetData);
 
 		/**
 		 * Finds the UClass and UBlueprint for the passed in node, utilizing unloaded data to find it.
 		 *
 		 * @param InOutClassNode		The node to find the class and fill out.
 		 */
-		void FindClass(FClassFilterNodePtr InOutClassNode);
+		void FindClass(FSEClassFilterNodePtr InOutClassNode);
 
 		/**
 		 * Recursively searches through the hierarchy to find and remove the asset. Used when deleting assets.
@@ -137,7 +137,7 @@ namespace ClassFilter
 		 *
 		 * @return Returns true if the asset was found and deleted successfully.
 		 */
-		bool FindAndRemoveNodeByClassPath(const FClassFilterNodePtr& InRootNode, FName InClassPath);
+		bool FindAndRemoveNodeByClassPath(const FSEClassFilterNodePtr& InRootNode, FName InClassPath);
 
 		/** Callback registered to the Asset Registry to be notified when an asset is added. */
 		void AddAsset(const FAssetData& InAddedAssetData);
@@ -161,7 +161,7 @@ namespace ClassFilter
 		static bool bPopulateClassHierarchy;
 
 		// Pre-declare these functions.
-		static bool CheckIfBlueprintBase( FClassFilterNodePtr InNode );
+		static bool CheckIfBlueprintBase( FSEClassFilterNodePtr InNode );
 		static UBlueprint* GetBlueprint( UClass* InClass );
 		static void UpdateClassInNode(FName InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint );
 
@@ -263,8 +263,8 @@ namespace ClassFilter
 		 *
 		 *	@return Returns true if the child passed the filter.
 		 */
-		static bool AddChildren_Tree(const FClassFilter& Filter, FClassFilterNodePtr& InOutRootNode,
-			const FClassFilterNodePtr& InOriginalRootNode,
+		static bool AddChildren_Tree(const FSEClassFilter& Filter, FSEClassFilterNodePtr& InOutRootNode,
+			const FSEClassFilterNodePtr& InOriginalRootNode,
 			bool bInOnlyBlueprintBases, bool bInShowUnloadedBlueprints, bool bInInternalClasses,
 			const TArray<UClass*>& InternalClasses, const TArray<FDirectoryPath>& InternalPaths)
 		{
@@ -317,7 +317,7 @@ namespace ClassFilter
 
 			for(const auto& Child : InOriginalRootNode->GetChildrenList())
 			{
-				FClassFilterNodePtr NewNode = MakeShared<FClassFilterNode>( *Child.Get() );
+				FSEClassFilterNodePtr NewNode = MakeShared<FSEClassFilterNode>( *Child.Get() );
 
 				NewNode->SetStateFromFilter(Filter);
 
@@ -341,12 +341,12 @@ namespace ClassFilter
 		 *  @param InternalPaths                        The paths that have been marked Internal Only.
 		 *	@return A fully built tree.
 		 */
-		static void GetClassTree(const FClassFilter& Filter, FClassFilterNodePtr& InOutRootNode, bool bInOnlyBlueprintBases,
+		static void GetClassTree(const FSEClassFilter& Filter, FSEClassFilterNodePtr& InOutRootNode, bool bInOnlyBlueprintBases,
 			bool bInShowUnloadedBlueprints, bool bInInternalClasses = true,
 			const TArray<UClass*>& InternalClasses = TArray<UClass*>(), const TArray<FDirectoryPath>& InternalPaths = TArray<FDirectoryPath>())
 		{
 			// Use BaseClass as root
-			FClassFilterNodePtr RootNode;
+			FSEClassFilterNodePtr RootNode;
 			if (Filter.GetBaseClass())
 			{
 				RootNode = ClassHierarchy->FindNodeByClass(ClassHierarchy->GetObjectRootNode(), Filter.GetBaseClass());
@@ -357,7 +357,7 @@ namespace ClassFilter
 			}
 
 			// Duplicate the node, it will have no children.
-			InOutRootNode = MakeShared<FClassFilterNode>(*RootNode);
+			InOutRootNode = MakeShared<FSEClassFilterNode>(*RootNode);
 
 			AddChildren_Tree(Filter, InOutRootNode, RootNode, bInOnlyBlueprintBases, bInShowUnloadedBlueprints, bInInternalClasses, InternalClasses, InternalPaths);
 		}
@@ -374,8 +374,8 @@ namespace ClassFilter
 		 *
 		 *	@return Returns true if the child passed the filter.
 		 */
-		static void AddChildren_List(TArray< FClassFilterNodePtr >& InOutNodeList,
-			const FClassFilterNodePtr& InOriginalRootNode,
+		static void AddChildren_List(TArray< FSEClassFilterNodePtr >& InOutNodeList,
+			const FSEClassFilterNodePtr& InOriginalRootNode,
 			bool bInOnlyBlueprintBases, bool bInShowUnloadedBlueprints,
 			bool bInInternalClasses,
 			const TArray<UClass*>& InternalClasses, const TArray<FDirectoryPath>& InternalPaths)
@@ -411,7 +411,7 @@ namespace ClassFilter
 				}
 			}
 
-			FClassFilterNodePtr NewNode = MakeShared<FClassFilterNode>(*InOriginalRootNode.Get());
+			FSEClassFilterNodePtr NewNode = MakeShared<FSEClassFilterNode>(*InOriginalRootNode.Get());
 
 			// There are few options for filtering an unloaded blueprint, if it matches with this filter, it passes.
 			if(bIsUnloadedBlueprint)
@@ -449,12 +449,12 @@ namespace ClassFilter
 		 *
 		 *	@return A fully built list.
 		 */
-		static void GetClassList(TArray< FClassFilterNodePtr >& InOutNodeList,
+		static void GetClassList(TArray< FSEClassFilterNodePtr >& InOutNodeList,
 			bool bInOnlyBlueprintBases, bool bInShowUnloadedBlueprints,
 			bool bInInternalClasses = true,
 			const TArray<UClass*>& InternalClasses = TArray<UClass*>(), const TArray<FDirectoryPath>& InternalPaths = TArray<FDirectoryPath>())
 		{
-			const FClassFilterNodePtr ObjectClassRoot = ClassHierarchy->GetObjectRootNode();
+			const FSEClassFilterNodePtr ObjectClassRoot = ClassHierarchy->GetObjectRootNode();
 
 			for (const auto& Child : ObjectClassRoot->GetChildrenList())
 			{
@@ -503,7 +503,7 @@ namespace ClassFilter
 		 *
 		 *	@return							true if the class is a blueprint.
 		 */
-		static bool CheckIfBlueprintBase( TSharedPtr< FClassFilterNode> InNode )
+		static bool CheckIfBlueprintBase( TSharedPtr< FSEClassFilterNode> InNode )
 		{
 			// If there is no class, it may be an unloaded blueprint.
 			if(UClass* Class = InNode->Class.Get())
@@ -526,7 +526,7 @@ namespace ClassFilter
 		 *
 		 * @param	InOutClassNode			Class node to pull what class to load and to update information in.
 		 */
-		static void LoadClass(FClassFilterNodePtr InOutClassNode)
+		static void LoadClass(FSEClassFilterNodePtr InOutClassNode)
 		{
 			GWarn->BeginSlowTask(LOCTEXT("LoadPackage", "Loading Package..."), true);
 			UClass* Class = LoadObject<UClass>(nullptr, *InOutClassNode->ClassPath.ToString());

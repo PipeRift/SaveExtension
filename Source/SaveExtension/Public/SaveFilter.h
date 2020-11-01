@@ -25,19 +25,19 @@ struct FSaveFilter
 public:
 
 	UPROPERTY(SaveGame)
-	FActorClassFilter ActorFilter;
+	FSEActorClassFilter ActorFilter;
 
 	UPROPERTY(SaveGame)
-	FActorClassFilter LoadActorFilter;
+	FSEActorClassFilter LoadActorFilter;
 
 	UPROPERTY(SaveGame)
 	bool bStoreComponents = false;
 
 	UPROPERTY(SaveGame)
-	FComponentClassFilter ComponentFilter;
+	FSEComponentClassFilter ComponentFilter;
 
 	UPROPERTY(SaveGame)
-	FComponentClassFilter LoadComponentFilter;
+	FSEComponentClassFilter LoadComponentFilter;
 
 	UPROPERTY(SaveGame)
 	float MaxFrameMs = 5.f;

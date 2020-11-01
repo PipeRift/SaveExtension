@@ -94,28 +94,28 @@ public:
 	bool bStoreGameInstance = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors")
-	FActorClassFilter ActorFilter;
+	FSEActorClassFilter ActorFilter;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", meta = (PinHiddenByDefault, InlineEditConditionToggle))
 	bool bUseLoadActorFilter = false;
 
 	/** If enabled, this filter will be used while loading instead of "ActorFilter" */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors", meta = (EditCondition="bUseLoadActorFilter"))
-	FActorClassFilter LoadActorFilter;
+	FSEActorClassFilter LoadActorFilter;
 
 	/** If true will store ActorComponents depending on the filters */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components")
 	bool bStoreComponents = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components")
-	FComponentClassFilter ComponentFilter;
+	FSEComponentClassFilter ComponentFilter;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", meta = (PinHiddenByDefault, InlineEditConditionToggle))
 	bool bUseLoadComponentFilter = false;
 
 	/** If enabled, this filter will be used while loading instead of "ComponentFilter" */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Components", meta = (EditCondition = "bUseLoadComponentFilter"))
-	FComponentClassFilter LoadComponentFilter;
+	FSEComponentClassFilter LoadComponentFilter;
 
 public:
 
@@ -164,20 +164,20 @@ public:
 	}
 
 	UFUNCTION(BlueprintPure, Category = SavePreset)
-	FORCEINLINE FActorClassFilter& GetActorFilter(bool bIsLoading) {
+	FORCEINLINE FSEActorClassFilter& GetActorFilter(bool bIsLoading) {
 		return (bIsLoading && bUseLoadActorFilter)? LoadActorFilter : ActorFilter;
 	}
 
-	FORCEINLINE const FActorClassFilter& GetActorFilter(bool bIsLoading) const {
+	FORCEINLINE const FSEActorClassFilter& GetActorFilter(bool bIsLoading) const {
 		return (bIsLoading && bUseLoadActorFilter)? LoadActorFilter : ActorFilter;
 	}
 
 	UFUNCTION(BlueprintPure, Category = SavePreset)
-	FORCEINLINE FComponentClassFilter& GetComponentFilter(bool bIsLoading) {
+	FORCEINLINE FSEComponentClassFilter& GetComponentFilter(bool bIsLoading) {
 		return (bIsLoading && bUseLoadComponentFilter) ? LoadComponentFilter : ComponentFilter;
 	}
 
-	FORCEINLINE const FComponentClassFilter& GetComponentFilter(bool bIsLoading) const {
+	FORCEINLINE const FSEComponentClassFilter& GetComponentFilter(bool bIsLoading) const {
 		return (bIsLoading && bUseLoadActorFilter) ? LoadComponentFilter : ComponentFilter;
 	}
 

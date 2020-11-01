@@ -9,10 +9,10 @@
 #include "Asset/AssetTypeAction_SavePreset.h"
 
 #include "Customizations/SavePresetDetails.h"
-#include "Customizations/ClassFilterCustomization.h"
-#include "Customizations/ClassFilterGraphPanelPinFactory.h"
-#include "Customizations/ActorClassFilterCustomization.h"
-#include "Customizations/ComponentClassFilterCustomization.h"
+#include "Customizations/SEClassFilterCustomization.h"
+#include "Customizations/SEClassFilterGraphPanelPinFactory.h"
+#include "Customizations/SEActorClassFilterCustomization.h"
+#include "Customizations/SEComponentClassFilterCustomization.h"
 
 #define LOCTEXT_NAMESPACE "SaveExtensionEditor"
 
@@ -47,12 +47,12 @@ void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 {
 	RegisterCustomClassLayout("SavePreset", FOnGetDetailCustomizationInstance::CreateStatic(&FSavePresetDetails::MakeInstance));
 
-	RegisterCustomPropertyTypeLayout("ClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FClassFilterCustomization::MakeInstance));
-	RegisterCustomPropertyTypeLayout("ActorClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FActorClassFilterCustomization::MakeInstance));
-	RegisterCustomPropertyTypeLayout("ComponentClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FComponentClassFilterCustomization::MakeInstance));
+	RegisterCustomPropertyTypeLayout("SEClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEClassFilterCustomization::MakeInstance));
+	RegisterCustomPropertyTypeLayout("SEActorClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEActorClassFilterCustomization::MakeInstance));
+	RegisterCustomPropertyTypeLayout("SEComponentClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEComponentClassFilterCustomization::MakeInstance));
 	//RegisterCustomPropertyTypeLayout("SavePreset", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSavePresetCustomization::MakeInstance));
 
-	RegisterCustomPinFactory<FClassFilterGraphPanelPinFactory>();
+	RegisterCustomPinFactory<FSEClassFilterGraphPanelPinFactory>();
 }
 
 void FSaveExtensionEditor::RegisterCustomClassLayout(FName ClassName, FOnGetDetailCustomizationInstance DetailLayoutDelegate)

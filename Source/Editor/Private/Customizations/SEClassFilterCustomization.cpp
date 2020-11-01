@@ -1,6 +1,6 @@
 // Copyright 2015-2020 Piperift. All Rights Reserved.
 
-#include "Customizations/ClassFilterCustomization.h"
+#include "Customizations/SEClassFilterCustomization.h"
 
 #include <DetailWidgetRow.h>
 #include <Widgets/Input/SComboButton.h>
@@ -10,15 +10,15 @@
 #include <Widgets/Images/SImage.h>
 #include <Widgets/Layout/SScaleBox.h>
 
-#define LOCTEXT_NAMESPACE "FClassFilterCustomization"
+#define LOCTEXT_NAMESPACE "FSEClassFilterCustomization"
 
 
-FClassFilterCustomization::~FClassFilterCustomization()
+FSEClassFilterCustomization::~FSEClassFilterCustomization()
 {
 	GEditor->UnregisterForUndo(this);
 }
 
-void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle> StructPropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
+void FSEClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle> StructPropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {
 	StructHandle = StructPropertyHandle;
 	FilterHandle = GetFilterHandle(StructPropertyHandle);
@@ -40,8 +40,8 @@ void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 		[
 			SAssignNew(EditButton, SComboButton)
 			.ButtonStyle(FEditorStyle::Get(), "HoverHintOnly")
-			.OnGetMenuContent(this, &FClassFilterCustomization::GetListContent)
-			.OnMenuOpenChanged(this, &FClassFilterCustomization::OnPopupStateChanged)
+			.OnGetMenuContent(this, &FSEClassFilterCustomization::GetListContent)
+			.OnMenuOpenChanged(this, &FSEClassFilterCustomization::OnPopupStateChanged)
 			.ContentPadding(FMargin(2.0f, 2.0f))
 			.MenuPlacement(MenuPlacement_BelowAnchor)
 			.ForegroundColor(FSlateColor::UseForeground())
@@ -49,7 +49,7 @@ void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 			[
 				SNew(SBorder)
 				.Padding(4.0f)
-				.Visibility(this, &FClassFilterCustomization::GetClassPreviewVisibility)
+				.Visibility(this, &FSEClassFilterCustomization::GetClassPreviewVisibility)
 				[
 					GetClassPreview()
 				]
@@ -62,7 +62,7 @@ void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 			SNew(SButton)
 			.ButtonStyle(FEditorStyle::Get(), "HoverHintOnly")
 			.ContentPadding(FMargin(2.0f, 2.0f))
-			.OnClicked(this, &FClassFilterCustomization::OnClearClicked)
+			.OnClicked(this, &FSEClassFilterCustomization::OnClearClicked)
 			.ForegroundColor(FSlateColor::UseForeground())
 			.Text(LOCTEXT("ClassFilter_Clear", "Clear"))
 			.ToolTipText(LOCTEXT("ClassFilter_ClearTooltip", "Clear all allowed and ignored classes"))
@@ -80,10 +80,10 @@ void FClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 	GEditor->RegisterForUndo(this);
 }
 
-void FClassFilterCustomization::CustomizeChildren(TSharedRef<class IPropertyHandle> StructPropertyHandle, class IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
+void FSEClassFilterCustomization::CustomizeChildren(TSharedRef<class IPropertyHandle> StructPropertyHandle, class IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {}
 
-void FClassFilterCustomization::BuildEditableFilterList()
+void FSEClassFilterCustomization::BuildEditableFilterList()
 {
 	EditableFilters.Empty();
 	if (FilterHandle.IsValid())
@@ -97,12 +97,12 @@ void FClassFilterCustomization::BuildEditableFilterList()
 
 		for (int32 ContainerIdx = 0; ContainerIdx < RawStructData.Num(); ++ContainerIdx)
 		{
-			EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(FirstOuter, (FClassFilter*)RawStructData[ContainerIdx]));
+			EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(FirstOuter, (FSEClassFilter*)RawStructData[ContainerIdx]));
 		}
 	}
 }
 
-TSharedRef<SWidget> FClassFilterCustomization::GetListContent()
+TSharedRef<SWidget> FSEClassFilterCustomization::GetListContent()
 {
 	if (!FilterHandle.IsValid() || FilterHandle->GetProperty() == nullptr)
 	{
@@ -113,7 +113,7 @@ TSharedRef<SWidget> FClassFilterCustomization::GetListContent()
 
 	TSharedRef<SClassFilter> EditPopup = SNew(SClassFilter, EditableFilters)
 	.ReadOnly(bReadOnly)
-	.OnFilterChanged(this, &FClassFilterCustomization::RefreshClassList)
+	.OnFilterChanged(this, &FSEClassFilterCustomization::RefreshClassList)
 	.PropertyHandle(FilterHandle);
 
 	LastFilterPopup = EditPopup;
@@ -127,7 +127,7 @@ TSharedRef<SWidget> FClassFilterCustomization::GetListContent()
 	];
 }
 
-void FClassFilterCustomization::OnPopupStateChanged(bool bIsOpened)
+void FSEClassFilterCustomization::OnPopupStateChanged(bool bIsOpened)
 {
 	if (bIsOpened)
 	{
@@ -139,7 +139,7 @@ void FClassFilterCustomization::OnPopupStateChanged(bool bIsOpened)
 	}
 }
 
-FReply FClassFilterCustomization::OnClearClicked()
+FReply FSEClassFilterCustomization::OnClearClicked()
 {
 	FScopedTransaction Transaction(LOCTEXT("ClassFilter_Filter", "Clear Filter"));
 	for (auto& Filter : EditableFilters)
@@ -157,7 +157,7 @@ FReply FClassFilterCustomization::OnClearClicked()
 	return FReply::Handled();
 }
 
-EVisibility FClassFilterCustomization::GetClassPreviewVisibility() const
+EVisibility FSEClassFilterCustomization::GetClassPreviewVisibility() const
 {
 	return EVisibility::Visible;
 	/*const auto* Filter = EditableFilters[0].Filter;
@@ -166,21 +166,21 @@ EVisibility FClassFilterCustomization::GetClassPreviewVisibility() const
 	return bEmpty ? EVisibility::Visible : EVisibility::Collapsed;*/
 }
 
-TSharedRef<SWidget> FClassFilterCustomization::GetClassPreview()
+TSharedRef<SWidget> FSEClassFilterCustomization::GetClassPreview()
 {
 	RefreshClassList();
 
 	return SNew(SBox)
 	.MinDesiredWidth(100.f)
 	[
-		SAssignNew(PreviewList, SListView<TSharedPtr<FClassFilterItem>>)
+		SAssignNew(PreviewList, SListView<TSharedPtr<FSEClassFilterItem>>)
 		.SelectionMode(ESelectionMode::None)
 		.ListItemsSource(&PreviewClasses)
-		.OnGenerateRow(this, &FClassFilterCustomization::OnGeneratePreviewRow)
+		.OnGenerateRow(this, &FSEClassFilterCustomization::OnGeneratePreviewRow)
 	];
 }
 
-TSharedRef<ITableRow> FClassFilterCustomization::OnGeneratePreviewRow(TSharedPtr<FClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable)
+TSharedRef<ITableRow> FSEClassFilterCustomization::OnGeneratePreviewRow(TSharedPtr<FSEClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	FLinearColor StateColor;
 	FText StateText;
@@ -195,7 +195,7 @@ TSharedRef<ITableRow> FClassFilterCustomization::OnGeneratePreviewRow(TSharedPtr
 		StateText = FText::FromString(FString(TEXT("\xf00d"))) /*fa-times*/;
 	}
 
-	return SNew(STableRow<TSharedPtr<FClassFilterItem>>, OwnerTable)
+	return SNew(STableRow<TSharedPtr<FSEClassFilterItem>>, OwnerTable)
 	[
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
@@ -217,7 +217,7 @@ TSharedRef<ITableRow> FClassFilterCustomization::OnGeneratePreviewRow(TSharedPtr
 	];
 }
 
-void FClassFilterCustomization::PostUndo(bool bSuccess)
+void FSEClassFilterCustomization::PostUndo(bool bSuccess)
 {
 	if (bSuccess)
 	{
@@ -225,7 +225,7 @@ void FClassFilterCustomization::PostUndo(bool bSuccess)
 	}
 }
 
-void FClassFilterCustomization::PostRedo(bool bSuccess)
+void FSEClassFilterCustomization::PostRedo(bool bSuccess)
 {
 	if (bSuccess)
 	{
@@ -233,7 +233,7 @@ void FClassFilterCustomization::PostRedo(bool bSuccess)
 	}
 }
 
-void FClassFilterCustomization::RefreshClassList()
+void FSEClassFilterCustomization::RefreshClassList()
 {
 	// Rebuild Editable Containers as container references can become unsafe
 	BuildEditableFilterList();
@@ -248,12 +248,12 @@ void FClassFilterCustomization::RefreshClassList()
 		{
 			for (const auto& Class : Filter.Filter->AllowedClasses)
 			{
-				PreviewClasses.Add(MakeShared<FClassFilterItem>(Class.GetAssetName(), true));
+				PreviewClasses.Add(MakeShared<FSEClassFilterItem>(Class.GetAssetName(), true));
 			}
 
 			for (const auto& Class : Filter.Filter->IgnoredClasses)
 			{
-				PreviewClasses.Add(MakeShared<FClassFilterItem>(Class.GetAssetName(), false));
+				PreviewClasses.Add(MakeShared<FSEClassFilterItem>(Class.GetAssetName(), false));
 			}
 		}
 	}
