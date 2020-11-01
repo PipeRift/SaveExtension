@@ -17,5 +17,5 @@ UObject* USavePresetFactory::FactoryCreateNew(UClass* Class, UObject* InParent, 
 	{
 		return nullptr;
 	}
-	return FKismetEditorUtilities::CreateBlueprint(Class,InParent,Name,BPTYPE_Const,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass(),TEXT("AssetTypeActions"));
+	return FKismetEditorUtilities::CreateBlueprint(Class, InParent, Name, BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass(),TEXT("AssetTypeActions"));
 }
