@@ -114,8 +114,7 @@ void USlotDataTask_Saver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (SaveInfoTask && SaveDataTask &&
-		SaveInfoTask->IsDone() && SaveDataTask->IsDone())
+	if (SaveTask && SaveTask->IsDone())
 	{
 		if (bSaveThumbnail)
 		{
@@ -150,14 +149,10 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 
 void USlotDataTask_Saver::BeginDestroy()
 {
-	if (SaveInfoTask) {
-		SaveInfoTask->EnsureCompletion(false);
-		delete SaveInfoTask;
-	}
-
-	if (SaveDataTask) {
-		SaveDataTask->EnsureCompletion(false);
-		delete SaveDataTask;
+	if (SaveTask)
+	{
+		SaveTask->EnsureCompletion(false);
+		delete SaveTask;
 	}
 
 	Super::BeginDestroy();
@@ -281,18 +276,15 @@ void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataN
 	USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 	USlotData* CurrentData = Manager->GetCurrentData();
 
-	SaveInfoTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, InfoName, false /* Infos don't use compression to be loaded faster */);
-	SaveDataTask = new FAsyncTask<FSaveFileTask>(CurrentData, DataName, Preset->bUseCompression);
+	SaveTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, CurrentData, InfoName, Preset->bUseCompression);
 
 	if (Preset->IsMTFilesSave())
 	{
-		SaveInfoTask->StartBackgroundTask();
-		SaveDataTask->StartBackgroundTask();
+		SaveTask->StartBackgroundTask();
 	}
 	else
 	{
-		SaveInfoTask->StartSynchronousTask();
-		SaveDataTask->StartSynchronousTask();
+		SaveTask->StartSynchronousTask();
 
 		if (!bSaveThumbnail)
 		{

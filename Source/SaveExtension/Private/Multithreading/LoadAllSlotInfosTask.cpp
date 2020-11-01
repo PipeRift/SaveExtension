@@ -38,5 +38,8 @@ void FLoadAllSlotInfosTask::DoWork()
 
 USlotInfo* FLoadAllSlotInfosTask::LoadInfoFromFile(const FString Name) const
 {
-	return Cast<USlotInfo>(FFileAdapter::LoadFile(Name));
+	USlotInfo* LoadedInfo = nullptr;
+	USlotData* LoadedData = nullptr;
+	FFileAdapter::LoadFile(Name, LoadedInfo, LoadedData, false);
+	return LoadedInfo;
 }

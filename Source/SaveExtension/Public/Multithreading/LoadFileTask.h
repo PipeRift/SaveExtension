@@ -14,31 +14,34 @@ protected:
 
 	const FString SlotName;
 
-	bool bSucceededLoad;
-	FSaveFileHeader FileHeader;
-	TArray<uint8> DataBytes;
+	FSaveFile File;
+
 
 public:
 
 	explicit FLoadFileTask(const FString& InSlotName)
 		: SlotName(InSlotName)
-		, bSucceededLoad{false}
-		, FileHeader{}
-		, DataBytes{}
-	{}
-
-	void DoWork() {
-		// This task splits FFileAdapter::LoadFile for multithreading compatibility
-		bSucceededLoad = FFileAdapter::LoadFileBytes(SlotName, FileHeader, DataBytes);
+		, File{}
+	{
 	}
 
-	// Create and return the resulting loaded SaveGame object. Call when task from Gamethread when task is finished
-	USaveGame* GetSaveGame() {
-		if (bSucceededLoad)
+	void DoWork()
+	{
+		FScopedFileReader FileReader(FFileAdapter::GetSavePath(SlotName));
+		if(FileReader.IsValid())
 		{
-			return FFileAdapter::CreateFromBytes(FileHeader, DataBytes);
+			File.Read(FileReader, false);
 		}
-		return nullptr;
+	}
+
+	USlotInfo* GetInfo()
+	{
+		return File.CreateAndDeserializeInfo();
+	}
+
+	USlotData* GetData()
+	{
+		return File.CreateAndDeserializeData();
 	}
 
 	FORCEINLINE TStatId GetStatId() const

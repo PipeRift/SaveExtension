@@ -17,6 +17,7 @@ void FLoadSlotInfoTask::DoWork()
 	if (SlotId >= 0)
 	{
 		const FString Card = Manager->GenerateSlotInfoName(SlotId);
-		LoadedSlot = Cast<USlotInfo>(FFileAdapter::LoadFile(Card));
+		USlotData* LoadedData = nullptr;
+		FFileAdapter::LoadFile(Card, LoadedSlot, LoadedData, false);
 	}
 }

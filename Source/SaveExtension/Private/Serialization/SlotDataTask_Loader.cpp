@@ -187,7 +187,9 @@ void USlotDataTask_Loader::StartLoadingData()
 USlotData* USlotDataTask_Loader::GetLoadedData() const
 {
 	if (IsDataLoaded())
-		return Cast<USlotData>(LoadDataTask->GetTask().GetSaveGame());
+	{
+		return LoadDataTask->GetTask().GetData();
+	}
 	return nullptr;
 }
 

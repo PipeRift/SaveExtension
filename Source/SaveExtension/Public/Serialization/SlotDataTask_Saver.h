@@ -51,8 +51,7 @@ protected:
 
 	/** Begin AsyncTasks */
 	TArray<FAsyncTask<FMTTask_SerializeActors>> Tasks;
-	FAsyncTask<FSaveFileTask>* SaveInfoTask;
-	FAsyncTask<FSaveFileTask>* SaveDataTask;
+	FAsyncTask<FSaveFileTask>* SaveTask;
 	/** End AsyncTasks */
 
 
@@ -60,8 +59,7 @@ public:
 
 	USlotDataTask_Saver()
 		: USlotDataTask()
-		, SaveInfoTask(nullptr)
-		, SaveDataTask(nullptr)
+		, SaveTask(nullptr)
 	{}
 
 	auto* Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)

@@ -43,8 +43,7 @@ void FSaveSpec_Files::Define()
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
 
-		TestTrue("Info File exists in disk", FFileAdapter::DoesFileExist("0"));
-		TestTrue("Data File exists in disk", FFileAdapter::DoesFileExist("0_data"));
+		TestTrue("Info File exists in disk", FFileAdapter::DoesFileExist(TEXT("0")));
 	});
 
 	It("Can save files asynchronously", [this]() {
@@ -53,15 +52,13 @@ void FSaveSpec_Files::Define()
 
 		bool bSaving = SaveManager->SaveSlot(0, true, false, {}, FOnGameSaved::CreateLambda([this](auto* Info) {
 			// Notified that files have been saved asynchronously
-			TestTrue("Info File exists in disk", FFileAdapter::DoesFileExist("0"));
-			TestTrue("Data File exists in disk", FFileAdapter::DoesFileExist("0_data"));
+			TestTrue("Info File exists in disk", FFileAdapter::DoesFileExist(TEXT("0")));
 			bFinishTick = true;
 		}));
 		TestTrue("Started Saving", bSaving);
 
 		// Files shouldn't exist yet
-		TestFalse("Info File exists in disk", FFileAdapter::DoesFileExist("0"));
-		TestFalse("Data File exists in disk", FFileAdapter::DoesFileExist("0_data"));
+		TestFalse("Info File exists in disk", FFileAdapter::DoesFileExist(TEXT("0")));
 
 		TickWorldUntil(GetMainWorld(), true, [this](float) {
 			return !bFinishTick;
@@ -73,8 +70,11 @@ void FSaveSpec_Files::Define()
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
 
-		TestNotNull("File was loaded", FFileAdapter::LoadFile("0"));
-		TestNotNull("File data was loaded", FFileAdapter::LoadFile("0_data"));
+		USlotInfo* Info = nullptr;
+		USlotData* Data = nullptr;
+		TestTrue("File was loaded", FFileAdapter::LoadFile(TEXT("0"), Info, Data, true));
+		TestNotNull("Info is valid", Info);
+		TestNotNull("Data is valid", Data);
 	});
 
 	AfterEach([this]() {

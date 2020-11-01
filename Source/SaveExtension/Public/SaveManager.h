@@ -342,7 +342,7 @@ public:
 
 	FString GenerateSlotDataName(const int32 SlotId) const
 	{
-		return GenerateSlotInfoName(SlotId).Append(TEXT("_data"));
+		return GenerateSlotInfoName(SlotId);
 	}
 
 	bool IsValidSlot(const int32 Slot) const;

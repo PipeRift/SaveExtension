@@ -44,9 +44,11 @@ void FClassFilter::BakeAllowedClasses() const
 		const UClass* CurrentClass = Class;
 		while (CurrentClass)
 		{
-			// Early out if this class has been explored and allowed
+			// If parent class is allowed, we are allowed.
+			// This prevents iteration to the first allowed. May not be worth it for performance
 			if (BakedAllowedClasses.Contains(CurrentClass))
 			{
+				BakedAllowedClasses.Add(Class);
 				break;
 			}
 

@@ -93,11 +93,10 @@ bool USaveManager::SaveSlot(
 
 bool USaveManager::LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded)
 {
-	if (!CanLoadOrSave())
+	if (!CanLoadOrSave() || !IsSlotSaved(SlotId))
+	{
 		return false;
-
-	if (!IsSlotSaved(SlotId))
-		return false;
+	}
 
 	TryInstantiateInfo();
 
@@ -223,10 +222,8 @@ bool USaveManager::IsSlotSaved(int32 SlotId) const
 	{
 		return false;
 	}
-
-	const FString InfoSlot = GenerateSlotInfoName(SlotId);
-	const FString DataSlot = GenerateSlotDataName(SlotId);
-	return FFileAdapter::DoesFileExist(InfoSlot) && FFileAdapter::DoesFileExist(DataSlot);
+	const FString SlotName = GenerateSlotInfoName(SlotId);
+	return FFileAdapter::DoesFileExist(SlotName);
 }
 
 bool USaveManager::SetActivePreset(USavePreset* Preset)
@@ -334,11 +331,19 @@ USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
 USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 {
 	if (!InSaveInfo)
+	{
 		return nullptr;
+	}
 
 	const FString Card = GenerateSlotDataName(InSaveInfo->Id);
 
-	return Cast<USlotData>(FFileAdapter::LoadFile(Card));
+	USlotInfo* LoadedInfo = nullptr;
+	USlotData* LoadedData = nullptr;
+	if(FFileAdapter::LoadFile(Card, LoadedInfo, LoadedData, true))
+	{
+		return LoadedData;
+	}
+	return nullptr;
 }
 
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
