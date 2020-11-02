@@ -53,7 +53,7 @@ bool USlotInfo::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height
 	if (auto* Viewport = GEngine->GameViewport->Viewport)
 	{
 		// TODO: Extract thumbnail path/name format to a function
-		_SetThumbnailPath(FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), Id, *FString("SaveScreenshot"), TEXT("png")));
+		_SetThumbnailPath(FString::Printf(TEXT("%sSaveGames/%i.%s"), *FPaths::ProjectSavedDir(), Id, TEXT("png")));
 
 		// TODO: Removal of a thumbnail should be standarized in a function
 		IFileManager& FM = IFileManager::Get();
