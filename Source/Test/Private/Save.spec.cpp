@@ -33,6 +33,8 @@ void FSaveSpec_Preset::Define()
 	BeforeEach([this]() {
 		SaveManager = USaveManager::Get(GetMainWorld());
 		TestNotNull(TEXT("SaveManager"), SaveManager);
+
+		SaveManager->bTickWithGameWorld = true;
 	});
 
 	It("SaveManager is instanced", [this]() {

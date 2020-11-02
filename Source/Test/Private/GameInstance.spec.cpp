@@ -34,6 +34,8 @@ void FSaveSpec_GameInstance::Define()
 		SaveManager = USaveManager::Get(GetMainWorld());
 		TestNotNull(TEXT("SaveManager"), SaveManager);
 
+		SaveManager->bTickWithGameWorld = true;
+
 		TestPreset = CreateTestPreset();
 		TestPreset->bStoreGameInstance = true;
 

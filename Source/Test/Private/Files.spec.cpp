@@ -32,6 +32,8 @@ void FSaveSpec_Files::Define()
 		SaveManager = USaveManager::Get(GetMainWorld());
 		TestNotNull(TEXT("SaveManager"), SaveManager);
 
+		SaveManager->bTickWithGameWorld = true;
+
 		// Set test preset
 		TestPreset = CreateTestPreset();
 		TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;

@@ -61,6 +61,11 @@ class SAVEEXTENSION_API USaveManager : public UGameInstanceSubsystem, public FTi
 	/************************************************************************/
 	/* PROPERTIES														    */
 	/************************************************************************/
+public:
+
+	// Loaded from settings. Can be changed at runtime
+	UPROPERTY(Transient, BlueprintReadWrite, Category=SaveManager)
+	bool bTickWithGameWorld = false;
 
 private:
 	UPROPERTY(Transient)
@@ -403,18 +408,9 @@ public:
 protected:
 	//~ Begin Tickable Object Interface
 	virtual void Tick(float DeltaTime) override;
-	virtual bool IsTickable() const override
-	{
-		return !HasAnyFlags(RF_ClassDefaultObject) && !IsPendingKill();
-	}
-	virtual UWorld* GetTickableGameObjectWorld() const override
-	{
-		return GetWorld();
-	}
-	virtual TStatId GetStatId() const override
-	{
-		RETURN_QUICK_DECLARE_CYCLE_STAT(USaveManager, STATGROUP_Tickables);
-	}
+	virtual bool IsTickable() const override;
+	virtual UWorld* GetTickableGameObjectWorld() const override;
+	virtual TStatId GetStatId() const override;
 	//~ End Tickable Object Interface
 
 	//~ Begin UObject Interface
@@ -487,4 +483,19 @@ inline USaveManager* USaveManager::Get(const UObject* Context)
 		return UGameInstance::GetSubsystem<USaveManager>(World->GetGameInstance());
 	}
 	return nullptr;
+}
+
+inline bool USaveManager::IsTickable() const
+{
+	return !HasAnyFlags(RF_ClassDefaultObject) && !IsPendingKill();
+}
+
+inline UWorld* USaveManager::GetTickableGameObjectWorld() const
+{
+	return bTickWithGameWorld? GetWorld() : nullptr;
+}
+
+inline TStatId USaveManager::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(USaveManager, STATGROUP_Tickables);
 }
