@@ -175,8 +175,8 @@ void USlotDataTask_Loader::StartDeserialization()
 
 void USlotDataTask_Loader::StartLoadingData()
 {
-	const FString SlotDataName = GetManager()->GenerateSlotDataName(Slot);
-	LoadDataTask = new FAsyncTask<FLoadFileTask>(SlotDataName);
+	const FString SlotName = GetManager()->GenerateSlotName(Slot);
+	LoadDataTask = new FAsyncTask<FLoadFileTask>(SlotName);
 
 	if (Preset->IsMTFilesLoad())
 		LoadDataTask->StartBackgroundTask();

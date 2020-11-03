@@ -16,14 +16,14 @@ void FLoadAllSlotInfosTask::DoWork()
 		return;
 
 	TArray<FString> FileNames;
-	FSlotHelpers::GetSlotFileNames(FileNames, true);
+	FSlotHelpers::FindSlotFileNames(FileNames);
 
 	LoadedSlots.Reserve(FileNames.Num());
 
 	for (const FString& File : FileNames)
 	{
-		USlotInfo* Info = LoadInfoFromFile(File);
-		if (Info) {
+		if (USlotInfo* Info = LoadInfoFromFile(File))
+		{
 			LoadedSlots.Add(Info);
 		}
 	}

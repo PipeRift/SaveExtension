@@ -224,8 +224,7 @@ bool USaveManager::IsSlotSaved(int32 SlotId) const
 	{
 		return false;
 	}
-	const FString SlotName = GenerateSlotInfoName(SlotId);
-	return FFileAdapter::DoesFileExist(SlotName);
+	return FFileAdapter::DoesFileExist(GenerateSlotName(SlotId));
 }
 
 bool USaveManager::SetActivePreset(USavePreset* Preset)
@@ -337,7 +336,7 @@ USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
 		return nullptr;
 	}
 
-	const FString Card = GenerateSlotDataName(InSaveInfo->Id);
+	const FString Card = GenerateSlotName(InSaveInfo->Id);
 
 	USlotInfo* LoadedInfo = nullptr;
 	USlotData* LoadedData = nullptr;

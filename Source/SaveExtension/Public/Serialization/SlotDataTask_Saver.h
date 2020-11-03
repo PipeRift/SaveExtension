@@ -96,6 +96,6 @@ protected:
 private:
 
 	/** BEGIN FileSaving */
-	void SaveFile(const FString& InfoName, const FString& DataName);
+	void SaveFile(const FString& SlotName);
 	/** End FileSaving */
 };

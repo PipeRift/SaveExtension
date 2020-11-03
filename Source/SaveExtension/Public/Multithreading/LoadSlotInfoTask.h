@@ -21,17 +21,14 @@ public:
 protected:
 
 	const class USaveManager* const Manager;
-	const int32 SlotId;
+	FString SlotName;
 
 	USlotInfo* LoadedSlot;
 
 
 public:
 
-	explicit FLoadSlotInfoTask(const USaveManager* Manager, const int32 SlotId)
-		: Manager(Manager)
-		, SlotId(SlotId)
-	{}
+	explicit FLoadSlotInfoTask(const USaveManager* Manager, const int32 SlotId);
 
 	void DoWork();
 

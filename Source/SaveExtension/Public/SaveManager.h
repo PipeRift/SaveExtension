@@ -335,19 +335,9 @@ public:
 
 	void TryInstantiateInfo(bool bForced = false);
 
-	virtual FString GenerateBaseSlotName(const int32 SlotId) const
+	FString GenerateSlotName(const int32 SlotId) const
 	{
 		return IsValidSlot(SlotId) ? FString::FromInt(SlotId) : FString{};
-	}
-
-	FString GenerateSlotInfoName(const int32 SlotId) const
-	{
-		return GenerateBaseSlotName(SlotId);
-	}
-
-	FString GenerateSlotDataName(const int32 SlotId) const
-	{
-		return GenerateSlotInfoName(SlotId);
 	}
 
 	bool IsValidSlot(const int32 Slot) const;

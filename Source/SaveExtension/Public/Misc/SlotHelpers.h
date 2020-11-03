@@ -9,18 +9,16 @@
 
 struct FSlotHelpers {
 
-	static void GetSlotFileNames(TArray<FString>& FoundFiles, bool bOnlyInfos = false, bool bOnlyDatas = false);
+	static void FindSlotFileNames(TArray<FString>& FoundSlots);
 
 	/** Used to find next available slot id */
 	class FFindSlotVisitor : public IPlatformFile::FDirectoryVisitor
 	{
 	public:
-		bool bOnlyInfos = false;
-		bool bOnlyDatas = false;
-		TArray<FString>& FilesFound;
+		TArray<FString>& FoundSlots;
 
-		FFindSlotVisitor(TArray<FString>& Files)
-			: FilesFound(Files)
+		FFindSlotVisitor(TArray<FString>& FoundSlots)
+			: FoundSlots(FoundSlots)
 		{}
 
 		virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override;

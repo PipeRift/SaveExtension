@@ -9,15 +9,18 @@
 #include "SaveManager.h"
 
 
+FLoadSlotInfoTask::FLoadSlotInfoTask(const USaveManager* Manager, const int32 SlotId)
+	: Manager(Manager)
+{
+	check(Manager);
+	SlotName = Manager->GenerateSlotName(SlotId);
+}
+
 void FLoadSlotInfoTask::DoWork()
 {
-	if (!Manager)
-		return;
-
-	if (SlotId >= 0)
+	if (Manager && !SlotName.IsEmpty())
 	{
-		const FString Card = Manager->GenerateSlotInfoName(SlotId);
 		USlotData* LoadedData = nullptr;
-		FFileAdapter::LoadFile(Card, LoadedSlot, LoadedData, false);
+		FFileAdapter::LoadFile(SlotName, LoadedSlot, LoadedData, false);
 	}
 }

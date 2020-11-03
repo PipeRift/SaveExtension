@@ -82,7 +82,6 @@ public:
 	bool bDebugInScreen = true;
 
 
-
 	/** If true save files will be compressed
 	 * Performance: Can add from 10ms to 20ms to loading and saving (estimate) but reduce file sizes making them up to 30x smaller
 	 */
@@ -164,44 +163,54 @@ public:
 	}
 
 	UFUNCTION(BlueprintPure, Category = SavePreset)
-	FORCEINLINE FSEActorClassFilter& GetActorFilter(bool bIsLoading) {
+	FORCEINLINE FSEActorClassFilter& GetActorFilter(bool bIsLoading)
+	{
 		return (bIsLoading && bUseLoadActorFilter)? LoadActorFilter : ActorFilter;
 	}
 
-	FORCEINLINE const FSEActorClassFilter& GetActorFilter(bool bIsLoading) const {
+	FORCEINLINE const FSEActorClassFilter& GetActorFilter(bool bIsLoading) const
+	{
 		return (bIsLoading && bUseLoadActorFilter)? LoadActorFilter : ActorFilter;
 	}
 
 	UFUNCTION(BlueprintPure, Category = SavePreset)
-	FORCEINLINE FSEComponentClassFilter& GetComponentFilter(bool bIsLoading) {
+	FORCEINLINE FSEComponentClassFilter& GetComponentFilter(bool bIsLoading)
+	{
 		return (bIsLoading && bUseLoadComponentFilter) ? LoadComponentFilter : ComponentFilter;
 	}
 
-	FORCEINLINE const FSEComponentClassFilter& GetComponentFilter(bool bIsLoading) const {
+	FORCEINLINE const FSEComponentClassFilter& GetComponentFilter(bool bIsLoading) const
+	{
 		return (bIsLoading && bUseLoadActorFilter) ? LoadComponentFilter : ComponentFilter;
 	}
 
-	FORCEINLINE bool IsMTSerializationLoad() const {
+	FORCEINLINE bool IsMTSerializationLoad() const
+	{
 		return MultithreadedSerialization == ESaveASyncMode::LoadAsync || MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
 	}
-	FORCEINLINE bool IsMTSerializationSave() const {
+	FORCEINLINE bool IsMTSerializationSave() const
+	{
 		return MultithreadedSerialization == ESaveASyncMode::SaveAsync || MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
 	}
 
 	FORCEINLINE ESaveASyncMode GetFrameSplitSerialization() const { return FrameSplittedSerialization; }
 	FORCEINLINE float GetMaxFrameMs() const { return MaxFrameMs; }
 
-	FORCEINLINE bool IsFrameSplitLoad() const {
+	FORCEINLINE bool IsFrameSplitLoad() const
+	{
 		return !IsMTSerializationLoad() && (FrameSplittedSerialization == ESaveASyncMode::LoadAsync || FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
 	}
-	FORCEINLINE bool IsFrameSplitSave() const {
+	FORCEINLINE bool IsFrameSplitSave() const
+	{
 		return !IsMTSerializationSave() && (FrameSplittedSerialization == ESaveASyncMode::SaveAsync || FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
 	}
 
-	FORCEINLINE bool IsMTFilesLoad() const {
+	FORCEINLINE bool IsMTFilesLoad() const
+	{
 		return MultithreadedFiles == ESaveASyncMode::LoadAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
 	}
-	FORCEINLINE bool IsMTFilesSave() const {
+	FORCEINLINE bool IsMTFilesSave() const
+	{
 		return MultithreadedFiles == ESaveASyncMode::SaveAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
 	}
 

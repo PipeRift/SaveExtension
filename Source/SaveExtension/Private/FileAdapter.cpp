@@ -236,7 +236,7 @@ bool FFileAdapter::SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Da
 
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_SaveFile);
 
-	FScopedFileWriter FileWriter(GetSavePath(SlotName));
+	FScopedFileWriter FileWriter(GetSlotPath(SlotName));
 	if(FileWriter.IsValid())
 	{
 		FSaveFile File{};
@@ -252,7 +252,7 @@ bool FFileAdapter::LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& 
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_LoadFile);
 
-	FScopedFileReader Reader(GetSavePath(SlotName));
+	FScopedFileReader Reader(GetSlotPath(SlotName));
 	if(Reader.IsValid())
 	{
 		FSaveFile File{};
@@ -266,17 +266,28 @@ bool FFileAdapter::LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& 
 
 bool FFileAdapter::DeleteFile(FStringView SlotName)
 {
-	return IFileManager::Get().Delete(*GetSavePath(SlotName), true, false, true);
+	return IFileManager::Get().Delete(*GetSlotPath(SlotName), true, false, true);
 }
 
 bool FFileAdapter::DoesFileExist(FStringView SlotName)
 {
-	return IFileManager::Get().FileSize(*GetSavePath(SlotName)) >= 0;
+	return IFileManager::Get().FileSize(*GetSlotPath(SlotName)) >= 0;
 }
 
-FString FFileAdapter::GetSavePath(FStringView FileName)
+const FString& FFileAdapter::GetSaveFolder()
 {
-	return FString::Printf(TEXT("%sSaveGames/%s.sav"), *FPaths::ProjectSavedDir(), FileName.GetData());
+	static const FString Folder = FString::Printf(TEXT("%sSaveGames/"), *FPaths::ProjectSavedDir());
+	return Folder;
+}
+
+FString FFileAdapter::GetSlotPath(FStringView SlotName)
+{
+	return GetSaveFolder() / FString::Printf(TEXT("%s.sav"), SlotName.GetData());
+}
+
+FString FFileAdapter::GetThumbnailPath(FStringView SlotName)
+{
+	return GetSaveFolder() / FString::Printf(TEXT("%s.png"), SlotName.GetData());
 }
 
 void FFileAdapter::DeserializeObject(UObject*& Object, FStringView ClassName, const TArray<uint8>& Bytes)

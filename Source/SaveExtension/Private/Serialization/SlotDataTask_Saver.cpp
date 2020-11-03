@@ -21,31 +21,24 @@ void USlotDataTask_Saver::OnStart()
 	Manager->TryInstantiateInfo();
 
 	bool bSave = true;
-	const FString InfoCard = Manager->GenerateSlotInfoName(Slot);
-	const FString DataCard = Manager->GenerateSlotDataName(Slot);
+	const FString SlotName = Manager->GenerateSlotName(Slot);
 
 	//Overriding
 	{
-		const bool bInfoExists = FFileAdapter::DoesFileExist(InfoCard);
-		const bool bDataExists = FFileAdapter::DoesFileExist(DataCard);
-
+		const bool bFileExists = FFileAdapter::DoesFileExist(SlotName);
 		if (bOverride)
 		{
 			// Delete previous save
-			if (bInfoExists)
+			if (bFileExists)
 			{
-				FFileAdapter::DeleteFile(InfoCard);
-			}
-			if (bDataExists)
-			{
-				FFileAdapter::DeleteFile(DataCard);
+				FFileAdapter::DeleteFile(SlotName);
 			}
 		}
 		else
 		{
 			//Only save if previous files don't exist
 			//We don't want to serialize since it won't be saved anyway
-			bSave = !bInfoExists && !bDataExists;
+			bSave = !bFileExists;
 		}
 	}
 
@@ -104,7 +97,7 @@ void USlotDataTask_Saver::OnStart()
 		SlotData->Map = World->GetFName().ToString();
 
 		SerializeSync();
-		SaveFile(InfoCard, DataCard);
+		SaveFile(SlotName);
 		return;
 	}
 	Finish(false);
@@ -269,14 +262,14 @@ void USlotDataTask_Saver::RunScheduledTasks()
 	Tasks.Empty();
 }
 
-void USlotDataTask_Saver::SaveFile(const FString& InfoName, const FString& DataName)
+void USlotDataTask_Saver::SaveFile(const FString& SlotName)
 {
 	USaveManager* Manager = GetManager();
 
 	USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
 	USlotData* CurrentData = Manager->GetCurrentData();
 
-	SaveTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, CurrentData, InfoName, Preset->bUseCompression);
+	SaveTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, CurrentData, SlotName, Preset->bUseCompression);
 
 	if (Preset->IsMTFilesSave())
 	{

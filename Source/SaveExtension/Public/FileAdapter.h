@@ -103,7 +103,9 @@ public:
 	static bool DeleteFile(FStringView SlotName);
 	static bool DoesFileExist(FStringView SlotName);
 
-	static FString GetSavePath(FStringView FileName);
+	static const FString& GetSaveFolder();
+	static FString GetSlotPath(FStringView SlotName);
+	static FString GetThumbnailPath(FStringView SlotName);
 
 	static void DeserializeObject(UObject*& Object, FStringView ClassName, const TArray<uint8>& Bytes);
 };

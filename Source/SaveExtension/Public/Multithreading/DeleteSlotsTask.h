@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CoreMinimal.h>
 #include <Async/AsyncWork.h>
 #include "FileAdapter.h"
 
@@ -21,18 +22,14 @@ class FDeleteSlotsTask : public FNonAbandonableTask {
 protected:
 
 	const USaveManager* const Manager;
-	const int32 SpecificSlotId;
+	FString SpecificSlotName;
 
 public:
 
 	bool bSuccess;
 
 	/** All infos Constructor */
-	explicit FDeleteSlotsTask(const USaveManager* InManager, int32 SlotId = -1)
-		: Manager(InManager)
-		, SpecificSlotId(SlotId)
-		, bSuccess(false)
-	{}
+	explicit FDeleteSlotsTask(const USaveManager* InManager, int32 SlotId = -1);
 
 	void DoWork();
 

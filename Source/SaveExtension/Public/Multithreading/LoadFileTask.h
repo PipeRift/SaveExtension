@@ -27,7 +27,7 @@ public:
 
 	void DoWork()
 	{
-		FScopedFileReader FileReader(FFileAdapter::GetSavePath(SlotName));
+		FScopedFileReader FileReader(FFileAdapter::GetSlotPath(SlotName));
 		if(FileReader.IsValid())
 		{
 			File.Read(FileReader, false);

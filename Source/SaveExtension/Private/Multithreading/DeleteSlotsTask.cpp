@@ -11,25 +11,30 @@
 #include "HAL/FileManager.h"
 
 
+FDeleteSlotsTask::FDeleteSlotsTask(const USaveManager* InManager, int32 SlotId)
+	: Manager(InManager)
+	, bSuccess(false)
+{
+	check(Manager);
+	SpecificSlotName = Manager->GenerateSlotName(SlotId);
+}
+
 void FDeleteSlotsTask::DoWork()
 {
-	if (SpecificSlotId > 0)
+	if (!SpecificSlotName.IsEmpty())
 	{
 		// Delete a single slot by id
-		const FString InfoSlot = Manager->GenerateSlotInfoName(SpecificSlotId);
-		const FString DataSlot = Manager->GenerateSlotDataName(SpecificSlotId);
-		FString ScreenshotPath = FString::Printf(TEXT("%sSaveGames/%i_%s.%s"), *FPaths::ProjectSavedDir(), SpecificSlotId, *FString("SaveScreenshot"), TEXT("png"));
-		bool bIsDeleteInfoSlotSuccess = FFileAdapter::DeleteFile(InfoSlot);
-		bool bIsDeleteDataSlotSuccess = FFileAdapter::DeleteFile(DataSlot);
+		const FString ScreenshotPath = FFileAdapter::GetThumbnailPath(SpecificSlotName);
+		bool bIsDeleteSlotSuccess = FFileAdapter::DeleteFile(SpecificSlotName);
 		bool bIsDeleteScreenshotSuccess = IFileManager::Get().Delete(*ScreenshotPath, true);
-		bSuccess = bIsDeleteInfoSlotSuccess || bIsDeleteDataSlotSuccess || bIsDeleteScreenshotSuccess;
+		bSuccess = bIsDeleteSlotSuccess || bIsDeleteScreenshotSuccess;
 	}
 	else
 	{
-		TArray<FString> FileNames;
-		FSlotHelpers::GetSlotFileNames(FileNames);
+		TArray<FString> FoundSlots;
+		FSlotHelpers::FindSlotFileNames(FoundSlots);
 
-		for (const FString& File : FileNames)
+		for (const FString& File : FoundSlots)
 		{
 			FFileAdapter::DeleteFile(File);
 		}
