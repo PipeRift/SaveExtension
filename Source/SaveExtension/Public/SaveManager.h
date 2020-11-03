@@ -335,10 +335,8 @@ public:
 
 	void TryInstantiateInfo(bool bForced = false);
 
-	FString GenerateSlotName(const int32 SlotId) const
-	{
-		return IsValidSlot(SlotId) ? FString::FromInt(SlotId) : FString{};
-	}
+	UFUNCTION(BlueprintPure, Category = "SaveExtension")
+	FString GenerateSlotName(const int32 SlotId) const;
 
 	bool IsValidSlot(const int32 Slot) const;
 
@@ -450,8 +448,7 @@ public:
 
 inline bool USaveManager::IsValidSlot(const int32 Slot) const
 {
-	const int32 MaxSlots = GetPreset()->GetMaxSlots();
-	return Slot >= 0 && (MaxSlots <= 0 || Slot < MaxSlots);
+	return GetPreset()->IsValidId(Slot);
 }
 
 inline void USaveManager::IterateSubscribedInterfaces(TFunction<void(UObject*)>&& Callback)

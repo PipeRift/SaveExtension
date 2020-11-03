@@ -13,6 +13,20 @@ USavePreset::USavePreset()
 	, SlotDataTemplate(USlotData::StaticClass())
 {}
 
+void USavePreset::BPGenerateSlotName_Implementation(int32 Id, FString& Name) const
+{
+	// Call C++ inheritance chain by default
+	return GenerateSlotName(Id, Name);
+}
+
+void USavePreset::GenerateSlotName(int32 Id, FString& Name) const
+{
+	if (IsValidId(Id))
+	{
+		Name = FString::FromInt(Id);
+	}
+}
+
 FSaveFilter USavePreset::ToFilter() const
 {
 	FSaveFilter Filter{};

@@ -366,6 +366,16 @@ void USaveManager::FinishTask(USlotDataTask* Task)
 	}
 }
 
+FString USaveManager::GenerateSlotName(const int32 SlotId) const
+{
+	FString Name;
+	if (const auto* Preset = GetPreset())
+	{
+		Preset->BPGenerateSlotName(SlotId, Name);
+	}
+	return Name;
+}
+
 bool USaveManager::IsLoading() const
 {
 	return HasTasks() &&

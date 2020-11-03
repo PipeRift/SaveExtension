@@ -155,64 +155,85 @@ public:
 
 	USavePreset();
 
+	UFUNCTION(BlueprintNativeEvent, Category = "Slots", meta = (DisplayName="Generate Slot Name"))
+	void BPGenerateSlotName(int32 Id, FString& Name) const;
+
+protected:
+
+
+	virtual void GenerateSlotName(int32 Id, FString& Name) const;
+
 
 	/** HELPERS */
+public:
 
-	FORCEINLINE int32 GetMaxSlots() const {
-		return MaxSlots <= 0 ? 16384 : MaxSlots;
-	}
+	int32 GetMaxIds() const;
+
+	bool IsValidId(int32 Id) const;
 
 	UFUNCTION(BlueprintPure, Category = SavePreset)
-	FORCEINLINE FSEActorClassFilter& GetActorFilter(bool bIsLoading)
+	FSEActorClassFilter& GetActorFilter(bool bIsLoading)
 	{
 		return (bIsLoading && bUseLoadActorFilter)? LoadActorFilter : ActorFilter;
 	}
 
-	FORCEINLINE const FSEActorClassFilter& GetActorFilter(bool bIsLoading) const
+	const FSEActorClassFilter& GetActorFilter(bool bIsLoading) const
 	{
 		return (bIsLoading && bUseLoadActorFilter)? LoadActorFilter : ActorFilter;
 	}
 
 	UFUNCTION(BlueprintPure, Category = SavePreset)
-	FORCEINLINE FSEComponentClassFilter& GetComponentFilter(bool bIsLoading)
+	FSEComponentClassFilter& GetComponentFilter(bool bIsLoading)
 	{
 		return (bIsLoading && bUseLoadComponentFilter) ? LoadComponentFilter : ComponentFilter;
 	}
 
-	FORCEINLINE const FSEComponentClassFilter& GetComponentFilter(bool bIsLoading) const
+	const FSEComponentClassFilter& GetComponentFilter(bool bIsLoading) const
 	{
 		return (bIsLoading && bUseLoadActorFilter) ? LoadComponentFilter : ComponentFilter;
 	}
 
-	FORCEINLINE bool IsMTSerializationLoad() const
+	bool IsMTSerializationLoad() const
 	{
 		return MultithreadedSerialization == ESaveASyncMode::LoadAsync || MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
 	}
-	FORCEINLINE bool IsMTSerializationSave() const
+	bool IsMTSerializationSave() const
 	{
 		return MultithreadedSerialization == ESaveASyncMode::SaveAsync || MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
 	}
 
-	FORCEINLINE ESaveASyncMode GetFrameSplitSerialization() const { return FrameSplittedSerialization; }
-	FORCEINLINE float GetMaxFrameMs() const { return MaxFrameMs; }
+	ESaveASyncMode GetFrameSplitSerialization() const { return FrameSplittedSerialization; }
+	float GetMaxFrameMs() const { return MaxFrameMs; }
 
-	FORCEINLINE bool IsFrameSplitLoad() const
+	bool IsFrameSplitLoad() const
 	{
 		return !IsMTSerializationLoad() && (FrameSplittedSerialization == ESaveASyncMode::LoadAsync || FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
 	}
-	FORCEINLINE bool IsFrameSplitSave() const
+	bool IsFrameSplitSave() const
 	{
 		return !IsMTSerializationSave() && (FrameSplittedSerialization == ESaveASyncMode::SaveAsync || FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
 	}
 
-	FORCEINLINE bool IsMTFilesLoad() const
+	bool IsMTFilesLoad() const
 	{
 		return MultithreadedFiles == ESaveASyncMode::LoadAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
 	}
-	FORCEINLINE bool IsMTFilesSave() const
+	bool IsMTFilesSave() const
 	{
 		return MultithreadedFiles == ESaveASyncMode::SaveAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
 	}
 
 	struct FSaveFilter ToFilter() const;
 };
+
+
+inline int32 USavePreset::GetMaxIds() const
+{
+	return MaxSlots <= 0 ? 16384 : MaxSlots;
+}
+
+inline bool USavePreset::IsValidId(int32 Id) const
+{
+	const int32 MaxIds = GetMaxIds();
+	return Id >= 0 && (MaxIds <= 0 || Id < MaxIds);
+}
