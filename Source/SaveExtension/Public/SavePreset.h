@@ -39,13 +39,13 @@ public:
 	* Specify the SaveInfo object to be used with this preset
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	TSubclassOf<USlotInfo> SlotInfoTemplate;
+	TSubclassOf<USlotInfo> SlotInfoClass;
 
 	/**
 	* Specify the SaveData object to be used with this preset
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	TSubclassOf<USlotData> SlotDataTemplate;
+	TSubclassOf<USlotData> SlotDataClass;
 
 	/** Maximum amount of saved slots at the same time */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Gameplay, meta = (ClampMin = "0"))

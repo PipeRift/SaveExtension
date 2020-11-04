@@ -9,8 +9,8 @@
 
 USavePreset::USavePreset()
 	: Super()
-	, SlotInfoTemplate(USlotInfo::StaticClass())
-	, SlotDataTemplate(USlotData::StaticClass())
+	, SlotInfoClass(USlotInfo::StaticClass())
+	, SlotDataClass(USlotData::StaticClass())
 {}
 
 void USavePreset::BPGenerateSlotName_Implementation(int32 Id, FString& Name) const

@@ -267,16 +267,16 @@ void USaveManager::TryInstantiateInfo(bool bForced)
 
 	const USavePreset* Preset = GetPreset();
 
-	UClass* InfoTemplate = Preset->SlotInfoTemplate.Get();
-	if (!InfoTemplate)
-		InfoTemplate = USlotInfo::StaticClass();
+	UClass* InfoClass = Preset->SlotInfoClass.Get();
+	if (!InfoClass)
+		InfoClass = USlotInfo::StaticClass();
 
-	UClass* DataTemplate = Preset->SlotDataTemplate.Get();
-	if (!DataTemplate)
-		DataTemplate = USlotData::StaticClass();
+	UClass* DataClass = Preset->SlotDataClass.Get();
+	if (!DataClass)
+		DataClass = USlotData::StaticClass();
 
-	CurrentInfo = NewObject<USlotInfo>(GetTransientPackage(), InfoTemplate);
-	CurrentData = NewObject<USlotData>(GetTransientPackage(), DataTemplate);
+	CurrentInfo = NewObject<USlotInfo>(GetTransientPackage(), InfoClass);
+	CurrentData = NewObject<USlotData>(GetTransientPackage(), DataClass);
 }
 
 void USaveManager::UpdateLevelStreamings()
