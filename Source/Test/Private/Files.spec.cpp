@@ -3,6 +3,8 @@
 #include "Automatron.h"
 #include "Helpers/TestActor.h"
 #include "SaveManager.h"
+#include "FileAdapter.h"
+
 
 class FSaveSpec_Files : public Automatron::FTestSpec
 {
@@ -21,8 +23,6 @@ class FSaveSpec_Files : public Automatron::FTestSpec
 		bReuseWorldForAllTests = false;
 		bCanUsePIEWorld = false;
 	}
-
-	USavePreset* CreateTestPreset();
 };
 
 
@@ -35,9 +35,8 @@ void FSaveSpec_Files::Define()
 		SaveManager->bTickWithGameWorld = true;
 
 		// Set test preset
-		TestPreset = CreateTestPreset();
+		TestPreset = SaveManager->SetActivePreset(USavePreset::StaticClass());
 		TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
-		SaveManager->SetActivePreset(TestPreset);
 	});
 
 	It("Can save files synchronously", [this]() {
@@ -74,7 +73,7 @@ void FSaveSpec_Files::Define()
 
 		USlotInfo* Info = nullptr;
 		USlotData* Data = nullptr;
-		TestTrue("File was loaded", FFileAdapter::LoadFile(TEXT("0"), Info, Data, true));
+		TestTrue("File was loaded", FFileAdapter::LoadFile(TEXT("0"), Info, Data, true, SaveManager));
 		TestNotNull("Info is valid", Info);
 		TestNotNull("Data is valid", Data);
 	});
@@ -92,9 +91,4 @@ void FSaveSpec_Files::Define()
 		}
 		SaveManager = nullptr;
 	});
-}
-
-USavePreset* FSaveSpec_Files::CreateTestPreset()
-{
-	return NewObject<USavePreset>(GetMainWorld());
 }

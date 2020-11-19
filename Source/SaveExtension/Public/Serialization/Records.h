@@ -91,8 +91,8 @@ struct FActorRecord : public FObjectRecord
 	/** Whether or not this actor was spawned in runtime */
 	bool bIsProcedural;
 	FTransform Transform;
-	FVector LinearVelocity;
-	FVector AngularVelocity;
+	FVector LinearVelocity = FVector::ZeroVector;
+	FVector AngularVelocity = FVector::ZeroVector;
 	TArray<FComponentRecord> ComponentRecords;
 
 

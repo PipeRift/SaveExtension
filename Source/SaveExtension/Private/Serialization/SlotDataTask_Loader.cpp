@@ -45,9 +45,9 @@ void USlotDataTask_Loader::OnStart()
 {
 	USaveManager* Manager = GetManager();
 
-	SELog(Preset, "Loading from Slot " + FString::FromInt(Slot));
+	SELog(Preset, "Loading from Slot " + SlotName.ToString());
 
-	NewSlotInfo = Manager->LoadInfo(Slot);
+	NewSlotInfo = Manager->LoadInfo(SlotName);
 	if (!NewSlotInfo)
 	{
 		SELog(Preset, "Slot Info not found! Can't load.", FColor::White, true, 1);
@@ -61,14 +61,22 @@ void USlotDataTask_Loader::OnStart()
 	const UWorld* World = GetWorld();
 
 	// Cross-Level loading
-	if (World->GetFName() != NewSlotInfo->Map)
+	// TODO: Handle empty Map as empty world
+	FName CurrentMapName { World->GetMapName() };
+	if (CurrentMapName != NewSlotInfo->Map)
 	{
 		LoadState = ELoadDataTaskState::LoadingMap;
+		FString MapToOpen = NewSlotInfo->Map.ToString();
+		if (!GEngine->MakeSureMapNameIsValid(MapToOpen))
+		{
+			UE_LOG(LogSaveExtension, Warning, TEXT("Slot '%s' was saved in map '%s' but it did not exist while loading. Corrupted save file?"), *NewSlotInfo->FileName.ToString(), *MapToOpen);
+			Finish(false);
+			return;
+		}
 
-		//Keep loaded Info for loading
-		UGameplayStatics::OpenLevel(this, NewSlotInfo->Map);
+		UGameplayStatics::OpenLevel(this, FName{ MapToOpen });
 
-		SELog(Preset, "Slot '" + FString::FromInt(Slot) + "' is recorded on another Map. Loading before charging slot.", FColor::White, false, 1);
+		SELog(Preset, "Slot '" + SlotName.ToString() + "' is recorded on another Map. Loading before charging slot.", FColor::White, false, 1);
 		return;
 	}
 	else if (IsDataLoaded())
@@ -149,21 +157,20 @@ void USlotDataTask_Loader::StartDeserialization()
 	check(NewSlotInfo);
 
 	LoadState = ELoadDataTaskState::Deserializing;
-	NewSlotInfo->LoadDate = FDateTime::Now();
-
-	USaveManager* Manager = GetManager();
 
 	SlotData = GetLoadedData();
 	if (!SlotData)
 	{
+		// Failed to load data
 		Finish(false);
 		return;
 	}
 
-	Manager->OnLoadBegan(Filter);
+	NewSlotInfo->LoadDate = FDateTime::Now();
 
+	GetManager()->OnLoadBegan(Filter);
 	//Apply current Info if succeeded
-	Manager->__SetCurrentInfo(NewSlotInfo);
+	GetManager()->__SetCurrentInfo(NewSlotInfo);
 
 	BeforeDeserialize();
 
@@ -175,8 +182,7 @@ void USlotDataTask_Loader::StartDeserialization()
 
 void USlotDataTask_Loader::StartLoadingData()
 {
-	const FString SlotName = GetManager()->GenerateSlotName(Slot);
-	LoadDataTask = new FAsyncTask<FLoadFileTask>(SlotName);
+	LoadDataTask = new FAsyncTask<FLoadFileTask>(GetManager(), SlotName.ToString());
 
 	if (Preset->IsMTFilesLoad())
 		LoadDataTask->StartBackgroundTask();

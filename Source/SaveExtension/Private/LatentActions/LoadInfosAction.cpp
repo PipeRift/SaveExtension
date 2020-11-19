@@ -13,7 +13,7 @@ FLoadInfosAction::FLoadInfosAction(USaveManager* Manager, const bool bSortByRece
 	, OutputLink(LatentInfo.Linkage)
 	, CallbackTarget(LatentInfo.CallbackTarget)
 {
-	Manager->LoadAllSlotInfos(bSortByRecent, FOnAllInfosLoaded::CreateLambda([this](const TArray<USlotInfo*>& Results) {
+	Manager->LoadAllSlotInfos(bSortByRecent, FOnSlotInfosLoaded::CreateLambda([this](const TArray<USlotInfo*>& Results) {
 		SlotInfos = Results;
 		bFinished = true;
 	}));

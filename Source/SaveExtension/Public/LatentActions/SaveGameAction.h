@@ -6,8 +6,6 @@
 #include <Engine/LatentActionManager.h>
 #include <LatentActions.h>
 
-#include "Multithreading/LoadAllSlotInfosTask.h"
-
 
 class USaveManager;
 class USlotInfo;
@@ -36,7 +34,7 @@ public:
 	FWeakObjectPtr CallbackTarget;
 
 
-	FSaveGameAction(USaveManager* Manager, int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& OutResult, const FLatentActionInfo& LatentInfo);
+	FSaveGameAction(USaveManager* Manager, FName SlotName, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& OutResult, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 

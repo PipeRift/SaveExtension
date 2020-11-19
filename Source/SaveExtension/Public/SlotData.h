@@ -34,7 +34,7 @@ public:
 
 	/** Full Name of the Map where this SlotData was saved */
 	UPROPERTY(Category = SaveData, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	FString Map;
+	FName Map;
 
 	/** Game world time since game started in seconds */
 	UPROPERTY(Category = SaveData, BlueprintReadOnly)
@@ -53,7 +53,6 @@ public:
 
 
 	void Clean(bool bKeepLevels);
-	FName GetFMap() const { return { *Map }; }
 
 	/** Using manual serialization. It's way faster than reflection serialization */
 	virtual void Serialize(FArchive& Ar) override;

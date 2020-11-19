@@ -31,7 +31,7 @@ class USlotDataTask_Saver : public USlotDataTask
 
 	bool bOverride;
 	bool bSaveThumbnail;
-	int32 Slot;
+	FName SlotName;
 	int32 Width;
 	int32 Height;
 
@@ -62,9 +62,9 @@ public:
 		, SaveTask(nullptr)
 	{}
 
-	auto* Setup(int32 InSlot, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
+	auto* Setup(FName InSlotName, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
 	{
-		Slot = InSlot;
+		SlotName = InSlotName;
 		bOverride = bInOverride;
 		bSaveThumbnail = bInSaveThumbnail;
 		Width = InWidth;
@@ -96,6 +96,6 @@ protected:
 private:
 
 	/** BEGIN FileSaving */
-	void SaveFile(const FString& SlotName);
+	void SaveFile();
 	/** End FileSaving */
 };

@@ -9,20 +9,33 @@
 /////////////////////////////////////////////////////
 // FLoadFileTask
 // Async task to load a File
-class FLoadFileTask : public FNonAbandonableTask {
+class FLoadFileTask : public FNonAbandonableTask
+{
 protected:
 
+	TWeakObjectPtr<USaveManager> Manager;
 	const FString SlotName;
 
-	FSaveFile File;
+	TWeakObjectPtr<USlotInfo> SlotInfo;
+	TWeakObjectPtr<USlotData> SlotData;
 
 
 public:
 
-	explicit FLoadFileTask(const FString& InSlotName)
-		: SlotName(InSlotName)
-		, File{}
+	explicit FLoadFileTask(USaveManager* Manager, FStringView SlotName)
+		: Manager(Manager)
+		, SlotName(SlotName)
+	{}
+	~FLoadFileTask()
 	{
+		if(SlotInfo.IsValid())
+		{
+			SlotInfo->ClearInternalFlags(EInternalObjectFlags::Async);
+		}
+		if(SlotData.IsValid())
+		{
+			SlotData->ClearInternalFlags(EInternalObjectFlags::Async);
+		}
 	}
 
 	void DoWork()
@@ -30,18 +43,21 @@ public:
 		FScopedFileReader FileReader(FFileAdapter::GetSlotPath(SlotName));
 		if(FileReader.IsValid())
 		{
+			FSaveFile File;
 			File.Read(FileReader, false);
+			SlotInfo = File.CreateAndDeserializeInfo(Manager.Get());
+			SlotData = File.CreateAndDeserializeData(Manager.Get());
 		}
 	}
 
 	USlotInfo* GetInfo()
 	{
-		return File.CreateAndDeserializeInfo();
+		return SlotInfo.Get();
 	}
 
 	USlotData* GetData()
 	{
-		return File.CreateAndDeserializeData();
+		return SlotData.Get();
 	}
 
 	FORCEINLINE TStatId GetStatId() const

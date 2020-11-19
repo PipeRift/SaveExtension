@@ -22,7 +22,6 @@ class SAVEEXTENSION_API USlotInfo : public USaveGame
 public:
 
 	USlotInfo() : Super()
-		, Id(0)
 		, PlayedTime(FTimespan::Zero())
 		, SlotPlayedTime(FTimespan::Zero())
 		, SaveDate(FDateTime::Now())
@@ -31,10 +30,10 @@ public:
 
 	/** Slot where this SaveInfo and its saveData are saved */
 	UPROPERTY(BlueprintReadOnly, Category = SlotInfo)
-	int32 Id;
+	FName FileName;
 
 	UPROPERTY(BlueprintReadWrite, Category = SlotInfo)
-	FText Name;
+	FText DisplayName;
 
 	/** Played time since this saved game was started. Not related to slots, slots can change */
 	UPROPERTY(BlueprintReadOnly, Category = SlotInfo)

@@ -6,7 +6,7 @@
 #include <Engine/LatentActionManager.h>
 #include <LatentActions.h>
 
-#include "Multithreading/LoadAllSlotInfosTask.h"
+#include "Multithreading/LoadSlotInfosTask.h"
 
 
 class USaveManager;

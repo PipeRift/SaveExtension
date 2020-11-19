@@ -2,34 +2,32 @@
 
 #pragma once
 
+#include "FileAdapter.h"
+#include "Multithreading/Delegates.h"
+#include "SlotInfo.h"
+
 #include <CoreMinimal.h>
 #include <Async/AsyncWork.h>
-#include "FileAdapter.h"
 
-#include "SlotInfo.h"
 
 class USaveManager;
 
-// @param Amount of slots removed
-DECLARE_DELEGATE(FOnSlotsDeleted);
-
-
 /**
- * FLoadSlotInfosTask
- * Async task to load an SlotInfo
+ * FDeleteSlotsTask
+ * Async task to remove an specific or all slots
  */
 class FDeleteSlotsTask : public FNonAbandonableTask {
 protected:
 
-	const USaveManager* const Manager;
+	const USaveManager* const Manager = nullptr;
 	FString SpecificSlotName;
 
 public:
 
-	bool bSuccess;
+	bool bSuccess = false;
 
 	/** All infos Constructor */
-	explicit FDeleteSlotsTask(const USaveManager* InManager, int32 SlotId = -1);
+	explicit FDeleteSlotsTask(const USaveManager* InManager, FName SlotName = {});
 
 	void DoWork();
 

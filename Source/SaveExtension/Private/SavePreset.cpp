@@ -13,17 +13,17 @@ USavePreset::USavePreset()
 	, SlotDataClass(USlotData::StaticClass())
 {}
 
-void USavePreset::BPGenerateSlotName_Implementation(int32 Id, FString& Name) const
+void USavePreset::BPGetSlotNameFromId_Implementation(int32 Id, FName& Name) const
 {
 	// Call C++ inheritance chain by default
-	return GenerateSlotName(Id, Name);
+	return GetSlotNameFromId(Id, Name);
 }
 
-void USavePreset::GenerateSlotName(int32 Id, FString& Name) const
+void USavePreset::GetSlotNameFromId(int32 Id, FName& Name) const
 {
 	if (IsValidId(Id))
 	{
-		Name = FString::FromInt(Id);
+		Name = { FString::FromInt(Id) };
 	}
 }
 

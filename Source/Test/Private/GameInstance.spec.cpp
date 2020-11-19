@@ -24,8 +24,6 @@ class FSaveSpec_GameInstance : public Automatron::FTestSpec
 		DefaultWorldSettings.bShouldTick = true;
 		DefaultWorldSettings.GameInstance = UTestGameInstance::StaticClass();
 	}
-
-	USavePreset* CreateTestPreset();
 };
 
 void FSaveSpec_GameInstance::Define()
@@ -36,12 +34,11 @@ void FSaveSpec_GameInstance::Define()
 
 		SaveManager->bTickWithGameWorld = true;
 
-		TestPreset = CreateTestPreset();
+		TestPreset = SaveManager->SetActivePreset(USavePreset::StaticClass());
 		TestPreset->bStoreGameInstance = true;
 
 		TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
 		TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
-		SaveManager->SetActivePreset(TestPreset);
 	});
 
 	It("GameInstance can be saved", [this]()
@@ -75,10 +72,4 @@ void FSaveSpec_GameInstance::Define()
 		}
 		SaveManager = nullptr;
 	});
-}
-
-USavePreset* FSaveSpec_GameInstance::CreateTestPreset()
-{
-	USavePreset* Preset = NewObject<USavePreset>(GetMainWorld());
-	return Preset;
 }

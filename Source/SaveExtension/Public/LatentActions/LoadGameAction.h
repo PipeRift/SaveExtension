@@ -32,7 +32,7 @@ public:
 	FWeakObjectPtr CallbackTarget;
 
 
-	FLoadGameAction(USaveManager* Manager, int32 SlotId, ELoadGameResult& Result, const FLatentActionInfo& LatentInfo);
+	FLoadGameAction(USaveManager* Manager, FName SlotName, ELoadGameResult& Result, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 

@@ -21,17 +21,16 @@ void USlotDataTask_Saver::OnStart()
 	Manager->TryInstantiateInfo();
 
 	bool bSave = true;
-	const FString SlotName = Manager->GenerateSlotName(Slot);
-
+	const FString SlotNameStr = SlotName.ToString();
 	//Overriding
 	{
-		const bool bFileExists = FFileAdapter::DoesFileExist(SlotName);
+		const bool bFileExists = FFileAdapter::DoesFileExist(SlotNameStr);
 		if (bOverride)
 		{
 			// Delete previous save
 			if (bFileExists)
 			{
-				FFileAdapter::DeleteFile(SlotName);
+				FFileAdapter::DeleteFile(SlotNameStr);
 			}
 		}
 		else
@@ -55,8 +54,8 @@ void USlotDataTask_Saver::OnStart()
 
 		check(SlotInfo && SlotData);
 
-		const bool bSlotWasDifferent = SlotInfo->Id != Slot;
-		SlotInfo->Id = Slot;
+		const bool bSlotWasDifferent = SlotInfo->FileName != SlotName;
+		SlotInfo->FileName = SlotName;
 
 		if (bSaveThumbnail)
 		{
@@ -93,11 +92,12 @@ void USlotDataTask_Saver::OnStart()
 		}
 
 		//Save Level info in both files
-		SlotInfo->Map = World->GetFName();
-		SlotData->Map = World->GetFName().ToString();
+		// TODO: Only if map is an asset, otherway it must be empty
+		SlotInfo->Map = FName{ World->GetMapName() };
+		SlotData->Map = SlotData->Map;
 
 		SerializeSync();
-		SaveFile(SlotName);
+		SaveFile();
 		return;
 	}
 	Finish(false);
@@ -262,14 +262,13 @@ void USlotDataTask_Saver::RunScheduledTasks()
 	Tasks.Empty();
 }
 
-void USlotDataTask_Saver::SaveFile(const FString& SlotName)
+void USlotDataTask_Saver::SaveFile()
 {
 	USaveManager* Manager = GetManager();
 
-	USlotInfo* CurrentInfo = Manager->GetCurrentInfo();
-	USlotData* CurrentData = Manager->GetCurrentData();
-
-	SaveTask = new FAsyncTask<FSaveFileTask>(CurrentInfo, CurrentData, SlotName, Preset->bUseCompression);
+	SaveTask = new FAsyncTask<FSaveFileTask>(
+		Manager->GetCurrentInfo(), Manager->GetCurrentData(),
+		SlotName.ToString(), Preset->bUseCompression);
 
 	if (Preset->IsMTFilesSave())
 	{

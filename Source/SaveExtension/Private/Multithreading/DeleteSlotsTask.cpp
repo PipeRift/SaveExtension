@@ -11,12 +11,14 @@
 #include "HAL/FileManager.h"
 
 
-FDeleteSlotsTask::FDeleteSlotsTask(const USaveManager* InManager, int32 SlotId)
+FDeleteSlotsTask::FDeleteSlotsTask(const USaveManager* InManager, FName SlotName)
 	: Manager(InManager)
-	, bSuccess(false)
 {
 	check(Manager);
-	SpecificSlotName = Manager->GenerateSlotName(SlotId);
+	if(!SlotName.IsNone())
+	{
+		SpecificSlotName = SlotName.ToString();
+	}
 }
 
 void FDeleteSlotsTask::DoWork()

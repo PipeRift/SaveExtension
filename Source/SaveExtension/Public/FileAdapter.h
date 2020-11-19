@@ -85,8 +85,8 @@ struct FSaveFile
 
 	void SerializeInfo(USlotInfo* SlotInfo);
 	void SerializeData(USlotData* SlotData);
-	USlotInfo* CreateAndDeserializeInfo() const;
-	USlotData* CreateAndDeserializeData() const;
+	USlotInfo* CreateAndDeserializeInfo(const UObject* Outer) const;
+	USlotData* CreateAndDeserializeData(const UObject* Outer) const;
 };
 
 
@@ -98,7 +98,7 @@ public:
 	static bool SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Data, const bool bUseCompression);
 
 	// Not safe for Multi-threading
-	static bool LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& Data, bool bLoadData);
+	static bool LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& Data, bool bLoadData, const UObject* Outer);
 
 	static bool DeleteFile(FStringView SlotName);
 	static bool DoesFileExist(FStringView SlotName);
@@ -107,5 +107,5 @@ public:
 	static FString GetSlotPath(FStringView SlotName);
 	static FString GetThumbnailPath(FStringView SlotName);
 
-	static void DeserializeObject(UObject*& Object, FStringView ClassName, const TArray<uint8>& Bytes);
+	static void DeserializeObject(UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes);
 };

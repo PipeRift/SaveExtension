@@ -7,9 +7,8 @@
 #include "LatentActions/LoadGameAction.h"
 #include "LatentActions/SaveGameAction.h"
 #include "LevelStreamingNotifier.h"
-#include "Multithreading/DeleteSlotsTask.h"
-#include "Multithreading/LoadAllSlotInfosTask.h"
 #include "Multithreading/ScopedTaskManager.h"
+#include "Multithreading/Delegates.h"
 #include "SaveExtensionInterface.h"
 #include "SavePreset.h"
 #include "Serialization/SlotDataTask.h"
@@ -30,6 +29,8 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC, USlotInfo*, SlotInfo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USlotInfo*, SlotInfo);
 
+
+struct FLatentActionInfo;
 
 USTRUCT(BlueprintType)
 struct FScreenshotSize
@@ -113,37 +114,32 @@ public:
 		OwningGameInstance = GameInstance;
 	}
 
-	/** BLUEPRINTS */
+	/** C++ ONLY API */
 
-	/** Save the Game into an specified Slot */
+	/** Save the Game into an specified slot name */
+	bool SaveSlot(FName SlotName, bool bOverrideIfNeeded = true, bool bScreenshot = false,
+		const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
+
+	/** Save the Game info an SlotInfo */
+	bool SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false,
+		const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
+
+	/** Save the Game into an specified slot id */
 	bool SaveSlot(int32 SlotId, bool bOverrideIfNeeded = true, bool bScreenshot = false,
 		const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
 
-	/** Save the Game to a Slot */
-	bool SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded = true, bool bScreenshot = false,
-		const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {})
-	{
-		if (!SlotInfo)
-		{
-			return false;
-		}
-		return SaveSlot(SlotInfo->Id, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
-	}
-
 	/** Save the currently loaded Slot */
-	bool SaveCurrentSlot(bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {})
-	{
-		return SaveSlot(CurrentInfo, true, bScreenshot, Size, OnSaved);
-	}
+	bool SaveCurrentSlot(bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
+
+
+	/** Load game from a file name */
+	bool LoadSlot(FName SlotName, FOnGameLoaded OnLoaded = {});
 
 	/** Load game from a slot Id */
 	bool LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded = {});
 
 	/** Load game from a SlotInfo */
-	bool LoadSlot(const USlotInfo* SlotInfo, FOnGameLoaded OnLoaded = {})
-	{
-		return SlotInfo ? LoadSlot(SlotInfo->Id, MoveTemp(OnLoaded)) : false;
-	}
+	bool LoadSlot(const USlotInfo* SlotInfo, FOnGameLoaded OnLoaded = {});
 
 	/** Reload the currently loaded slot if any */
 	bool ReloadCurrentSlot(FOnGameLoaded OnLoaded = {})
@@ -156,13 +152,13 @@ public:
 	 * @param bSortByRecent Should slots be ordered by save date?
 	 * @param SaveInfos All saved games found on disk
 	 */
-	void LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate);
-	void LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded Delegate);
+	void LoadAllSlotInfos(bool bSortByRecent, FOnSlotInfosLoaded Delegate);
+	void LoadAllSlotInfosSync(bool bSortByRecent, FOnSlotInfosLoaded Delegate);
 
-	/** Delete a saved game on an specified slot Id
+	/** Delete a saved game on an specified slot name
 	 * Performance: Interacts with disk, can be slow
 	 */
-	bool DeleteSlot(int32 SlotId);
+	bool DeleteSlot(FName SlotName);
 
 	/** Delete all saved slots from disk, loaded or not */
 	void DeleteAllSlots(FOnSlotsDeleted Delegate);
@@ -174,65 +170,54 @@ public:
 	// with the normal C++ API
 
 	/** Save the Game into an specified Slot */
-	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable,
-		meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot to Id", Latent,
-			LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result,
-		struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
+	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size",
+		DisplayName = "Save Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPSaveSlot(FName SlotName, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
+
+	/** Save the Game into an specified Slot */
+	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size",
+		DisplayName = "Save Slot by Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPSaveSlotById(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
 
 	/** Save the Game to a Slot */
-	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable,
-		meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot", Latent,
-			LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPSaveSlot(const USlotInfo* SlotInfo, bool bScreenshot, const FScreenshotSize Size,
-		ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true)
-	{
-		if (!SlotInfo)
-		{
-			Result = ESaveGameResult::Failed;
-			return;
-		}
-		BPSaveSlotToId(SlotInfo->Id, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
-	}
+	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (AdvancedDisplay = "bScreenshot, Size",
+		DisplayName = "Save Slot by Info", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPSaveSlotByInfo(const USlotInfo* SlotInfo, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true);
 
 	/** Save the currently loaded Slot */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Saving",
 		meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Current Slot", Latent,
 			LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPSaveCurrentSlot(bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result,
-		struct FLatentActionInfo LatentInfo)
+	void BPSaveCurrentSlot(bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, FLatentActionInfo LatentInfo)
 	{
-		BPSaveSlot(CurrentInfo, bScreenshot, Size, Result, MoveTemp(LatentInfo), true);
+		BPSaveSlotByInfo(CurrentInfo, bScreenshot, Size, Result, MoveTemp(LatentInfo), true);
 	}
 
+	/** Load game from a slot name */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
+		meta = (DisplayName = "Load Slot from Id", Latent, LatentInfo = "LatentInfo",
+			ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPLoadSlot(FName SlotName, ELoadGameResult& Result, FLatentActionInfo LatentInfo);
 
 	/** Load game from a slot Id */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
 		meta = (DisplayName = "Load Slot from Id", Latent, LatentInfo = "LatentInfo",
 			ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPLoadSlotFromId(int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo);
+	void BPLoadSlotById(int32 SlotId, ELoadGameResult& Result, FLatentActionInfo LatentInfo);
 
 	/** Load game from a SlotInfo */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
 		meta = (DisplayName = "Load Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result",
 			UnsafeDuringActorConstruction))
-	void BPLoadSlot(const USlotInfo* SlotInfo, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
-	{
-		if (!SlotInfo)
-		{
-			Result = ELoadGameResult::Failed;
-			return;
-		}
-		BPLoadSlotFromId(SlotInfo->Id, Result, MoveTemp(LatentInfo));
-	}
+	void BPLoadSlotByInfo(const USlotInfo* SlotInfo, ELoadGameResult& Result, FLatentActionInfo LatentInfo);
 
 	/** Reload the currently loaded slot if any */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
 		meta = (DisplayName = "Reload Current Slot", Latent, LatentInfo = "LatentInfo",
 			ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPReloadCurrentSlot(ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
+	void BPReloadCurrentSlot(ELoadGameResult& Result, FLatentActionInfo LatentInfo)
 	{
-		BPLoadSlot(CurrentInfo, Result, MoveTemp(LatentInfo));
+		BPLoadSlotByInfo(CurrentInfo, Result, MoveTemp(LatentInfo));
 	}
 
 	/**
@@ -250,16 +235,20 @@ public:
 	 * Performance: Interacts with disk, can be slow
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
-	FORCEINLINE bool DeleteSlotFromId(int32 SlotId)
+	FORCEINLINE bool DeleteSlotById(int32 SlotId)
 	{
-		return DeleteSlot(SlotId);
+		if (!IsValidSlot(SlotId))
+		{
+			return false;
+		}
+		return DeleteSlot(GetSlotNameFromId(SlotId));
 	}
 
 	/** Delete all saved slots from disk, loaded or not */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension",
 		meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result",
 			DisplayName = "Delete All Slots"))
-	void BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentActionInfo LatentInfo);
+	void BPDeleteAllSlots(EDeleteSlotsResult& Result, FLatentActionInfo LatentInfo);
 
 	UFUNCTION(BlueprintPure, Category = "SaveExtension")
 	USavePreset* BPGetPreset() const
@@ -270,15 +259,14 @@ public:
 
 	/** BLUEPRINTS & C++ API */
 public:
+
 	/** Delete a saved game on an specified slot
 	 * Performance: Interacts with disk, can be slow
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
 	bool DeleteSlot(USlotInfo* Slot)
 	{
-		if (!Slot)
-			return false;
-		return DeleteSlot(Slot->Id);
+		return Slot? DeleteSlot(Slot->FileName) : false;
 	}
 
 	/** Get the currently loaded SlotInfo. If game was never loaded returns a new SlotInfo */
@@ -313,7 +301,16 @@ public:
 	 * @return true if the slot exists
 	 */
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
-	bool IsSlotSaved(int32 Slot) const;
+	bool IsSlotSaved(FName SlotName) const;
+
+	/** Check if an slot exists on disk
+	 * @return true if the slot exists
+	 */
+	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
+	bool IsSlotSavedById(int32 SlotId) const
+	{
+		return IsValidSlot(SlotId)? IsSlotSaved(GetSlotNameFromId(SlotId)) : false;
+	}
 
 	/** Check if currently playing in a saved slot
 	 * @return true if currently playing in a saved slot
@@ -329,14 +326,14 @@ public:
 	 * @return true if the preset was set successfully
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
-	bool SetActivePreset(USavePreset* Preset);
+	USavePreset* SetActivePreset(TSubclassOf<USavePreset> PresetClass);
 
 	const USavePreset* GetPreset() const;
 
 	void TryInstantiateInfo(bool bForced = false);
 
 	UFUNCTION(BlueprintPure, Category = "SaveExtension")
-	FString GenerateSlotName(const int32 SlotId) const;
+	FName GetSlotNameFromId(const int32 SlotId) const;
 
 	bool IsValidSlot(const int32 Slot) const;
 
@@ -350,8 +347,11 @@ public:
 		CurrentData = NewData;
 	}
 
-	USlotInfo* LoadInfo(uint32 Slot) const;
-	USlotData* LoadData(const USlotInfo* Info) const;
+	USlotInfo* LoadInfo(FName SlotName);
+	USlotInfo* LoadInfo(uint32 SlotId)
+	{
+		return IsValidSlot(SlotId)? LoadInfo(GetSlotNameFromId(SlotId)) : false;
+	}
 
 protected:
 	bool CanLoadOrSave();
@@ -445,6 +445,90 @@ public:
 	static USaveManager* Get(const UObject* ContextObject);
 };
 
+
+inline bool USaveManager::SaveSlot(int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot,
+	const FScreenshotSize Size, FOnGameSaved OnSaved)
+{
+	if (!IsValidSlot(SlotId))
+	{
+		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
+		return false;
+	}
+	return SaveSlot(GetSlotNameFromId(SlotId), bOverrideIfNeeded, bScreenshot, Size, OnSaved);
+}
+
+inline bool USaveManager::SaveSlot(const USlotInfo* SlotInfo, bool bOverrideIfNeeded, bool bScreenshot,
+	const FScreenshotSize Size, FOnGameSaved OnSaved)
+{
+	if (!SlotInfo)
+	{
+		return false;
+	}
+	return SaveSlot(SlotInfo->FileName, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
+}
+
+inline void USaveManager::BPSaveSlotById(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, FLatentActionInfo LatentInfo, bool bOverrideIfNeeded)
+{
+	if (!IsValidSlot(SlotId))
+	{
+		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
+		Result = ESaveGameResult::Failed;
+		return;
+	}
+	BPSaveSlot(GetSlotNameFromId(SlotId), bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
+}
+
+inline void USaveManager::BPSaveSlotByInfo(const USlotInfo* SlotInfo, bool bScreenshot, const FScreenshotSize Size,
+	ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded)
+{
+	if (!SlotInfo)
+	{
+		Result = ESaveGameResult::Failed;
+		return;
+	}
+	BPSaveSlot(SlotInfo->FileName, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
+}
+
+/** Save the currently loaded Slot */
+inline bool USaveManager::SaveCurrentSlot(bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
+{
+	return SaveSlot(CurrentInfo, true, bScreenshot, Size, OnSaved);
+}
+
+inline bool USaveManager::LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded)
+{
+	if (!IsValidSlot(SlotId))
+	{
+		SELog(GetPreset(), "Invalid Slot. Can't go under 0 or exceed MaxSlots.", true);
+		return false;
+	}
+	return LoadSlot(GetSlotNameFromId(SlotId), OnLoaded);
+}
+
+inline bool USaveManager::LoadSlot(const USlotInfo* SlotInfo, FOnGameLoaded OnLoaded)
+{
+	if (!SlotInfo)
+	{
+		return false;
+	}
+	return LoadSlot(SlotInfo->FileName, OnLoaded);
+}
+
+inline void USaveManager::BPLoadSlotById(
+	int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
+{
+	BPLoadSlot(GetSlotNameFromId(SlotId), Result, MoveTemp(LatentInfo));
+}
+
+inline void USaveManager::BPLoadSlotByInfo(const USlotInfo* SlotInfo, ELoadGameResult& Result, FLatentActionInfo LatentInfo)
+{
+	if (!SlotInfo)
+	{
+		Result = ELoadGameResult::Failed;
+		return;
+	}
+	BPLoadSlot(SlotInfo->FileName, Result, MoveTemp(LatentInfo));
+}
 
 inline bool USaveManager::IsValidSlot(const int32 Slot) const
 {

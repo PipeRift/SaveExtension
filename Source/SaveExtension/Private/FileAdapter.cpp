@@ -207,17 +207,17 @@ void FSaveFile::SerializeData(USlotData* SlotData)
 	SlotData->Serialize(Ar);
 }
 
-USlotInfo* FSaveFile::CreateAndDeserializeInfo() const
+USlotInfo* FSaveFile::CreateAndDeserializeInfo(const UObject* Outer) const
 {
 	UObject* Object = nullptr;
-	FFileAdapter::DeserializeObject(Object, InfoClassName, InfoBytes);
+	FFileAdapter::DeserializeObject(Object, InfoClassName, Outer, InfoBytes);
 	return Cast<USlotInfo>(Object);
 }
 
-USlotData* FSaveFile::CreateAndDeserializeData() const
+USlotData* FSaveFile::CreateAndDeserializeData(const UObject* Outer) const
 {
 	UObject* Object = nullptr;
-	FFileAdapter::DeserializeObject(Object, DataClassName, DataBytes);
+	FFileAdapter::DeserializeObject(Object, DataClassName, Outer, DataBytes);
 	return Cast<USlotData>(Object);
 }
 
@@ -248,7 +248,7 @@ bool FFileAdapter::SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Da
 	return false;
 }
 
-bool FFileAdapter::LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& Data, bool bLoadData)
+bool FFileAdapter::LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& Data, bool bLoadData, const UObject* Outer)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_LoadFile);
 
@@ -257,8 +257,8 @@ bool FFileAdapter::LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& 
 	{
 		FSaveFile File{};
 		File.Read(Reader, !bLoadData);
-		Info = File.CreateAndDeserializeInfo();
-		Data = File.CreateAndDeserializeData();
+		Info = File.CreateAndDeserializeInfo(Outer);
+		Data = File.CreateAndDeserializeData(Outer);
 		return true;
 	}
 	return false;
@@ -290,7 +290,7 @@ FString FFileAdapter::GetThumbnailPath(FStringView SlotName)
 	return GetSaveFolder() / FString::Printf(TEXT("%s.png"), SlotName.GetData());
 }
 
-void FFileAdapter::DeserializeObject(UObject*& Object, FStringView ClassName, const TArray<uint8>& Bytes)
+void FFileAdapter::DeserializeObject(UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
 {
 	if (ClassName.IsEmpty() || Bytes.Num() <= 0)
 	{
@@ -309,8 +309,13 @@ void FFileAdapter::DeserializeObject(UObject*& Object, FStringView ClassName, co
 
 	if(!Object)
 	{
+		if(!Outer)
+		{
+			Outer = GetTransientPackage();
+		}
+
 		check(IsInGameThread());
-		Object = NewObject<UObject>(GetTransientPackage(), ObjectClass);
+		Object = NewObject<UObject>(const_cast<UObject*>(Outer), ObjectClass);
 	}
 	// Can only reuse object if class matches
 	else if(Object->GetClass() != ObjectClass)

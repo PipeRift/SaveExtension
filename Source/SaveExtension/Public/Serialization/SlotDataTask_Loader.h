@@ -39,7 +39,7 @@ class USlotDataTask_Loader : public USlotDataTask
 {
 	GENERATED_BODY()
 
-	int32 Slot;
+	FName SlotName;
 
 	UPROPERTY()
 	USlotInfo* NewSlotInfo;
@@ -66,9 +66,9 @@ public:
 
 	USlotDataTask_Loader() : Super() {}
 
-	auto Setup(int32 InSlot)
+	auto Setup(FName InSlotName)
 	{
-		Slot = InSlot;
+		SlotName = InSlotName;
 		return this;
 	}
 

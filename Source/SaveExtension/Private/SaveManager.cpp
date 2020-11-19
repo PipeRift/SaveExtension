@@ -4,7 +4,8 @@
 
 #include "FileAdapter.h"
 #include "LatentActions/LoadInfosAction.h"
-#include "Multithreading/LoadSlotInfoTask.h"
+#include "Multithreading/DeleteSlotsTask.h"
+#include "Multithreading/LoadSlotInfosTask.h"
 #include "SaveSettings.h"
 #include "Serialization/SlotDataTask_LevelLoader.h"
 #include "Serialization/SlotDataTask_LevelSaver.h"
@@ -43,8 +44,6 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 
 	TryInstantiateInfo();
 	UpdateLevelStreamings();
-
-	AddToRoot();
 }
 
 void USaveManager::Deinitialize()
@@ -59,62 +58,62 @@ void USaveManager::Deinitialize()
 	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
 	FGameDelegates::Get().GetEndPlayMapDelegate().RemoveAll(this);
-
-	// Destroy
-	RemoveFromRoot();
-	MarkPendingKill();
 }
 
 bool USaveManager::SaveSlot(
-	int32 SlotId, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
+	FName SlotName, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	if (!CanLoadOrSave())
 		return false;
 
 	const USavePreset* Preset = GetPreset();
-	if (!IsValidSlot(SlotId))
+	if (SlotName.IsNone())
 	{
-		SELog(Preset, "Invalid Slot. Cant go under 0 or exceed MaxSlots.", true);
+		SELog(Preset, "Can't use an empty slot name to save.", true);
 		return false;
 	}
 
 	// Saving
-	SELog(Preset, "Saving to Slot " + FString::FromInt(SlotId));
+	SELog(Preset, "Saving to Slot " + SlotName.ToString());
 
 	UWorld* World = GetWorld();
 	check(World);
 
 	// Launch task, always fail if it didn't finish or wasn't scheduled
 	auto* Task = CreateTask<USlotDataTask_Saver>()
-					 ->Setup(SlotId, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
-					 ->Bind(OnSaved)
-					 ->Start();
+		->Setup(SlotName, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+		->Bind(OnSaved)
+		->Start();
 
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
-bool USaveManager::LoadSlot(int32 SlotId, FOnGameLoaded OnLoaded)
+bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
 {
-	if (!CanLoadOrSave() || !IsSlotSaved(SlotId))
+	if (!CanLoadOrSave() || !IsSlotSaved(SlotName))
 	{
 		return false;
 	}
 
 	TryInstantiateInfo();
 
-	auto* Task = CreateTask<USlotDataTask_Loader>()->Setup(SlotId)->Bind(OnLoaded)->Start();
+	auto* Task = CreateTask<USlotDataTask_Loader>()
+		->Setup(SlotName)
+		->Bind(OnLoaded)
+		->Start();
 
 	return Task->IsSucceeded() || Task->IsScheduled();
 }
 
-bool USaveManager::DeleteSlot(int32 SlotId)
+bool USaveManager::DeleteSlot(FName SlotName)
 {
-	if (!IsValidSlot(SlotId))
+	if (SlotName.IsNone())
+	{
 		return false;
+	}
 
 	bool bSuccess = false;
-
-	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotId)
+	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotName)
 		.OnFinished([&bSuccess](auto& Task) mutable {
 			bSuccess = Task->bSuccess;
 		})
@@ -123,20 +122,20 @@ bool USaveManager::DeleteSlot(int32 SlotId)
 	return bSuccess;
 }
 
-void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnAllInfosLoaded Delegate)
+void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnSlotInfosLoaded Delegate)
 {
-	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	MTTasks.CreateTask<FLoadSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
 		.OnFinished([](auto& Task) {
-			Task->CallDelegate();
+			Task->AfterFinish();
 		})
 		.StartBackgroundTask();
 }
 
-void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnAllInfosLoaded Delegate)
+void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnSlotInfosLoaded Delegate)
 {
-	MTTasks.CreateTask<FLoadAllSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	MTTasks.CreateTask<FLoadSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
 		.OnFinished([](auto& Task) {
-			Task->CallDelegate();
+			Task->AfterFinish();
 		})
 		.StartSynchronousTask();
 	MTTasks.Tick();
@@ -151,7 +150,7 @@ void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 		.StartBackgroundTask();
 }
 
-void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size,
+void USaveManager::BPSaveSlot(FName SlotName, bool bScreenshot, const FScreenshotSize Size,
 	ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
 {
 	if (UWorld* World = GetWorld())
@@ -163,15 +162,15 @@ void USaveManager::BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreens
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FSaveGameAction(this, SlotId, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
+				new FSaveGameAction(this, SlotName, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
 		}
 		return;
 	}
 	Result = ESaveGameResult::Failed;
 }
 
-void USaveManager::BPLoadSlotFromId(
-	int32 SlotId, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadSlot(
+	FName SlotName, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -182,7 +181,7 @@ void USaveManager::BPLoadSlotFromId(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FLoadGameAction(this, SlotId, Result, LatentInfo));
+				new FLoadGameAction(this, SlotName, Result, LatentInfo));
 		}
 		return;
 	}
@@ -218,25 +217,27 @@ void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentAc
 	}
 }
 
-bool USaveManager::IsSlotSaved(int32 SlotId) const
+bool USaveManager::IsSlotSaved(FName SlotName) const
 {
-	if (!IsValidSlot(SlotId))
-	{
-		return false;
-	}
-	return FFileAdapter::DoesFileExist(GenerateSlotName(SlotId));
+	return FFileAdapter::DoesFileExist(SlotName.ToString());
 }
 
-bool USaveManager::SetActivePreset(USavePreset* Preset)
+USavePreset* USaveManager::SetActivePreset(TSubclassOf<USavePreset> PresetClass)
 {
 	// We can only change a preset if we have no tasks running
-	if (HasTasks() || !Preset || ActivePreset == Preset)
+	if (HasTasks() || !PresetClass.Get())
 	{
-		return false;
+		return nullptr;
 	}
 
-	ActivePreset = Preset;
-	return true;
+	// If We have a preset and its already of the same class, dont do anything
+	if (ActivePreset && ActivePreset->GetClass() == PresetClass)
+	{
+		return nullptr;
+	}
+
+	ActivePreset = NewObject<USavePreset>(this, PresetClass);
+	return ActivePreset;
 }
 
 const USavePreset* USaveManager::GetPreset() const
@@ -313,38 +314,25 @@ void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
 	CreateTask<USlotDataTask_LevelLoader>()->Setup(LevelStreaming)->Start();
 }
 
-USlotInfo* USaveManager::LoadInfo(uint32 SlotId) const
+USlotInfo* USaveManager::LoadInfo(FName SlotName)
 {
-	if (!IsValidSlot(SlotId))
+	if (SlotName.IsNone())
 	{
 		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
-	FAsyncTask<FLoadSlotInfoTask>* LoadInfoTask = new FAsyncTask<FLoadSlotInfoTask>(this, SlotId);
-	LoadInfoTask->StartSynchronousTask();
+	auto& Task = MTTasks.CreateTask<FLoadSlotInfosTask>(this, SlotName)
+		.OnFinished([](auto& Task)
+		{
+			Task->AfterFinish();
+		});
+	Task.StartSynchronousTask();
 
-	check(LoadInfoTask->IsDone());
+	check(Task.IsDone());
 
-	return LoadInfoTask->GetTask().GetLoadedSlot();
-}
-
-USlotData* USaveManager::LoadData(const USlotInfo* InSaveInfo) const
-{
-	if (!InSaveInfo)
-	{
-		return nullptr;
-	}
-
-	const FString Card = GenerateSlotName(InSaveInfo->Id);
-
-	USlotInfo* LoadedInfo = nullptr;
-	USlotData* LoadedData = nullptr;
-	if(FFileAdapter::LoadFile(Card, LoadedInfo, LoadedData, true))
-	{
-		return LoadedData;
-	}
-	return nullptr;
+	const auto& Infos = Task->GetLoadedSlots();
+	return Infos.Num() > 0? Infos[0] : nullptr;
 }
 
 USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
@@ -366,14 +354,15 @@ void USaveManager::FinishTask(USlotDataTask* Task)
 	}
 }
 
-FString USaveManager::GenerateSlotName(const int32 SlotId) const
+FName USaveManager::GetSlotNameFromId(const int32 SlotId) const
 {
-	FString Name;
 	if (const auto* Preset = GetPreset())
 	{
-		Preset->BPGenerateSlotName(SlotId, Name);
+		FName Name;
+		Preset->BPGetSlotNameFromId(SlotId, Name);
+		return Name;
 	}
-	return Name;
+	return FName{ FString::FromInt(SlotId) };
 }
 
 bool USaveManager::IsLoading() const
