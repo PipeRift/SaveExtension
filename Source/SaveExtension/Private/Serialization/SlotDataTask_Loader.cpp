@@ -8,6 +8,7 @@
 #include <Components/PrimitiveComponent.h>
 #include <UObject/UObjectGlobals.h>
 
+#include "Misc/SlotHelpers.h"
 #include "SavePreset.h"
 #include "SaveManager.h"
 #include "Serialization/SEArchive.h"
@@ -62,7 +63,7 @@ void USlotDataTask_Loader::OnStart()
 
 	// Cross-Level loading
 	// TODO: Handle empty Map as empty world
-	FName CurrentMapName { World->GetMapName() };
+	FName CurrentMapName { FSlotHelpers::GetWorldName(World) };
 	if (CurrentMapName != NewSlotInfo->Map)
 	{
 		LoadState = ELoadDataTaskState::LoadingMap;
@@ -139,7 +140,12 @@ void USlotDataTask_Loader::OnMapLoaded()
 	}
 
 	const UWorld* World = GetWorld();
-	if (World->GetFName() == NewSlotInfo->Map)
+	if(!World)
+	{
+		UE_LOG(LogSaveExtension, Warning, TEXT("Failed loading map from saved slot."));
+		Finish(false);
+	}
+	else if (World->GetFName() == NewSlotInfo->Map)
 	{
 		if(IsDataLoaded())
 		{

@@ -314,7 +314,6 @@ void FFileAdapter::DeserializeObject(UObject*& Object, FStringView ClassName, co
 			Outer = GetTransientPackage();
 		}
 
-		check(IsInGameThread());
 		Object = NewObject<UObject>(const_cast<UObject*>(Outer), ObjectClass);
 	}
 	// Can only reuse object if class matches

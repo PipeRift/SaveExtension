@@ -195,19 +195,19 @@ public:
 
 	/** Load game from a slot name */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
-		meta = (DisplayName = "Load Slot from Id", Latent, LatentInfo = "LatentInfo",
+		meta = (DisplayName = "Load Slot", Latent, LatentInfo = "LatentInfo",
 			ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
 	void BPLoadSlot(FName SlotName, ELoadGameResult& Result, FLatentActionInfo LatentInfo);
 
 	/** Load game from a slot Id */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
-		meta = (DisplayName = "Load Slot from Id", Latent, LatentInfo = "LatentInfo",
+		meta = (DisplayName = "Load Slot by Id", Latent, LatentInfo = "LatentInfo",
 			ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
 	void BPLoadSlotById(int32 SlotId, ELoadGameResult& Result, FLatentActionInfo LatentInfo);
 
 	/** Load game from a SlotInfo */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
-		meta = (DisplayName = "Load Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result",
+		meta = (DisplayName = "Load Slot by Info", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result",
 			UnsafeDuringActorConstruction))
 	void BPLoadSlotByInfo(const USlotInfo* SlotInfo, ELoadGameResult& Result, FLatentActionInfo LatentInfo);
 
@@ -443,6 +443,25 @@ private:
 public:
 	/** Get the global save manager */
 	static USaveManager* Get(const UObject* ContextObject);
+
+
+	/***********************************************************************/
+	/* DEPRECATED                                                          */
+	/***********************************************************************/
+
+	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (DeprecatedFunction, DeprecationMessage="Use 'Save Slot by Id' instead.", 
+		AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot to Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true)
+	{
+		BPSaveSlotById(SlotId, bScreenshot, Size, Result, LatentInfo, bOverrideIfNeeded);
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading", meta = (DeprecatedFunction, DeprecationMessage="Use 'Load Slot by Id' instead.",
+		DisplayName = "Load Slot from Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+	void BPLoadSlotFromId(int32 SlotId, ELoadGameResult& Result, FLatentActionInfo LatentInfo)
+	{
+		BPLoadSlotById(SlotId, Result, LatentInfo);
+	}
 };
 
 

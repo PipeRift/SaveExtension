@@ -5,6 +5,7 @@
 #include <GameFramework/GameModeBase.h>
 #include <Serialization/MemoryWriter.h>
 
+#include "Misc/SlotHelpers.h"
 #include "SaveManager.h"
 #include "SlotInfo.h"
 #include "SlotData.h"
@@ -92,8 +93,7 @@ void USlotDataTask_Saver::OnStart()
 		}
 
 		//Save Level info in both files
-		// TODO: Only if map is an asset, otherway it must be empty
-		SlotInfo->Map = FName{ World->GetMapName() };
+		SlotInfo->Map = FName{ FSlotHelpers::GetWorldName(World) };
 		SlotData->Map = SlotData->Map;
 
 		SerializeSync();

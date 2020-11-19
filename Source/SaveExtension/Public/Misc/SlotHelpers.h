@@ -2,13 +2,14 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include <CoreMinimal.h>
 #include <HAL/PlatformFile.h>
+
 #include "FileAdapter.h"
 
 
-struct FSlotHelpers {
-
+struct FSlotHelpers
+{
 	static void FindSlotFileNames(TArray<FString>& FoundSlots);
 
 	/** Used to find next available slot id */
@@ -23,4 +24,15 @@ struct FSlotHelpers {
 
 		virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override;
 	};
+
+	static FString GetWorldName(const UWorld* World)
+	{
+		check(World);
+		const FString MapName = World->GetOutermost()->GetName();
+		if (World->IsPlayInEditor())
+		{
+			return UWorld::RemovePIEPrefix(MapName);
+		}
+		return MapName;
+	}
 };

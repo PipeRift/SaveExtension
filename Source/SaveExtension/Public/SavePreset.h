@@ -155,7 +155,7 @@ public:
 
 	USavePreset();
 
-	UFUNCTION(BlueprintNativeEvent, Category = "Slots", meta = (DisplayName="Generate Slot Name"))
+	UFUNCTION(BlueprintNativeEvent, Category = "Slots", meta = (DisplayName="Get Slot Name from Id"))
 	void BPGetSlotNameFromId(int32 Id, FName& Name) const;
 
 protected:

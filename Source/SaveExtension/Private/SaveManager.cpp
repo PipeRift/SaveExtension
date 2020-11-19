@@ -283,7 +283,10 @@ void USaveManager::TryInstantiateInfo(bool bForced)
 void USaveManager::UpdateLevelStreamings()
 {
 	UWorld* World = GetWorld();
-	check(World);
+	if(!World)
+	{
+		return;
+	}
 
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 
