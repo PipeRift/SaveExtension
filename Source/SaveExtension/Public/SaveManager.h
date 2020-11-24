@@ -425,10 +425,10 @@ public:
 	UFUNCTION(Category = SaveExtension, BlueprintCallable)
 	void UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface);
 
-	void OnSaveBegan(const FSaveFilter& Filter);
-	void OnSaveFinished(const FSaveFilter& Filter, const bool bError);
-	void OnLoadBegan(const FSaveFilter& Filter);
-	void OnLoadFinished(const FSaveFilter& Filter, const bool bError);
+	void OnSaveBegan(const FSELevelFilter& Filter);
+	void OnSaveFinished(const FSELevelFilter& Filter, const bool bError);
+	void OnLoadBegan(const FSELevelFilter& Filter);
+	void OnLoadFinished(const FSELevelFilter& Filter, const bool bError);
 
 private:
 	void OnMapLoadStarted(const FString& MapName);

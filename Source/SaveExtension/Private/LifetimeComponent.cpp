@@ -46,7 +46,7 @@ void ULifetimeComponent::EndPlay(EEndPlayReason::Type Reason)
 	Super::EndPlay(Reason);
 }
 
-void ULifetimeComponent::OnSaveBegan(const FSaveFilter& Filter)
+void ULifetimeComponent::OnSaveBegan(const FSELevelFilter& Filter)
 {
 	if (Filter.ShouldSave(GetOwner()))
 	{
@@ -54,7 +54,7 @@ void ULifetimeComponent::OnSaveBegan(const FSaveFilter& Filter)
 	}
 }
 
-void ULifetimeComponent::OnLoadFinished(const FSaveFilter& Filter, bool bError)
+void ULifetimeComponent::OnLoadFinished(const FSELevelFilter& Filter, bool bError)
 {
 	if (Filter.ShouldSave(GetOwner()))
 	{

@@ -41,10 +41,10 @@ public:
 
 
 	// Event called when Save process starts
-	virtual void OnSaveBegan(const FSaveFilter& Filter) override;
+	virtual void OnSaveBegan(const FSELevelFilter& Filter) override;
 
 	// Event called when Load process ends
-	virtual void OnLoadFinished(const FSaveFilter& Filter, bool bError);
+	virtual void OnLoadFinished(const FSELevelFilter& Filter, bool bError);
 
 
 	USaveManager* GetManager() const

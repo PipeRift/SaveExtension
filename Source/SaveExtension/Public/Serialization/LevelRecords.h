@@ -8,7 +8,7 @@
 #include <Engine/LevelScriptActor.h>
 
 #include "Records.h"
-#include "SaveFilter.h"
+#include "LevelFilter.h"
 #include "LevelRecords.generated.h"
 
 
@@ -18,8 +18,9 @@ struct FLevelRecord : public FBaseRecord
 {
 	GENERATED_BODY()
 
-
-	FSaveFilter SaveFilter;
+	bool bOverrideGeneralFilter = false;
+	// Filter is used if bOverrideGeneralFilter is true
+	FSELevelFilter Filter;
 
 	/** Record of the Level Script Actor */
 	FActorRecord LevelScript;
@@ -34,7 +35,7 @@ struct FLevelRecord : public FBaseRecord
 
 	bool IsValid() const { return !Name.IsNone(); }
 
-	void Clean();
+	void CleanRecords();
 };
 
 
@@ -44,9 +45,12 @@ struct FPersistentLevelRecord : public FLevelRecord
 {
 	GENERATED_BODY()
 
-	static FName PersistentName;
+	static const FName PersistentName;
 
-	FPersistentLevelRecord() : Super() { Name = PersistentName; }
+	FPersistentLevelRecord() : Super()
+	{
+		Name = PersistentName;
+	}
 };
 
 
@@ -57,15 +61,12 @@ struct FStreamingLevelRecord : public FLevelRecord
 	GENERATED_BODY()
 
 	FStreamingLevelRecord() : Super() {}
-	FStreamingLevelRecord(const ULevelStreaming* Level) : Super()
+	FStreamingLevelRecord(const ULevelStreaming& Level) : Super()
 	{
-		if (Level)
-		{
-			Name = Level->GetWorldAssetPackageFName();
-		}
+		Name = Level.GetWorldAssetPackageFName();
 	}
 
-	FORCEINLINE bool operator== (const ULevelStreaming* Level) const
+	FORCEINLINE bool operator==(const ULevelStreaming* Level) const
 	{
 		return Level && Name == Level->GetWorldAssetPackageFName();
 	}

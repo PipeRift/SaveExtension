@@ -44,6 +44,47 @@ USaveManager* USlotDataTask::GetManager() const
 	return Cast<USaveManager>(GetOuter());
 }
 
+void USlotDataTask::BakeAllFilters()
+{
+	SlotData->GeneralLevelFilter.BakeAllowedClasses();
+
+	if(SlotData->MainLevel.bOverrideGeneralFilter)
+	{
+		SlotData->MainLevel.Filter.BakeAllowedClasses();
+	}
+
+	for(const auto& Level : SlotData->SubLevels)
+	{
+		if(Level.bOverrideGeneralFilter)
+		{
+			Level.Filter.BakeAllowedClasses();
+		}
+	}
+}
+
+const FSELevelFilter& USlotDataTask::GetGeneralFilter() const
+{
+	check(SlotData);
+	return SlotData->GeneralLevelFilter;
+}
+
+const FSELevelFilter& USlotDataTask::GetLevelFilter(const FLevelRecord& Level) const
+{
+	if(Level.bOverrideGeneralFilter)
+	{
+		return Level.Filter;
+	}
+	return GetGeneralFilter();
+}
+
+FLevelRecord* USlotDataTask::FindLevelRecord(const ULevelStreaming* Level) const
+{
+	if (!Level)
+		return &SlotData->MainLevel;
+	else // Find the Sub-Level
+		return SlotData->SubLevels.FindByKey(Level);
+}
+
 UWorld* USlotDataTask::GetWorld() const
 {
 	return GetOuter()->GetWorld();

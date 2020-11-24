@@ -10,6 +10,15 @@ void USlotDataTask_LevelLoader::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
+		FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
+		if (!LevelRecord)
+		{
+			Finish(false);
+			return;
+		}
+
+		GetLevelFilter(*LevelRecord).BakeAllowedClasses();
+
 		if (Preset->IsFrameSplitLoad())
 		{
 			DeserializeLevelASync(StreamingLevel->GetLoadedLevel(), StreamingLevel);
@@ -26,15 +35,14 @@ void USlotDataTask_LevelLoader::OnStart()
 
 void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 {
-	FLevelRecord * LevelRecord = FindLevelRecord(CurrentSLevel.Get());
-	if (!LevelRecord)
-	{
-		Finish(false);
-		return;
-	}
+	FLevelRecord& LevelRecord = *FindLevelRecord(CurrentSLevel.Get());
 
 	if (StartMS <= 0)
+	{
 		StartMS = GetTimeMilliseconds();
+	}
+
+	const auto& Filter = GetLevelFilter(LevelRecord);
 
 	// Continue Iterating actors every tick
 	for (; CurrentActorIndex < CurrentLevelActors.Num(); ++CurrentActorIndex)
@@ -42,11 +50,11 @@ void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 		AActor* Actor{ CurrentLevelActors[CurrentActorIndex].Get() };
 		if (Actor)
 		{
-			DeserializeLevel_Actor(Actor, *LevelRecord);
+			DeserializeLevel_Actor(Actor, LevelRecord, Filter);
 
 			const float CurrentMS = GetTimeMilliseconds();
 			// If x milliseconds passed, continue on next frame
-			if (CurrentMS - StartMS >= Filter.MaxFrameMs)
+			if (CurrentMS - StartMS >= MaxFrameMs)
 				return;
 		}
 	}

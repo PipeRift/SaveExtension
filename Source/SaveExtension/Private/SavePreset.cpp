@@ -2,7 +2,7 @@
 
 #include "SavePreset.h"
 
-#include "SaveFilter.h"
+#include "LevelFilter.h"
 #include "SlotData.h"
 #include "SlotInfo.h"
 
@@ -27,9 +27,9 @@ void USavePreset::GetSlotNameFromId(int32 Id, FName& Name) const
 	}
 }
 
-FSaveFilter USavePreset::ToFilter() const
+FSELevelFilter USavePreset::ToFilter() const
 {
-	FSaveFilter Filter{};
+	FSELevelFilter Filter{};
 	Filter.FromPreset(*this);
 	return Filter;
 }

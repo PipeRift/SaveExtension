@@ -222,7 +222,7 @@ public:
 		return MultithreadedFiles == ESaveASyncMode::SaveAsync || MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
 	}
 
-	struct FSaveFilter ToFilter() const;
+	struct FSELevelFilter ToFilter() const;
 };
 
 

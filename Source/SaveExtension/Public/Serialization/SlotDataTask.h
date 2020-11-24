@@ -9,7 +9,7 @@
 #include <GameFramework/Actor.h>
 
 #include "SlotData.h"
-#include "SaveFilter.h"
+#include "LevelFilter.h"
 
 #include "SlotDataTask.generated.h"
 
@@ -37,7 +37,9 @@ protected:
 
 	UPROPERTY()
 	const USavePreset* Preset;
-	FSaveFilter Filter;
+
+	UPROPERTY()
+	float MaxFrameMs = 0.f;
 
 public:
 
@@ -47,7 +49,7 @@ public:
 	{
 		SlotData = InSaveData;
 		Preset = &InPreset;
-		Filter = InPreset.ToFilter();
+		MaxFrameMs = Preset->GetMaxFrameMs();
 	}
 
 	USlotDataTask* Start();
@@ -72,11 +74,16 @@ protected:
 
 	USaveManager* GetManager() const;
 
+	void BakeAllFilters();
+
+	const FSELevelFilter& GetGeneralFilter() const;
+	const FSELevelFilter& GetLevelFilter(const FLevelRecord& Level) const;
+
+	FLevelRecord* FindLevelRecord(const ULevelStreaming* Level) const;
+
 	//~ Begin UObject Interface
 	virtual UWorld* GetWorld() const override;
 	//~ End UObject Interface
-
-protected:
 
 	FORCEINLINE float GetTimeMilliseconds() const {
 		return FPlatformTime::ToMilliseconds(FPlatformTime::Cycles());
@@ -96,10 +103,10 @@ protected:
 	/** USE ONLY IF SYNC */
 	USlotData* SlotData;
 
-	const FSaveFilter& Filter;
+	const FSELevelFilter& Filter;
 
 
-	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const FSaveFilter& Filter) :
+	FSlotDataActorsTask(const bool bInIsSync, const UWorld* InWorld, USlotData* InSlotData, const FSELevelFilter& Filter) :
 		bIsSync(bInIsSync),
 		World(InWorld),
 		SlotData(InSlotData),

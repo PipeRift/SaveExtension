@@ -3,7 +3,7 @@
 #pragma once
 
 #include "SavePreset.h"
-#include "SaveFilter.generated.h"
+#include "LevelFilter.generated.h"
 
 class USaveManager;
 
@@ -13,7 +13,7 @@ class USaveManager;
  * This information is saved to be restored while loading.
  */
 USTRUCT(Blueprintable)
-struct FSaveFilter
+struct FSELevelFilter
 {
 	GENERATED_BODY()
 
@@ -39,27 +39,19 @@ public:
 	UPROPERTY(SaveGame)
 	FSEComponentClassFilter LoadComponentFilter;
 
-	UPROPERTY(SaveGame)
-	float MaxFrameMs = 5.f;
 
-	UPROPERTY(SaveGame)
-	bool bStoreGameInstance = false;
+	FSELevelFilter() {}
 
-
-	FSaveFilter() {}
 	void FromPreset(const USavePreset& Preset)
 	{
 		ActorFilter = Preset.GetActorFilter(true);
-		ComponentFilter = Preset.GetComponentFilter(true);
 		LoadActorFilter = Preset.GetActorFilter(false);
-		LoadComponentFilter = Preset.GetComponentFilter(false);
-
-		MaxFrameMs = Preset.GetMaxFrameMs();
 		bStoreComponents = Preset.bStoreComponents;
-		bStoreGameInstance = Preset.bStoreGameInstance;
+		ComponentFilter = Preset.GetComponentFilter(true);
+		LoadComponentFilter = Preset.GetComponentFilter(false);
 	}
 
-	void BakeAllowedClasses()
+	void BakeAllowedClasses() const
 	{
 		ActorFilter.BakeAllowedClasses();
 		ComponentFilter.BakeAllowedClasses();
@@ -67,35 +59,35 @@ public:
 		LoadComponentFilter.BakeAllowedClasses();
 	}
 
-	FORCEINLINE bool ShouldSave(const AActor* Actor) const
+	bool ShouldSave(const AActor* Actor) const
 	{
 		return ActorFilter.IsClassAllowed(Actor->GetClass());
 	}
 
-	FORCEINLINE bool ShouldLoad(const AActor* Actor) const
+	bool ShouldLoad(const AActor* Actor) const
 	{
 		return LoadActorFilter.IsClassAllowed(Actor->GetClass());
 	}
 
-	FORCEINLINE bool ShouldSave(const UActorComponent* Component) const
+	bool ShouldSave(const UActorComponent* Component) const
 	{
 		return IsValid(Component)
 			&& ComponentFilter.IsClassAllowed(Component->GetClass());
 	}
 
-	FORCEINLINE bool ShouldLoad(const UActorComponent* Component) const
+	bool ShouldLoad(const UActorComponent* Component) const
 	{
 		return IsValid(Component)
 			&& LoadComponentFilter.IsClassAllowed(Component->GetClass());
 	}
 
-	FORCEINLINE bool StoresTransform(const UActorComponent* Component) const
+	static bool StoresTransform(const UActorComponent* Component)
 	{
 		return Component->GetClass()->IsChildOf<USceneComponent>()
 			&& HasTag(Component, TagTransform);
 	}
 
-	FORCEINLINE bool StoresTags(const UActorComponent* Component) const
+	static bool StoresTags(const UActorComponent* Component)
 	{
 		return !HasTag(Component, TagNoTags);
 	}

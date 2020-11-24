@@ -32,9 +32,10 @@ class FMTTask_SerializeActors : public FMTTask
 	const TArray<AActor*>* const LevelActors;
 	const int32 StartIndex;
 	const int32 Num;
+	const bool bStoreGameInstance = false;
 
 	/** USE ONLY FOR DUMPING DATA */
-	FLevelRecord* LevelRecord;
+	FLevelRecord* LevelRecord = nullptr;
 
 	FActorRecord LevelScriptRecord;
 	TArray<FActorRecord> ActorRecords;
@@ -43,11 +44,12 @@ class FMTTask_SerializeActors : public FMTTask
 public:
 	FMTTask_SerializeActors(const UWorld* World, USlotData* SlotData,
 		const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum,
-		FLevelRecord* InLevelRecord, const FSaveFilter& Filter)
+		FLevelRecord* InLevelRecord, const FSELevelFilter& Filter)
 		: FMTTask(false, World, SlotData, Filter)
 		, LevelActors(InLevelActors)
 		, StartIndex(InStartIndex)
 		, Num(InNum)
+		, bStoreGameInstance(SlotData->bStoreGameInstance)
 		, LevelRecord(InLevelRecord)
 		, LevelScriptRecord{}
 		, ActorRecords{}

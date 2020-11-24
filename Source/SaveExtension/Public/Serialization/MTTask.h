@@ -10,7 +10,7 @@
 #include <GameFramework/Controller.h>
 
 #include "SavePreset.h"
-#include "SaveFilter.h"
+#include "LevelFilter.h"
 
 
 /////////////////////////////////////////////////////
@@ -24,10 +24,10 @@ protected:
 	USlotData* SlotData;
 
 	// Locally cached settings
-	FSaveFilter Filter;
+	const FSELevelFilter& Filter;
 
 
-	FMTTask(const bool bIsloading, const UWorld* InWorld, USlotData* InSlotData, const FSaveFilter& Filter)
+	FMTTask(const bool bIsloading, const UWorld* InWorld, USlotData* InSlotData, const FSELevelFilter& Filter)
 		: World(InWorld)
 		, SlotData(InSlotData)
 		, Filter(Filter)

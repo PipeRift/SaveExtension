@@ -40,19 +40,19 @@ public:
 	UPROPERTY(Category = SaveData, BlueprintReadOnly)
 	float TimeSeconds;
 
-
 	/** Records
 	 * All serialized information to be saved or loaded
 	 * Serialized manually for performance
 	 */
-
+	bool bStoreGameInstance = false;
 	FObjectRecord GameInstance;
 
+	FSELevelFilter GeneralLevelFilter;
 	FPersistentLevelRecord MainLevel;
 	TArray<FStreamingLevelRecord> SubLevels;
 
 
-	void Clean(bool bKeepLevels);
+	void Clean(bool bKeepSublevels);
 
 	/** Using manual serialization. It's way faster than reflection serialization */
 	virtual void Serialize(FArchive& Ar) override;

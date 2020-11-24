@@ -7,12 +7,19 @@
 /////////////////////////////////////////////////////
 // LevelRecords
 
-FName FPersistentLevelRecord::PersistentName{ "Persistent" };
+const FName FPersistentLevelRecord::PersistentName{ "Persistent" };
 
 
 bool FLevelRecord::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);
+
+	Ar << bOverrideGeneralFilter;
+	if (bOverrideGeneralFilter)
+	{
+		static UScriptStruct* const LevelFilterType{ FSELevelFilter::StaticStruct() };
+		LevelFilterType->SerializeItem(Ar, &Filter, nullptr);
+	}
 
 	Ar << LevelScript;
 	Ar << Actors;
@@ -20,7 +27,7 @@ bool FLevelRecord::Serialize(FArchive& Ar)
 	return true;
 }
 
-void FLevelRecord::Clean()
+void FLevelRecord::CleanRecords()
 {
 	LevelScript = {};
 	Actors.Empty();

@@ -399,7 +399,7 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 	SubscribedInterfaces.Remove(Interface);
 }
 
-void USaveManager::OnSaveBegan(const FSaveFilter& Filter)
+void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 {
 	IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
@@ -413,7 +413,7 @@ void USaveManager::OnSaveBegan(const FSaveFilter& Filter)
 	});
 }
 
-void USaveManager::OnSaveFinished(const FSaveFilter& Filter, const bool bError)
+void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bError)
 {
 	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
@@ -432,7 +432,7 @@ void USaveManager::OnSaveFinished(const FSaveFilter& Filter, const bool bError)
 	}
 }
 
-void USaveManager::OnLoadBegan(const FSaveFilter& Filter)
+void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 {
 	IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
@@ -446,7 +446,7 @@ void USaveManager::OnLoadBegan(const FSaveFilter& Filter)
 	});
 }
 
-void USaveManager::OnLoadFinished(const FSaveFilter& Filter, const bool bError)
+void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bError)
 {
 	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());

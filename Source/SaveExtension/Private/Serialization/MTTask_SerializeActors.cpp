@@ -15,7 +15,7 @@
 // FMTTask_SerializeActors
 void FMTTask_SerializeActors::DoWork()
 {
-	if (Filter.bStoreGameInstance)
+	if (bStoreGameInstance)
 	{
 		SerializeGameInstance();
 	}

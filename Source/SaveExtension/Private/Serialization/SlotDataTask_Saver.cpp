@@ -46,12 +46,11 @@ void USlotDataTask_Saver::OnStart()
 	{
 		const UWorld* World = GetWorld();
 
-		GetManager()->OnSaveBegan(Filter);
+		GetManager()->OnSaveBegan(GetGeneralFilter());
 
 		SlotInfo = Manager->GetCurrentInfo();
 		SlotData = Manager->GetCurrentData();
 		SlotData->Clean(true);
-
 
 		check(SlotInfo && SlotData);
 
@@ -96,6 +95,9 @@ void USlotDataTask_Saver::OnStart()
 		SlotInfo->Map = FName{ FSlotHelpers::GetWorldName(World) };
 		SlotData->Map = SlotData->Map;
 
+		SlotData->bStoreGameInstance = Preset->bStoreGameInstance;
+		SlotData->GeneralLevelFilter = Preset->ToFilter();
+
 		SerializeSync();
 		SaveFile();
 		return;
@@ -137,7 +139,10 @@ void USlotDataTask_Saver::OnFinish(bool bSuccess)
 	USaveManager* Manager = GetManager();
 	check(Manager);
 	Delegate.ExecuteIfBound((Manager && bSuccess)? Manager->GetCurrentInfo() : nullptr);
-	Manager->OnSaveFinished(Filter, !bSuccess);
+	Manager->OnSaveFinished(
+		SlotData? GetGeneralFilter() : FSELevelFilter{},
+		!bSuccess
+	);
 }
 
 void USlotDataTask_Saver::BeginDestroy()
@@ -167,6 +172,8 @@ void USlotDataTask_Saver::SerializeWorld()
 
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
+	BakeAllFilters();
+
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 
 	// Threads available + 1 (Synchronous Thread)
@@ -192,7 +199,9 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 	check(IsValid(Level));
 
 	if (!Preset->IsMTSerializationSave())
+	{
 		AssignedTasks = 1;
+	}
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
@@ -203,21 +212,20 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 	if (StreamingLevel)
 	{
 		// Find or create the sub-level
-		const int32 Index = SlotData->SubLevels.AddUnique({ StreamingLevel });
+		const int32 Index = SlotData->SubLevels.AddUnique({ *StreamingLevel });
 		LevelRecord = &SlotData->SubLevels[Index];
 	}
 	check(LevelRecord);
 
 	// Empty level record before serializing it
-	LevelRecord->Clean();
+	LevelRecord->CleanRecords();
 
-	Filter.BakeAllowedClasses();
+	auto& Filter = GetLevelFilter(*LevelRecord);
 
 	const int32 MinObjectsPerTask = 40;
 	const int32 ActorCount = Level->Actors.Num();
 	const int32 NumBalancedPerTask = FMath::CeilToInt((float) ActorCount / AssignedTasks);
 	const int32 NumPerTask = FMath::Max(NumBalancedPerTask, MinObjectsPerTask);
-
 
 	// Split all actors between multi-threaded tasks
 	int32 Index = 0;

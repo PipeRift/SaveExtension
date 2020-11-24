@@ -115,7 +115,9 @@ protected:
 	void PrepareLevel(const ULevel* Level, FLevelRecord& LevelRecord);
 
 	/** Deserializes all Level actors. */
-	inline void DeserializeLevel_Actor(AActor* const Actor, const FLevelRecord& LevelRecord);
+	inline void DeserializeLevel_Actor(AActor* const Actor, const FLevelRecord& LevelRecord, const FSELevelFilter& Filter);
+
+	void FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const;
 
 private:
 
@@ -124,15 +126,9 @@ private:
 	void DeserializeGameInstance();
 
 	/** Serializes an actor into this Actor Record */
-	bool DeserializeActor(AActor* Actor, const FActorRecord& Record);
+	bool DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSELevelFilter& Filter);
 
 	/** Deserializes the components of an actor from a provided Record */
-	void DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, int8 indent = 0);
+	void DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, const FSELevelFilter& Filter, int8 indent = 0);
 	/** END Deserialization */
-
-protected:
-
-	// HELPERS
-	FLevelRecord* FindLevelRecord(const ULevelStreaming* Level) const;
-	void FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const;
 };

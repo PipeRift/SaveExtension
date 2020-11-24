@@ -10,6 +10,15 @@ void USlotDataTask_LevelSaver::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
+		FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
+		if (!LevelRecord)
+		{
+			Finish(false);
+			return;
+		}
+
+		GetLevelFilter(*LevelRecord).BakeAllowedClasses();
+
 		const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn());
 		SerializeLevelSync(StreamingLevel->GetLoadedLevel(), NumberOfThreads, StreamingLevel);
 
