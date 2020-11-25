@@ -29,6 +29,7 @@ void FSEClassFilter::Merge(const FSEClassFilter& Other)
 
 void FSEClassFilter::BakeAllowedClasses() const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSEClassFilter::BakeAllowedClasses);
 	BakedAllowedClasses.Empty();
 
 	if(AllowedClasses.Num() <= 0)
@@ -36,34 +37,47 @@ void FSEClassFilter::BakeAllowedClasses() const
 		return;
 	}
 
-	for (TObjectIterator<UClass> It; It; ++It)
+	TArray<UClass*> PotentiallyAllowedClasses;
 	{
-		UClass* const Class = *It;
-
-		// Iterate parent classes of a class
-		const UClass* CurrentClass = Class;
-		while (CurrentClass)
+		TRACE_CPUPROFILER_EVENT_SCOPE(First Pass: Potential classes);
+		for(auto& AllowedClass : AllowedClasses)
 		{
-			// If parent class is allowed, we are allowed.
-			// This prevents iteration to the first allowed. May not be worth it for performance
-			if (BakedAllowedClasses.Contains(CurrentClass))
+			UClass* const AllowedClassPtr = AllowedClass.Get();
+			for (TObjectIterator<UClass> It; It; ++It)
 			{
-				BakedAllowedClasses.Add(Class);
-				break;
+				UClass* const Class = *It;
+				if (AllowedClassPtr == Class)
+				{
+					BakedAllowedClasses.Add(Class);
+				}
+				else if(Class->IsChildOf(AllowedClassPtr))
+				{
+					PotentiallyAllowedClasses.Add(Class);
+				}
 			}
-
-			if (AllowedClasses.Contains(CurrentClass))
+		}
+	}
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(Second Pass: Bake Classes);
+		for (UClass* Class : PotentiallyAllowedClasses)
+		{
+			// Iterate parent classes of a class
+			const UClass* CurrentClass = Class;
+			while (CurrentClass)
 			{
-				// First parent allowed class marks it as allowed
-				BakedAllowedClasses.Add(Class);
-				break;
+				if (AllowedClasses.Contains(CurrentClass))
+				{
+					// First parent allowed class marks it as allowed
+					BakedAllowedClasses.Add(Class);
+					break;
+				}
+				else if (IgnoredClasses.Contains(CurrentClass))
+				{
+					// First parent ignored class marks it as not allowed
+					break;
+				}
+				CurrentClass = CurrentClass->GetSuperClass();
 			}
-			else if (IgnoredClasses.Contains(CurrentClass))
-			{
-				// First parent ignored class marks it as not allowed
-				break;
-			}
-			CurrentClass = CurrentClass->GetSuperClass();
 		}
 	}
 }

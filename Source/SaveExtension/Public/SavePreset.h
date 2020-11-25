@@ -90,7 +90,7 @@ public:
 
 	/** If true will store the game instance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Serialization)
-	bool bStoreGameInstance = false;
+	bool bStoreGameInstance = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization|Actors")
 	FSEActorClassFilter ActorFilter;

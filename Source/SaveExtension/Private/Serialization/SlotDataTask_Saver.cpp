@@ -18,6 +18,7 @@
 
 void USlotDataTask_Saver::OnStart()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::OnStart);
 	USaveManager* Manager = GetManager();
 	Manager->TryInstantiateInfo();
 
@@ -107,6 +108,7 @@ void USlotDataTask_Saver::OnStart()
 
 void USlotDataTask_Saver::Tick(float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::Tick);
 	Super::Tick(DeltaTime);
 
 	if (SaveTask && SaveTask->IsDone())
@@ -127,6 +129,7 @@ void USlotDataTask_Saver::Tick(float DeltaTime)
 
 void USlotDataTask_Saver::OnFinish(bool bSuccess)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::OnFinish);
 	if (bSuccess)
 	{
 		// Clean serialization data
@@ -158,6 +161,7 @@ void USlotDataTask_Saver::BeginDestroy()
 
 void USlotDataTask_Saver::SerializeSync()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::SerializeSync);
 	// Has Authority
 	if (GetWorld()->GetAuthGameMode())
 	{
@@ -168,8 +172,9 @@ void USlotDataTask_Saver::SerializeSync()
 
 void USlotDataTask_Saver::SerializeWorld()
 {
-	const UWorld* World = GetWorld();
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::SerializeWorld);
 
+	const UWorld* World = GetWorld();
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	BakeAllFilters();
@@ -196,6 +201,7 @@ void USlotDataTask_Saver::SerializeWorld()
 
 void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::SerializeLevelSync);
 	check(IsValid(Level));
 
 	if (!Preset->IsMTSerializationSave())
@@ -234,9 +240,14 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 		const int32 NumRemaining = ActorCount - Index;
 		const int32 NumToSerialize = FMath::Min(NumRemaining, NumPerTask);
 
+		// First task saves the GameInstance
+		bool bStoreGameInstance = Index <= 0 && SlotData->bStoreGameInstance;
 		// Add new Task
-		Tasks.Emplace(FMTTask_SerializeActors{
-			GetWorld(), SlotData, &Level->Actors, Index, NumToSerialize, LevelRecord, Filter});
+		Tasks.Emplace(FMTTask_SerializeActors
+		{
+			GetWorld(), SlotData, &Level->Actors, Index, NumToSerialize,
+			bStoreGameInstance, LevelRecord, Filter
+		});
 
 		Index += NumToSerialize;
 	}
@@ -244,6 +255,7 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 
 void USlotDataTask_Saver::RunScheduledTasks()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::RunScheduledTasks);
 	// Start all serialization tasks
 	if (Tasks.Num() > 0)
 	{
@@ -272,6 +284,7 @@ void USlotDataTask_Saver::RunScheduledTasks()
 
 void USlotDataTask_Saver::SaveFile()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::SaveFile);
 	USaveManager* Manager = GetManager();
 
 	SaveTask = new FAsyncTask<FSaveFileTask>(

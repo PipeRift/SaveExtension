@@ -270,7 +270,11 @@ void USlotDataTask_Loader::DeserializeLevelSync(const ULevel* Level, const ULeve
 
 		for (auto ActorItr = Level->Actors.CreateConstIterator(); ActorItr; ++ActorItr)
 		{
-			DeserializeLevel_Actor(*ActorItr, *LevelRecord, Filter);
+			auto* Actor = *ActorItr;
+			if (IsValid(Actor) && Filter.ShouldSave(Actor))
+			{
+				DeserializeLevel_Actor(Actor, *LevelRecord, Filter);
+			}
 		}
 	}
 }
@@ -336,15 +340,17 @@ void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 	// Continue Iterating actors every tick
 	for (; CurrentActorIndex < CurrentLevelActors.Num(); ++CurrentActorIndex)
 	{
-		AActor* Actor{ CurrentLevelActors[CurrentActorIndex].Get() };
-		if (Actor)
+		AActor* const Actor{ CurrentLevelActors[CurrentActorIndex].Get() };
+		if (IsValid(Actor) && Filter.ShouldSave(Actor))
 		{
 			DeserializeLevel_Actor(Actor, *LevelRecord, Filter);
 
 			const float CurrentMS = GetTimeMilliseconds();
-			// If x milliseconds passed, continue on next frame
+			// If x milliseconds passed, stop and continue on next frame
 			if (CurrentMS - StartMS >= MaxFrameMs)
+			{
 				return;
+			}
 		}
 	}
 
@@ -466,14 +472,11 @@ void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* const Actor, const FLe
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor);
 
-	if (IsValid(Actor) && Filter.ShouldSave(Actor))
+	// Find the record
+	const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
+	if (Record && Record->IsValid() && Record->Class == Actor->GetClass())
 	{
-		// Find the record
-		const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
-		if (Record && Record->IsValid() && Record->Class == Actor->GetClass())
-		{
-			DeserializeActor(Actor, *Record, Filter);
-		}
+		DeserializeActor(Actor, *Record, Filter);
 	}
 }
 

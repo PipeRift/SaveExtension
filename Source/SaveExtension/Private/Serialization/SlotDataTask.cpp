@@ -46,6 +46,7 @@ USaveManager* USlotDataTask::GetManager() const
 
 void USlotDataTask::BakeAllFilters()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask::BakeAllFilters);
 	SlotData->GeneralLevelFilter.BakeAllowedClasses();
 
 	if(SlotData->MainLevel.bOverrideGeneralFilter)

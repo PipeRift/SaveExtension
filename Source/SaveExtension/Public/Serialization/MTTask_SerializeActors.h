@@ -43,13 +43,13 @@ class FMTTask_SerializeActors : public FMTTask
 
 public:
 	FMTTask_SerializeActors(const UWorld* World, USlotData* SlotData,
-		const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum,
+		const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, bool bStoreGameInstance,
 		FLevelRecord* InLevelRecord, const FSELevelFilter& Filter)
 		: FMTTask(false, World, SlotData, Filter)
 		, LevelActors(InLevelActors)
 		, StartIndex(InStartIndex)
 		, Num(InNum)
-		, bStoreGameInstance(SlotData->bStoreGameInstance)
+		, bStoreGameInstance(bStoreGameInstance)
 		, LevelRecord(InLevelRecord)
 		, LevelScriptRecord{}
 		, ActorRecords{}

@@ -15,6 +15,7 @@
 // FMTTask_SerializeActors
 void FMTTask_SerializeActors::DoWork()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::DoWork);
 	if (bStoreGameInstance)
 	{
 		SerializeGameInstance();
@@ -33,6 +34,7 @@ void FMTTask_SerializeActors::DoWork()
 
 void FMTTask_SerializeActors::SerializeGameInstance()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::SerializeGameInstance);
 	if (UGameInstance* GameInstance = World->GetGameInstance())
 	{
 		FObjectRecord Record{ GameInstance };
@@ -48,6 +50,8 @@ void FMTTask_SerializeActors::SerializeGameInstance()
 
 bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& Record) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::SerializeActor);
+
 	//Clean the record
 	Record = { Actor };
 
@@ -106,9 +110,12 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 
 void FMTTask_SerializeActors::SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 Indent /*= 0*/) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::SerializeActorComponents);
+
 	const TSet<UActorComponent*>& Components = Actor->GetComponents();
 	for (auto* Component : Components)
 	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::SerializeActorComponents|Component);
 		if (Filter.ShouldSave(Component))
 		{
 			FComponentRecord ComponentRecord;
