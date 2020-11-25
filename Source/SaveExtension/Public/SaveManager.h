@@ -350,7 +350,7 @@ public:
 	USlotInfo* LoadInfo(FName SlotName);
 	USlotInfo* LoadInfo(uint32 SlotId)
 	{
-		return IsValidSlot(SlotId)? LoadInfo(GetSlotNameFromId(SlotId)) : false;
+		return IsValidSlot(SlotId)? LoadInfo(GetSlotNameFromId(SlotId)) : nullptr;
 	}
 
 protected:

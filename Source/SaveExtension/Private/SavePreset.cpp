@@ -23,7 +23,7 @@ void USavePreset::GetSlotNameFromId(int32 Id, FName& Name) const
 {
 	if (IsValidId(Id))
 	{
-		Name = { FString::FromInt(Id) };
+		Name = FName{ FString::FromInt(Id) };
 	}
 }
 
