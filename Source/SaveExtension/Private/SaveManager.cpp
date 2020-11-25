@@ -401,7 +401,10 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 
 void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 {
-	IterateSubscribedInterfaces([&Filter](auto* Object) {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveBegan);
+
+	IterateSubscribedInterfaces([&Filter](auto* Object)
+	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -415,7 +418,10 @@ void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 
 void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveFinished);
+
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
+	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -434,7 +440,10 @@ void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bErro
 
 void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 {
-	IterateSubscribedInterfaces([&Filter](auto* Object) {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadBegan);
+
+	IterateSubscribedInterfaces([&Filter](auto* Object)
+	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -448,7 +457,10 @@ void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 
 void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bError)
 {
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadFinished);
+
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
+	{
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event

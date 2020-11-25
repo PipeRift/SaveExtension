@@ -45,6 +45,7 @@ namespace Loader
 
 void USlotDataTask_Loader::OnStart()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::OnStart);
 	USaveManager* Manager = GetManager();
 
 	SELog(Preset, "Loading from Slot " + SlotName.ToString());
@@ -93,6 +94,7 @@ void USlotDataTask_Loader::OnStart()
 
 void USlotDataTask_Loader::Tick(float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::Tick);
 	switch(LoadState)
 	{
 	case ELoadDataTaskState::Deserializing:
@@ -112,6 +114,7 @@ void USlotDataTask_Loader::Tick(float DeltaTime)
 
 void USlotDataTask_Loader::OnFinish(bool bSuccess)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::OnFinish);
 	if (bSuccess)
 	{
 		SELog(Preset, "Finished Loading", FColor::Green);
@@ -166,6 +169,7 @@ void USlotDataTask_Loader::OnMapLoaded()
 
 void USlotDataTask_Loader::StartDeserialization()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::StartDeserialization);
 	check(NewSlotInfo);
 
 	LoadState = ELoadDataTaskState::Deserializing;
@@ -215,6 +219,7 @@ USlotData* USlotDataTask_Loader::GetLoadedData() const
 
 void USlotDataTask_Loader::BeforeDeserialize()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::BeforeDeserialize);
 	UWorld* World = GetWorld();
 
 	// Set current game time to the saved value
@@ -228,7 +233,7 @@ void USlotDataTask_Loader::BeforeDeserialize()
 
 void USlotDataTask_Loader::DeserializeSync()
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeSync);
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::DeserializeSync);
 
 	const UWorld* World = GetWorld();
 	check(World);
@@ -256,10 +261,10 @@ void USlotDataTask_Loader::DeserializeSync()
 
 void USlotDataTask_Loader::DeserializeLevelSync(const ULevel* Level, const ULevelStreaming* StreamingLevel)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::DeserializeLevelSync);
+
 	if (!IsValid(Level))
 		return;
-
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevelSync);
 
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
@@ -373,7 +378,7 @@ void USlotDataTask_Loader::DeserializeASyncLoop(float StartMS)
 
 void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, FLevelRecord& LevelRecord)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_PrepareLevel);
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::PrepareLevel);
 
 	const auto& Filter = GetLevelFilter(LevelRecord);
 
@@ -424,7 +429,7 @@ void USlotDataTask_Loader::FinishedDeserializing()
 
 void USlotDataTask_Loader::PrepareAllLevels()
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_PrepareAllLevels);
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::PrepareAllLevels);
 
 	const UWorld* World = GetWorld();
 	check(World);
@@ -449,7 +454,7 @@ void USlotDataTask_Loader::PrepareAllLevels()
 
 void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord*>& Records, const ULevel* Level)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_RespawnActors);
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::RespawnActors);
 
 	FActorSpawnParameters SpawnInfo{};
 	SpawnInfo.OverrideLevel = const_cast<ULevel*>(Level);
@@ -470,7 +475,7 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord*>& Records, c
 
 void USlotDataTask_Loader::DeserializeLevel_Actor(AActor* const Actor, const FLevelRecord& LevelRecord, const FSELevelFilter& Filter)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeLevel_Actor);
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::DeserializeLevel_Actor);
 
 	// Find the record
 	const FActorRecord* const Record = LevelRecord.Actors.FindByKey(Actor);
@@ -502,7 +507,7 @@ void USlotDataTask_Loader::DeserializeGameInstance()
 
 bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSELevelFilter& Filter)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeActor);
+	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::DeserializeActor);
 
 	// Always load saved tags
 	Actor->Tags = Record.Tags;
@@ -532,7 +537,6 @@ bool USlotDataTask_Loader::DeserializeActor(AActor* Actor, const FActorRecord& R
 	DeserializeActorComponents(Actor, Record, Filter, 2);
 
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DataReader);
 		//Serialize from Record Data
 		FMemoryReader MemoryReader(Record.Data, true);
 		FSEArchive Archive(MemoryReader, false);
@@ -546,7 +550,7 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 {
 	if (Filter.bStoreComponents)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_Loading_DeserializeActorComponents);
+		TRACE_CPUPROFILER_EVENT_SCOPE(UUSlotDataTask_Loader::DeserializeActorComponents);
 
 		const TSet<UActorComponent*>& Components = Actor->GetComponents();
 		for (auto* Component : Components)

@@ -101,6 +101,7 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 		SerializeActorComponents(Actor, Record, 1);
 	}
 
+	TRACE_CPUPROFILER_EVENT_SCOPE(Serialize);
 	FMemoryWriter MemoryWriter(Record.Data, true);
 	FSEArchive Archive(MemoryWriter, false);
 	const_cast<AActor*>(Actor)->Serialize(Archive);

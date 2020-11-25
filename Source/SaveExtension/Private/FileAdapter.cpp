@@ -78,7 +78,7 @@ bool FSaveFile::IsEmpty() const
 
 void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveFile_Read);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::Read);
 
 	Empty();
 	FArchive& Ar = Reader.GetArchive();
@@ -124,7 +124,7 @@ void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 		TArray<uint8> CompressedDataBytes;
 		Ar << CompressedDataBytes;
 
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveFile_Decompression);
+		TRACE_CPUPROFILER_EVENT_SCOPE(Decompression);
 		FArchiveLoadCompressedProxy Decompressor(CompressedDataBytes, NAME_Zlib);
 		if (!Decompressor.GetError())
 		{
@@ -144,7 +144,8 @@ void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 
 void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveFile_Write);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::Write);
+
 	bIsDataCompressed = bCompressData;
 	FArchive& Ar = Writer.GetArchive();
 
@@ -168,7 +169,7 @@ void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 		{
 			TArray<uint8> CompressedDataBytes;
 			{ // Compression
-				QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveFile_Compression);
+				TRACE_CPUPROFILER_EVENT_SCOPE(Compression);
 				// Compress Object data
 				FArchiveSaveCompressedProxy Compressor(CompressedDataBytes, NAME_Zlib);
 				Compressor << DataBytes;
@@ -186,7 +187,7 @@ void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 
 void FSaveFile::SerializeInfo(USlotInfo* SlotInfo)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveFile_SerializeInfo);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::SerializeInfo);
 	check(SlotInfo);
 	InfoBytes.Reset();
 	InfoClassName = SlotInfo->GetClass()->GetPathName();
@@ -197,7 +198,7 @@ void FSaveFile::SerializeInfo(USlotInfo* SlotInfo)
 }
 void FSaveFile::SerializeData(USlotData* SlotData)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveFile_SerializeData);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::SerializeData);
 	check(SlotData);
 	DataBytes.Reset();
 	DataClassName = SlotData->GetClass()->GetPathName();
@@ -209,6 +210,7 @@ void FSaveFile::SerializeData(USlotData* SlotData)
 
 USlotInfo* FSaveFile::CreateAndDeserializeInfo(const UObject* Outer) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeInfo);
 	UObject* Object = nullptr;
 	FFileAdapter::DeserializeObject(Object, InfoClassName, Outer, InfoBytes);
 	return Cast<USlotInfo>(Object);
@@ -216,6 +218,7 @@ USlotInfo* FSaveFile::CreateAndDeserializeInfo(const UObject* Outer) const
 
 USlotData* FSaveFile::CreateAndDeserializeData(const UObject* Outer) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeData);
 	UObject* Object = nullptr;
 	FFileAdapter::DeserializeObject(Object, DataClassName, Outer, DataBytes);
 	return Cast<USlotData>(Object);
@@ -223,6 +226,8 @@ USlotData* FSaveFile::CreateAndDeserializeData(const UObject* Outer) const
 
 bool FFileAdapter::SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Data, const bool bUseCompression)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(FFileAdapter::SaveFile);
+
 	if (SlotName.IsEmpty())
 	{
 		return false;
@@ -233,8 +238,6 @@ bool FFileAdapter::SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Da
 	{
 		return false;
 	}
-
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_SaveFile);
 
 	FScopedFileWriter FileWriter(GetSlotPath(SlotName));
 	if(FileWriter.IsValid())
@@ -250,7 +253,7 @@ bool FFileAdapter::SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Da
 
 bool FFileAdapter::LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& Data, bool bLoadData, const UObject* Outer)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_FileAdapter_LoadFile);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FFileAdapter::LoadFile);
 
 	FScopedFileReader Reader(GetSlotPath(SlotName));
 	if(Reader.IsValid())
