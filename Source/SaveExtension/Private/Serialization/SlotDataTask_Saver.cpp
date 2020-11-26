@@ -206,17 +206,16 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 
 
 	// Find level record. By default, main level
-	FLevelRecord* LevelRecord = &SlotData->MainLevel;
+	int LevelRecordId = USlotData::MainLevelRecordId;
 	if (StreamingLevel)
 	{
 		// Find or create the sub-level
 		const int32 Index = SlotData->SubLevels.AddUnique({ StreamingLevel });
-		LevelRecord = &SlotData->SubLevels[Index];
+		LevelRecordId = Index;
 	}
-	check(LevelRecord);
 
 	// Empty level record before serializing it
-	LevelRecord->Clean();
+	SlotData->GetLevelRecord(LevelRecordId)->Clean();
 
 	Filter.BakeAllowedClasses();
 
@@ -235,7 +234,7 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 
 		// Add new Task
 		Tasks.Emplace(FMTTask_SerializeActors{
-			GetWorld(), SlotData, &Level->Actors, Index, NumToSerialize, LevelRecord, Filter});
+			GetWorld(), SlotData, &Level->Actors, Index, NumToSerialize, LevelRecordId, Filter});
 
 		Index += NumToSerialize;
 	}

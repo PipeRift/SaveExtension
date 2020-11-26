@@ -57,4 +57,17 @@ public:
 
 	/** Using manual serialization. It's way faster than reflection serialization */
 	virtual void Serialize(FArchive& Ar) override;
+
+    static const int MainLevelRecordId = -1;
+	FLevelRecord* GetLevelRecord(int LevelRecordId) 
+	{ 
+		if (LevelRecordId == MainLevelRecordId)
+		{
+			return &MainLevel;
+		}
+		else
+		{
+			return &SubLevels[LevelRecordId];
+		}
+	}
 };
