@@ -32,12 +32,11 @@ void USlotData::Serialize(FArchive& Ar)
 	Ar << SubLevels;
 }
 
-void USlotData::Clean(bool bKeepSublevels)
+void USlotData::CleanRecords(bool bKeepSublevels)
 {
 	//Clean Up serialization data
 	GameInstance = {};
 
-	GeneralLevelFilter = {};
 	MainLevel.CleanRecords();
 	if (!bKeepSublevels)
 	{

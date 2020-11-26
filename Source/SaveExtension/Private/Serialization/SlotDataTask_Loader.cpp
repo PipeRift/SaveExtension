@@ -421,7 +421,7 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, FLevelRecord& Level
 void USlotDataTask_Loader::FinishedDeserializing()
 {
 	// Clean serialization data
-	SlotData->Clean(true);
+	SlotData->CleanRecords(true);
 	GetManager()->__SetCurrentData(SlotData);
 
 	Finish(true);

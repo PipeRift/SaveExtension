@@ -52,7 +52,7 @@ public:
 	TArray<FStreamingLevelRecord> SubLevels;
 
 
-	void Clean(bool bKeepSublevels);
+	void CleanRecords(bool bKeepSublevels);
 
 	/** Using manual serialization. It's way faster than reflection serialization */
 	virtual void Serialize(FArchive& Ar) override;
