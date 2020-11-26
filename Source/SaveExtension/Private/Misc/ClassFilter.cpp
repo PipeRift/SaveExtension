@@ -43,14 +43,16 @@ void FSEClassFilter::BakeAllowedClasses() const
 		for(auto& AllowedClass : AllowedClasses)
 		{
 			UClass* const AllowedClassPtr = AllowedClass.Get();
+			if(!AllowedClassPtr)
+			{
+				continue;
+			}
+			BakedAllowedClasses.Add(AllowedClassPtr);
+
 			for (TObjectIterator<UClass> It; It; ++It)
 			{
 				UClass* const Class = *It;
-				if (AllowedClassPtr == Class)
-				{
-					BakedAllowedClasses.Add(Class);
-				}
-				else if(Class->IsChildOf(AllowedClassPtr))
+				if(Class->IsChildOf(AllowedClassPtr))
 				{
 					PotentiallyAllowedClasses.Add(Class);
 				}
