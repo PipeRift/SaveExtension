@@ -37,48 +37,42 @@ void FSEClassFilter::BakeAllowedClasses() const
 		return;
 	}
 
-	TArray<UClass*> PotentiallyAllowedClasses;
+	TArray<UClass*> ChildrenOfAllowedClasses;
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(First Pass: Potential classes);
 		for(auto& AllowedClass : AllowedClasses)
 		{
 			UClass* const AllowedClassPtr = AllowedClass.Get();
+
 			if(!AllowedClassPtr)
 			{
 				continue;
 			}
-			BakedAllowedClasses.Add(AllowedClassPtr);
 
-			for (TObjectIterator<UClass> It; It; ++It)
-			{
-				UClass* const Class = *It;
-				if(Class->IsChildOf(AllowedClassPtr))
-				{
-					PotentiallyAllowedClasses.Add(Class);
-				}
-			}
+			BakedAllowedClasses.Add(AllowedClassPtr);
+			GetDerivedClasses(AllowedClassPtr, ChildrenOfAllowedClasses);
 		}
 	}
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(Second Pass: Bake Classes);
-		for (UClass* Class : PotentiallyAllowedClasses)
+		for (UClass* Class : ChildrenOfAllowedClasses)
 		{
 			// Iterate parent classes of a class
-			const UClass* CurrentClass = Class;
-			while (CurrentClass)
+			const UClass* ParentClass = Class;
+			while (ParentClass)
 			{
-				if (AllowedClasses.Contains(CurrentClass))
+				if (BakedAllowedClasses.Contains(ParentClass))
 				{
 					// First parent allowed class marks it as allowed
 					BakedAllowedClasses.Add(Class);
 					break;
 				}
-				else if (IgnoredClasses.Contains(CurrentClass))
+				else if (IgnoredClasses.Contains(ParentClass))
 				{
 					// First parent ignored class marks it as not allowed
 					break;
 				}
-				CurrentClass = CurrentClass->GetSuperClass();
+				ParentClass = ParentClass->GetSuperClass();
 			}
 		}
 	}
