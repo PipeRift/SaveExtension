@@ -1,4 +1,4 @@
-image: adamrehn/ue4-full:4.25.4
+image: piperift/ue4-full:4.25.4
 
 variables:
   plugin: SaveExtension
