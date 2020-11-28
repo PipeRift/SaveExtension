@@ -1,6 +1,4 @@
 image: adamrehn/ue4-full:4.25.4
-tags:
-  - UE4.25
 
 variables:
   plugin: SaveExtension
