@@ -10,7 +10,7 @@ BeginPlay gets called every time game starts for that actor including when game 
 
 It's not a good representative of the lifetime of the actor. That is why Lifetime events are called only during the actor's lifetime. It doesn't matter if it was loaded, saved, destroyed, etc. It is kind of more deterministic.
 
-<img src="img/lifetime_events.png" alt="Lifetime Events" width="600px" />
+![Lifetime Events](./img/lifetime_events.png)
 
 ## Events
 

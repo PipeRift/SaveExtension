@@ -4,7 +4,7 @@ Save Extension allows your projects to be saved and loaded automatically.
 
 If you like our plugins, consider becoming a Patron. It will go a long way in helping me create more awesome tech!
 
-[![patron](img/patron_small.png)](https://www.patreon.com/bePatron?u=16503983)
+[![patron](assets/patron_small.png)](https://www.patreon.com/bePatron?u=16503983)
 
 ## Intended Usage
 

@@ -29,16 +29,10 @@ This default settings page is useful in case you have many presets, or in case y
 ---
 
 Each actor blueprint can have its own configuration which is edited directly inside the blueprint:
-
-<img  width=450 src="img\actor_settings.png">
-
-<img width=300 align="left" style="margin-right: 5%" src="img\open_actor_settings.png">
-
-<br>
+![Open actor settings](./img/actor_settings.png ':size=450')
 
 If you can't see *"Save Settings"* window opened it can be manually opened from **Window -> Save Settings**
-
-<br><br><br><br>
+![Open actor settings](./img/open_actor_settings.png ':size=300')
 
 #### Save settings
 
