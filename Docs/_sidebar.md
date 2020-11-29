@@ -11,5 +11,7 @@
   - [Configuration](resources/configuration.md)
   - [Level Streaming](resources/level-streaming.md)
   - [Lifetime Components](resources/lifetime-components.md)
+  - [Saving Process](resources/saving-process.md)
+  - [Loading Process](resources/loading-process.md)
 
 - [Credits](credits.md)
