@@ -12,36 +12,62 @@ let Glossary = {
 
         let termTexts = text.split('#####');
         termTexts.forEach((termText) => {
-          if (termText.length <= 5) { // If it can't possibly contain a term, skip
+          if (termText.length <= 1) { // If it can't possibly contain a term, skip
             return;
           }
 
           // Parse the term and its content
-          let title = termText.split('\n', 1)[0].trim();
-          let id = title.toLowerCase().replace(' ','-');
+          let titles = termText.split('\n', 1)[0].split(',');
+          if(titles.length <= 0) {
+            return;
+          }
+          let id = titles[0].trim().toLowerCase().replace(' ','-');
           let content = termText.substr(termText.indexOf('\n') + 1).trim();
           content = content.replace("\r\n\r\n", "\n");
           if (content.length > 200) {
             content = content.substring(0, 200) + "...";
           }
-          window.$docsify.terms[title] = {
-            id: id,
-            content: content
-          };
+
+          titles.forEach((title)=> {
+            window.$docsify.terms[title.trim()] = {
+              id: id,
+              content: content
+            };
+          });
         });
       });
     };
 
     let addLinks = (content,next,terms) => {
+      let lines = content.split('\n');
+
       for (let term in terms) {
         console.log(term);
 
         let regex = new RegExp(`\\b${term}\\b`,'ig');
-        content = content.replace(regex, (match) => {
-          let termData = terms[term];
-          return `[${match}*](/_glossary?id=${termData.id} "${termData.content}")`;
+
+        let isBlock = false;
+        lines.forEach((line, index) => {
+          // Ignore titles
+          if(line.startsWith('#')) {
+            return;
+          }
+
+          // Ignore blocks of code or graphs
+          if(line.startsWith('```')) {
+            isBlock = !isBlock;
+            return;
+          } else if(isBlock) {
+            return;
+          }
+
+          lines[index] = line.replace(regex, (match) => {
+            let termData = terms[term];
+            return `[${match}*](/_glossary?id=${termData.id} "${termData.content}")`;
+          });
         });
       }
+      content = lines.join('\n');
       next(content);
     };
 

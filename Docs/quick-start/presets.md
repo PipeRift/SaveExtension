@@ -31,7 +31,7 @@ The preset can also be changed from blueprints in runtime calling:
 
 ![INSERT DETAILS SCREENSHOT HERE]()
 
-{% hint style='hint' %} All settings have defined tooltips describing what they are used for. Check them moving your mouse over the property. {% endhint %}
+?> All settings have defined tooltips describing what they are used for. Check them moving your mouse over the property.
 
 * **Gameplay**: Configures the runtime behavior of the plugin. Debug settings are also inside Gameplay. [Check Saving & Loading](saving&loading.md)
 * **Serialization**: Toggle what to save from the world.

@@ -51,12 +51,15 @@
         pre: '',
         style: 'text-align: center;'
       },
+      'flexible-alerts': {
+        style: 'flat'
+      },
       plugins: [
         EditOnGithubPlugin.create(
           "https://github.com/PipeRift/SaveExtension/blob/main/Docs/",
           "https://github.com/PipeRift/SaveExtension/edit/main/Docs/",
           "<img class='emoji' src='https://github.githubassets.com/images/icons/emoji/memo.png' alt='memo'> Edit"),
-        Glossary.create({})
+        Glossary.create()
       ],
       mustache: {
         data: ['https://raw.githubusercontent.com/PipeRift/SaveExtension/main/SaveExtension.uplugin']
@@ -70,10 +73,10 @@
   <script src="//cdn.jsdelivr.net/npm/prismjs/components/prism-csharp.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs/components/prism-cpp.min.js"></script>
 
-  <link rel="stylesheet" href="unpkg.com/@fortawesome/fontawesome-free/css/fontawesome.css" />
-  <link rel="stylesheet" href="unpkg.com/@fortawesome/fontawesome-free/css/brands.css" />
-  <link rel="stylesheet" href="unpkg.com/@fortawesome/fontawesome-free/css/regular.css" />
-  <link rel="stylesheet" href="unpkg.com/@fortawesome/fontawesome-free/css/solid.css" />
+  <link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free/css/fontawesome.css" />
+  <link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free/css/brands.css" />
+  <link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free/css/regular.css" />
+  <link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free/css/solid.css" />
 
   <!-- Plugins -->
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
@@ -84,6 +87,7 @@
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/front-matter.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify-mustache"></script>
   <script src="//unpkg.com/docsify-fontawesome/dist/docsify-fontawesome.min.js"></script>
+  <script src="//unpkg.com/docsify-plugin-flexible-alerts"></script>
 
   <script src="//unpkg.com/mermaid/dist/mermaid.js"></script>
   <script src="//unpkg.com/docsify-mermaid@latest/dist/docsify-mermaid.js"></script>
@@ -96,8 +100,8 @@
         darkMode: true
       },
       flowchart:{
-          htmlLabels:true,
-          curve:'linear',
+          htmlLabels: true,
+          curve: 'linear',
       },
     });
   </script>

@@ -16,7 +16,7 @@ Under *Project Settings* -> *Game* -> *Save Extension: Default Preset* you will 
 
 This default settings page is useful in case you have many presets, or in case you have none (because without any preset, default is used).
 
-{% hint style='hint' %} All settings have defined tooltips describing what they are used for. Check them moving your mouse over the property. {% endhint %}
+?> All settings have defined tooltips describing what they are used for. Check them moving your mouse over the property.
 
 * **Gameplay**: Configures the runtime behavior of the plugin. Debug settings are also inside Gameplay. [Check Saving & Loading](saving&loading.md)
 * **Serialization**: Toggle what to save from the world.

@@ -99,7 +99,7 @@ void USlotDataTask_Saver::OnStart()
 		SlotData->bStoreGameInstance = Preset->bStoreGameInstance;
 		SlotData->GeneralLevelFilter = Preset->ToFilter();
 
-		SerializeSync();
+		SerializeWorld();
 		SaveFile();
 		return;
 	}
@@ -159,20 +159,15 @@ void USlotDataTask_Saver::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void USlotDataTask_Saver::SerializeSync()
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::SerializeSync);
-	// Has Authority
-	if (GetWorld()->GetAuthGameMode())
-	{
-		// Save World
-		SerializeWorld();
-	}
-}
-
 void USlotDataTask_Saver::SerializeWorld()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Saver::SerializeWorld);
+
+	// Must have Authority
+	if (!GetWorld()->GetAuthGameMode())
+	{
+		return;
+	}
 
 	const UWorld* World = GetWorld();
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);

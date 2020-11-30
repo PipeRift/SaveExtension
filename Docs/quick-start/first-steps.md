@@ -42,7 +42,7 @@ To be able to save, we will need to:
 3. Assign the preset inside Project Settings
    ![Assign Preset](img/default-preset.png)
 
-{% hint style='hint' %} For detailed info see [**Save Presets**](presets.md) and [**Filters**](filters.md) {% endhint %}
+?> For detailed info see [**Save Presets**](presets.md) and [**Filters**](filters.md)
 
 ## Marking variables to be saved
 

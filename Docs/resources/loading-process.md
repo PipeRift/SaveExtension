@@ -1,26 +1,30 @@
 # Loading
-Loading is divided in the following stages:
+Loading is divided in many stages.
 
+*Note: Dot lines(- - - -) mean concurrency*
 ```mermaid
 flowchart LR
     classDef CEntry stroke:#ea9999;
 
-    A[Start]:::CEntry --> B[<b>Notify</b><br>OnLoadBegin]
+    A[Start]:::CEntry --> B[<b>Notify</b><br>OnLoadBegan]
     B --> Load
-    Load --> C[<b>Notify</b><br>OnLoadFinish]
+    Load --> C[<b>Notify</b><br>OnLoadFinished]
     C --> D[Done]
 
     subgraph Load [ ]
-        LoadB{Is at map?}:::CEntry;
+        LoadA[Load Info]:::CEntry -.-> LoadB{Is at map?};
+        LoadA -.-> LoadG[Load Data]
         LoadB -->|No| LoadC[Load Map];
-        LoadB -->|Yes| LoadD[Bake Filters];
-        LoadC --> LoadD;
+        LoadC --> LoadMapLoaded
+        LoadB -->|Yes| LoadMapLoaded;
+        LoadMapLoaded[ ] -.-> LoadWait(( ))
+        LoadG -.-> LoadWait
+        LoadWait --> LoadD[Bake Filters];
         LoadD --> LoadE[Prepare Levels];
         LoadE --> LoadF[Deserialize World];
-
-        click LoadE "./?id=deserialize-world" "Deserialize World" _blank
     end
 ```
+
 
 ## Bake filters
 In this step, all level filters and the general one are baked.
@@ -47,5 +51,16 @@ flowchart LR
 This is where the magic happens. The system goes through each actor to be loaded and deserializes its data from its record.
 ```mermaid
 flowchart LR
-    A[Deserialize Game Instance] --> B[Deserialize Actors];
+    classDef CEntry stroke:#ea9999;
+
+    A[Deserialize Game Instance]:::CEntry --> Loop;
+    Loop{Levels left?} -->|No| Done
+    Loop -->|Yes| DeserializeLevel
+
+    subgraph DeserializeLevel [Deserialize Level]
+      LevelB -->|Loop all saved actors| LevelA;
+      LevelA[Deserialize Actor]:::CEntry --> LevelB[Deserialize Actor Components];
+    end
+
+    DeserializeLevel --> Loop;
 ```

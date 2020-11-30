@@ -1,12 +1,12 @@
 
-@font-face { font-family: 'Lovelo'; src: url('Fonts/Lovelo-Black.otf') format('opentype'); }
-@font-face { font-family: 'Lovelo Line'; src: url('Fonts/Lovelo-LineBold.otf') format('opentype'); font-weight: bold; }
-@font-face { font-family: 'Lovelo Line'; src: url('Fonts/Lovelo-LineLight.otf') format('opentype'); }
+@font-face { font-family: 'Lovelo'; src: url('fonts/Lovelo-Black.otf') format('opentype'); }
+@font-face { font-family: 'Lovelo Line'; src: url('fonts/Lovelo-LineBold.otf') format('opentype'); font-weight: bold; }
+@font-face { font-family: 'Lovelo Line'; src: url('fonts/Lovelo-LineLight.otf') format('opentype'); }
 
-@font-face { font-family: 'Century Gothic'; src: url('Fonts/Gothic.ttf') format('truetype'); }
-@font-face { font-family: 'Century Gothic'; src: url('Fonts/Gothic-Bold.ttf') format('truetype'); font-weight: bold; }
-@font-face { font-family: 'Century Gothic'; src: url('Fonts/Gothic-Italic.ttf') format('truetype'); font-style: italic; }
-@font-face { font-family: 'Century Gothic'; src: url('Fonts/Gothic-BoldItalic.ttf') format('truetype'); font-weight: bold; font-style: italic; }
+@font-face { font-family: 'Century Gothic'; src: url('fonts/Gothic.ttf') format('truetype'); }
+@font-face { font-family: 'Century Gothic'; src: url('fonts/Gothic-Bold.ttf') format('truetype'); font-weight: bold; }
+@font-face { font-family: 'Century Gothic'; src: url('fonts/Gothic-Italic.ttf') format('truetype'); font-style: italic; }
+@font-face { font-family: 'Century Gothic'; src: url('fonts/Gothic-BoldItalic.ttf') format('truetype'); font-weight: bold; font-style: italic; }
 
 
 :root {

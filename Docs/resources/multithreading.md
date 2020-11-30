@@ -26,7 +26,7 @@ This means platforms with many cores like modern CPUs will obtain very noticeabl
 
 This method is only available if [Multithreaded Serialization](#multithreaded-serialization) is disabled.
 
-{% hint style='danger' %} Frame Splitting is not recommended if level streaming saving is enabled. It could be interrupted while loading or saving creating unexpected issues {% endhint %}
+!> Frame Splitting is not recommended if level streaming saving is enabled. It could be interrupted while loading or saving creating unexpected issues
 
 ![Frame-splitted Serialization](./img/frame-splitted_serialization.png)
 

@@ -84,7 +84,6 @@ public:
 protected:
 
 	/** BEGIN Serialization */
-	void SerializeSync();
 	void SerializeLevelSync(const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
 
 	/** Serializes all world actors. */
