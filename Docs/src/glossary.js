@@ -42,8 +42,6 @@ let Glossary = {
       let lines = content.split('\n');
 
       for (let term in terms) {
-        console.log(term);
-
         let regex = new RegExp(`\\b${term}\\b`,'ig');
 
         let isBlock = false;
