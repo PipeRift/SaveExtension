@@ -1,22 +1,23 @@
 # Slots
 
-In Save Extension, we refer to "slots" as an **instance of a saved game** and they are identified by a number.
-Most of the times we will think of slots as the actual saved files.
+In Save Extension, we refer to "slots" as an **instance of a saved game**. They can either be identified by a name or a number.
 
 ## Slots as files
 
-An slot is composed of two individual files. One is the slot info, and the other the slot data.
+Slots are saved into a single file named after the slot name.
+
+To avoid having to load all save files entirely when, for example, displaying a list of slots in a menu, data is stored in two sections:
 
 ### Slot Info
 
 Contains **lightweight** information about the saved game. Information we want to obtain without needing to load the rest of the slot.
 Some examples are player level, xp, progress, player name, zone or area, current objective or thumbnail.
 
-The game can access all slot infos very quickly without requiring to load game, which is very useful for UI when we want to display a list of all saved games.
+The game can access all slot infos very quickly without requiring to load the rest of the data.
 
 ### Slot Data
 
-It is here were all heavy data is contained!
+The bulk of any saved game.
 All information serialized from actors and components is stored in the Slot Data, as well as any other data the game may need.
 
 All levels, players, AIs and game systems configured to be saved are contained here.
