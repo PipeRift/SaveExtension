@@ -172,14 +172,12 @@ void USlotDataTask_Saver::SerializeWorld()
 	const UWorld* World = GetWorld();
 	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
-	BakeAllFilters();
-
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
+	PrepareAllLevels(Levels);
 
 	// Threads available + 1 (Synchronous Thread)
 	const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn() + 1);
 	const int32 TasksPerLevel = FMath::Max(1, FMath::RoundToInt(float(NumberOfThreads) / (Levels.Num() + 1)));
-
 	Tasks.Reserve(NumberOfThreads);
 
 	SerializeLevelSync(World->GetCurrentLevel(), TasksPerLevel);
@@ -192,6 +190,20 @@ void USlotDataTask_Saver::SerializeWorld()
 	}
 
 	RunScheduledTasks();
+}
+
+void USlotDataTask_Saver::PrepareAllLevels(const TArray<ULevelStreaming*>& Levels)
+{
+	BakeAllFilters();
+
+	// Create the sub-level records if non existent
+	for (const ULevelStreaming* Level : Levels)
+	{
+		if (Level->IsLevelLoaded())
+		{
+			SlotData->SubLevels.AddUnique({ *Level });
+		}
+	}
 }
 
 void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
@@ -207,14 +219,11 @@ void USlotDataTask_Saver::SerializeLevelSync(const ULevel* Level, int32 Assigned
 	const FName LevelName = StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
-
 	// Find level record. By default, main level
 	FLevelRecord* LevelRecord = &SlotData->MainLevel;
 	if (StreamingLevel)
 	{
-		// Find or create the sub-level
-		const int32 Index = SlotData->SubLevels.AddUnique({ *StreamingLevel });
-		LevelRecord = &SlotData->SubLevels[Index];
+		LevelRecord = FindLevelRecord(StreamingLevel);
 	}
 	check(LevelRecord);
 
