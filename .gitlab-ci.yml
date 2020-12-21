@@ -2,7 +2,7 @@ image: piperift/ue4-full:4.25.4
 
 variables:
   plugin: SaveExtension
-  engine_version: 25
+  engine_version: 26
 
 stages:
   - build

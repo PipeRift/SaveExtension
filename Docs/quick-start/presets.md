@@ -23,15 +23,17 @@ Then we assign our preset class we want to use in **Preset**.
 
 #### In Blueprints
 
-The preset can also be changed from blueprints in runtime calling:
+The preset can also be changed from blueprints in runtime by calling:
 
 ![Set Active Preset](img/set-preset-bp.png)
 
 ## Settings
 
-![INSERT DETAILS SCREENSHOT HERE]()
+![Preset Details](img/preset-details.png)
 
-{% hint style='hint' %} All settings have defined tooltips describing what they are used for. Check them moving your mouse over the property. {% endhint %}
+?> All settings have **tooltips** describing what they are used for. Check them by moving your mouse over the property.
+
+A brief overview of the settings available:
 
 * **Gameplay**: Configures the runtime behavior of the plugin. Debug settings are also inside Gameplay. [Check Saving & Loading](saving&loading.md)
 * **Serialization**: Toggle what to save from the world.
@@ -41,4 +43,22 @@ The preset can also be changed from blueprints in runtime calling:
 
 ## Filters
 
-TODO
+Filters allow us to select which classes will be saved and which classes won't.
+This applies to actors and components and can be edited from the Preset.
+
+### Allowing classes
+
+If a class is added to a filter, that class and all its children will be allowed, meaning they will be considered for saving, their properties will be saved, etc.
+
+![Class allowed](img/filter_class_allowed.png)
+
+*In the image: We allow Character, so all children character classes will be saved.*
+
+### Rejected classes
+
+We can also reject classes from a filter, meaning they wont be considered for saving.
+?> Only children classes of allowed classes will be allowed to be rejected.
+
+![Rejected class](img/filter_class_rejected.png)
+
+*In the image: We reject TutorialCharacter from the previous image, essentially saving all characters except TutorialCharacters.*
