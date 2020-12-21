@@ -1,8 +1,8 @@
-image: piperift/ue4-full:4.25.4
-
 variables:
   plugin: SaveExtension
   engine_version: 26
+
+image: $CI_REGISTRY/piperift/ue4-full:4.26.0
 
 stages:
   - build
@@ -19,12 +19,14 @@ before_script:
 
 build:
   stage: build
+  tags: ue4
   script:
     - cd Lib
     - cmd.exe /c BuildPlugin.bat
 
 test:
   stage: test
+  tags: ue4
   script:
     - cd Lib
     - py test_plugin.py
@@ -36,6 +38,7 @@ test:
 
 upload:
   stage: package
+  tags: ue4
   script:
     - cd Lib
     - cmd.exe /c CompressPlugin.bat
