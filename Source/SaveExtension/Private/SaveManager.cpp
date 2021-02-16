@@ -403,6 +403,8 @@ void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveBegan);
 
+	OnBeginGameSave.Broadcast();
+
 	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
@@ -414,8 +416,6 @@ void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object, Filter);
 	});
-
-	OnBeginGameSave.Broadcast();
 }
 
 void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bError)
@@ -444,6 +444,8 @@ void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadBegan);
 
+	OnBeginGameLoad.Broadcast();
+
 	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
@@ -455,8 +457,6 @@ void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object, Filter);
 	});
-
-	OnBeginGameLoad.Broadcast();
 }
 
 void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bError)
