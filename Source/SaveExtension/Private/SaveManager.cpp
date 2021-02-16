@@ -414,6 +414,8 @@ void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object, Filter);
 	});
+
+	OnBeginGameSave.Broadcast();
 }
 
 void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bError)
@@ -453,6 +455,8 @@ void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object, Filter);
 	});
+
+	OnBeginGameLoad.Broadcast();
 }
 
 void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bError)

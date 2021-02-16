@@ -25,6 +25,8 @@
 
 #include "SaveManager.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBeginGameSaveMC);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBeginGameLoadMC);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC, USlotInfo*, SlotInfo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USlotInfo*, SlotInfo);
@@ -410,6 +412,12 @@ protected:
 	/* EVENTS                                                              */
 	/***********************************************************************/
 public:
+	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
+	FOnBeginGameSaveMC OnBeginGameSave;
+	
+	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
+	FOnBeginGameLoadMC OnBeginGameLoad;
+
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
 	FOnGameSavedMC OnGameSaved;
 
