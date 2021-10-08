@@ -20,7 +20,7 @@ void ULifetimeComponent::BeginPlay()
 		// this actor and its not a natural start
 		if (!Manager->IsLoading())
 		{
-			Start.Broadcast();
+			OnStart.Broadcast();
 		}
 	}
 	else
@@ -37,7 +37,7 @@ void ULifetimeComponent::EndPlay(EEndPlayReason::Type Reason)
 		// this actor and its not a natural destroy
 		if (!Manager->IsLoading())
 		{
-			Finish.Broadcast();
+			OnFinish.Broadcast();
 		}
 
 		Manager->UnsubscribeFromEvents(this);
@@ -50,7 +50,24 @@ void ULifetimeComponent::OnSaveBegan(const FSELevelFilter& Filter)
 {
 	if (Filter.ShouldSave(GetOwner()))
 	{
-		Saved.Broadcast();
+		OnSave.Broadcast();
+	}
+}
+
+void ULifetimeComponent::OnSaveFinished(const FSELevelFilter& Filter, bool bError)
+{
+	if (Filter.ShouldSave(GetOwner()))
+	{
+		OnSaved.Broadcast();
+	}
+}
+
+
+void ULifetimeComponent::OnLoadBegan(const FSELevelFilter& Filter)
+{
+	if (Filter.ShouldSave(GetOwner()))
+	{
+		OnResume.Broadcast();
 	}
 }
 
@@ -58,6 +75,6 @@ void ULifetimeComponent::OnLoadFinished(const FSELevelFilter& Filter, bool bErro
 {
 	if (Filter.ShouldSave(GetOwner()))
 	{
-		Resume.Broadcast();
+		OnResumed.Broadcast();
 	}
 }

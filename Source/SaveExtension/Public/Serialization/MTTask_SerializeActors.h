@@ -74,13 +74,12 @@ public:
 		RETURN_QUICK_DECLARE_CYCLE_STAT(FMTTask_SerializeActors, STATGROUP_ThreadPoolAsyncTasks);
 	}
 
+ 	static bool SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFilter &Filter);
+ 	static void SerializeActorComponents(
+ 		const AActor* Actor, FActorRecord& ActorRecord, const FSELevelFilter &Filter, int8 indent = 0
+ 	);
+
 private:
 
 	void SerializeGameInstance();
-
-	/** Serializes an actor into this Actor Record */
-	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;
-
-	/** Serializes the components of an actor into a provided Actor Record */
-	inline void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0) const;
 };

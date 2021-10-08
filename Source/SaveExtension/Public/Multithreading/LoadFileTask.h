@@ -4,6 +4,7 @@
 
 #include <Async/AsyncWork.h>
 #include "FileAdapter.h"
+#include "SaveManager.h"
 
 
 /////////////////////////////////////////////////////

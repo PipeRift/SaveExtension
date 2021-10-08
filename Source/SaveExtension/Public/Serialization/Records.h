@@ -12,7 +12,7 @@
 class USlotData;
 
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FBaseRecord
 {
 	GENERATED_BODY()

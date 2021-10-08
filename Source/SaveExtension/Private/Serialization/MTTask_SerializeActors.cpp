@@ -27,7 +27,7 @@ void FMTTask_SerializeActors::DoWork()
 		if (Actor && Filter.ShouldSave(Actor))
 		{
 			FActorRecord& Record = ActorRecords.AddDefaulted_GetRef();
-			SerializeActor(Actor, Record);
+			SerializeActor(Actor, Record, Filter);
 		}
 	}
 }
@@ -48,8 +48,7 @@ void FMTTask_SerializeActors::SerializeGameInstance()
 	}
 }
 
-bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& Record) const
-{
+bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFilter &Filter) {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::SerializeActor);
 
 	//Clean the record
@@ -98,7 +97,7 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 
 	if (Filter.bStoreComponents)
 	{
-		SerializeActorComponents(Actor, Record, 1);
+		SerializeActorComponents(Actor, Record, Filter, 1);
 	}
 
 	TRACE_CPUPROFILER_EVENT_SCOPE(Serialize);
@@ -109,8 +108,9 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 	return true;
 }
 
-void FMTTask_SerializeActors::SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 Indent /*= 0*/) const
-{
+void FMTTask_SerializeActors::SerializeActorComponents(
+	const AActor* Actor, FActorRecord& ActorRecord, const FSELevelFilter &Filter, int8 Indent /*= 0*/
+) {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::SerializeActorComponents);
 
 	const TSet<UActorComponent*>& Components = Actor->GetComponents();

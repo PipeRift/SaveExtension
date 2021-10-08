@@ -11,6 +11,7 @@
 #include "Serialization/SlotDataTask_LevelSaver.h"
 #include "Serialization/SlotDataTask_Loader.h"
 #include "Serialization/SlotDataTask_Saver.h"
+#include "LifetimeComponent.h"
 
 #include <Engine/GameViewportClient.h>
 #include <Engine/LevelStreaming.h>
@@ -403,6 +404,8 @@ void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveBegan);
 
+	OnBeginGameSave.Broadcast();
+
 	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
@@ -441,6 +444,8 @@ void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bErro
 void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadBegan);
+
+	OnBeginGameLoad.Broadcast();
 
 	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
@@ -501,4 +506,38 @@ UWorld* USaveManager::GetWorld() const
 		return nullptr;
 
 	return GetGameInstance()->GetWorld();
+}
+
+bool USaveManager::SerializeActor(const AActor *Actor, FActorRecord &Record) {
+	const auto* Preset = GetPreset();
+	if (!Preset) { return false; }
+	const auto Filter = Preset->ToFilter();
+	Filter.BakeAllowedClasses();
+
+	ULifetimeComponent *LifeComp = Actor->FindComponentByClass<ULifetimeComponent>();
+	if (LifeComp != nullptr) {
+		LifeComp->OnSaveBegan(Filter);
+	}
+	bool r = FMTTask_SerializeActors::SerializeActor(Actor, Record, Filter);
+	if (LifeComp != nullptr) {
+		LifeComp->OnSaveFinished(Filter, r);
+	}
+	return r;
+}
+
+bool USaveManager::DeserializeActor(AActor *Actor, const FActorRecord Record) {
+	const auto* Preset = GetPreset();
+	if (!Preset) { return false; }
+	const auto Filter = Preset->ToFilter();
+	Filter.BakeAllowedClasses();
+
+	ULifetimeComponent *LifeComp = Actor->FindComponentByClass<ULifetimeComponent>();
+	if (LifeComp != nullptr) {
+		LifeComp->OnLoadBegan(Filter);
+	}
+	bool r = USlotDataTask_Loader::DeserializeActor(Actor, Record, Filter);
+	if (LifeComp != nullptr) {
+		LifeComp->OnLoadFinished(Filter, r);
+	}
+	return r;
 }

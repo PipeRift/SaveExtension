@@ -562,9 +562,8 @@ void USlotDataTask_Loader::DeserializeActorComponents(AActor* Actor, const FActo
 
 			// Find the record
 			const FComponentRecord* Record = ActorRecord.ComponentRecords.FindByKey(Component);
-			if (!Record)
-			{
-				SELog(Preset, "Component '" + Component->GetFName().ToString() + "' - Record not found", FColor::Red, false, Indent + 1);
+			if (!Record) {
+				// SELog(Preset, "Component '" + Component->GetFName().ToString() + "' - Record not found", FColor::Red, false, Indent + 1);
 				continue;
 			}
 

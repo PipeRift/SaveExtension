@@ -13,9 +13,11 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeStartSignature);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeSaveSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeSavedSignature);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeResumeSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeResumedSignature);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeFinishSignature);
 
@@ -40,11 +42,13 @@ public:
 	virtual void EndPlay(EEndPlayReason::Type Reason) override;
 
 
-	// Event called when Save process starts
+	// Event called when Save process
 	virtual void OnSaveBegan(const FSELevelFilter& Filter) override;
+	virtual void OnSaveFinished(const FSELevelFilter& Filter, bool bError) override;
 
-	// Event called when Load process ends
-	virtual void OnLoadFinished(const FSELevelFilter& Filter, bool bError);
+	// Event called when Load process
+	virtual void OnLoadBegan(const FSELevelFilter& Filter) override;
+	virtual void OnLoadFinished(const FSELevelFilter& Filter, bool bError) override;
 
 
 	USaveManager* GetManager() const
@@ -60,25 +64,35 @@ protected:
 
 	// Called once when this actor gets created for the first time. Similar to BeginPlay
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
-	FLifetimeStartSignature Start;
+	FLifetimeStartSignature OnStart;
 
-	// Called when game is saved
+	// Called when begin save
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
-	FLifetimeSavedSignature Saved;
+	FLifetimeSaveSignature OnSave;
 
-	// Called when game loaded
+	// Called when after save
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
-	FLifetimeResumeSignature Resume;
+	FLifetimeSavedSignature OnSaved;
+
+	// Called when before load
+	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
+	FLifetimeResumeSignature OnResume;
+
+	// Called when after load
+	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
+	FLifetimeResumedSignature OnResumed;
 
 	// Called when this actor gets destroyed for ever
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
-	FLifetimeFinishSignature Finish;
+	FLifetimeFinishSignature OnFinish;
 
 
 public:
 
-	FLifetimeStartSignature& OnStart() { return Start; }
-	FLifetimeSavedSignature& OnSaved() { return Saved; }
-	FLifetimeResumeSignature& OnResume() { return Resume; }
-	FLifetimeFinishSignature& OnFinish() { return Finish; }
+	// FLifetimeStartSignature& OnStart() { return Start; }
+	// FLifetimeSaveSignature& OnSave() { return Save; }
+	// FLifetimeSavedSignature& OnSaved() { return Saved; }
+	// FLifetimeResumeSignature& OnResume() { return Resume; }
+	// FLifetimeResumedSignature& OnResumed() { return Resumed; }
+	// FLifetimeFinishSignature& OnFinish() { return Finish; }
 };

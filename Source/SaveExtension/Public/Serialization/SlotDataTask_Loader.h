@@ -76,6 +76,12 @@ public:
 
 	void OnMapLoaded();
 
+ 	/** Serializes an actor into this Actor Record */
+ 	static bool DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSELevelFilter& Filter);
+
+ 	/** Deserializes the components of an actor from a provided Record */
+ 	static void DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, const FSELevelFilter& Filter, int8 indent = 0);
+
 private:
 
 	virtual void OnStart() override;
@@ -124,11 +130,4 @@ private:
 	/** Deserializes Game Instance Object and its Properties.
 	Requires 'SaveGameMode' flag to be used. */
 	void DeserializeGameInstance();
-
-	/** Serializes an actor into this Actor Record */
-	bool DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSELevelFilter& Filter);
-
-	/** Deserializes the components of an actor from a provided Record */
-	void DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, const FSELevelFilter& Filter, int8 indent = 0);
-	/** END Deserialization */
 };

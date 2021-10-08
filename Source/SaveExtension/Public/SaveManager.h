@@ -25,6 +25,8 @@
 
 #include "SaveManager.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBeginGameSaveMC);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBeginGameLoadMC);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC, USlotInfo*, SlotInfo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USlotInfo*, SlotInfo);
@@ -256,6 +258,13 @@ public:
 		return ActivePreset;
 	}
 
+ 	UFUNCTION(BlueprintCallable, Category = "SaveExtension", meta = (DisplayName = "Serialize Actor"))
+ 	bool SerializeActor(const AActor *Actor, FActorRecord &Record);
+
+ 	UFUNCTION(BlueprintCallable, Category = "SaveExtension", meta = (DisplayName = "Deserialize Actor"))
+ 	bool DeserializeActor(AActor *Actor, const FActorRecord Record);
+
+
 
 	/** BLUEPRINTS & C++ API */
 public:
@@ -411,6 +420,12 @@ protected:
 	/***********************************************************************/
 public:
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
+	FOnBeginGameSaveMC OnBeginGameSave;
+
+	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
+	FOnBeginGameLoadMC OnBeginGameLoad;
+
+	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
 	FOnGameSavedMC OnGameSaved;
 
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
@@ -449,7 +464,7 @@ public:
 	/* DEPRECATED                                                          */
 	/***********************************************************************/
 
-	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (DeprecatedFunction, DeprecationMessage="Use 'Save Slot by Id' instead.", 
+	UFUNCTION(Category = "SaveExtension|Saving", BlueprintCallable, meta = (DeprecatedFunction, DeprecationMessage="Use 'Save Slot by Id' instead.",
 		AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Slot to Id", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
 	void BPSaveSlotToId(int32 SlotId, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& Result, FLatentActionInfo LatentInfo, bool bOverrideIfNeeded = true)
 	{
