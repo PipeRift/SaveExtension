@@ -1,11 +1,12 @@
+variables:
+  CI_PLUGIN: SaveExtension
+
+image: $CI_REGISTRY/piperift/ue4-full:4.26.0
+
 stages:
   - build
   - test
   - package
-
-variables:
-  plugin: SaveExtension
-  engine_version: 26
 
 cache:
   paths:
@@ -17,15 +18,17 @@ before_script:
 
 build:
   stage: build
+  tags: [docker, ue4]
   script:
     - cd Lib
-    - cmd.exe /c BuildPlugin.bat
+    - py build.py plugin
 
 test:
   stage: test
+  tags: [docker, ue4]
   script:
     - cd Lib
-    - py test_plugin.py
+    - py test.py plugin
   artifacts:
     paths:
       - Test/Report.xml
@@ -36,5 +39,5 @@ upload:
   stage: package
   script:
     - cd Lib
-    - cmd.exe /c CompressPlugin.bat
-    - py upload.py
+    - py compress.py plugin
+    - py vault.py upload
