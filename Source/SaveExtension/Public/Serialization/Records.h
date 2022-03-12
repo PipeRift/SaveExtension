@@ -63,7 +63,7 @@ struct FObjectRecord : public FBaseRecord
 
 	FORCEINLINE bool operator== (const UObject* Other) const
 	{
-		return Name == Other->GetFName() && Class == Other->GetClass();
+		return Other && Name == Other->GetFName() && Class == Other->GetClass();
 	}
 };
 
