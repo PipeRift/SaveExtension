@@ -403,6 +403,8 @@ void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveBegan);
 
+	OnBeginGameSave.Broadcast();
+
 	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
 		check(Object->template Implements<USaveExtensionInterface>());
@@ -441,6 +443,8 @@ void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bErro
 void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadBegan);
+
+	OnBeginGameLoad.Broadcast();
 
 	IterateSubscribedInterfaces([&Filter](auto* Object)
 	{
