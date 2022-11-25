@@ -12,7 +12,7 @@
 #include <Framework/MultiBox/MultiBoxBuilder.h>
 #include <Framework/Application/SlateApplication.h>
 #include <GameFramework/Actor.h>
-
+#include <UObject/ObjectSaveContext.h>
 
 
 #define LOCTEXT_NAMESPACE "SaveActorEditorSummoner"
@@ -29,7 +29,7 @@ void SSaveActorEditorWidget::Construct(const FArguments&, TWeakPtr<FBlueprintEdi
 	bRefreshingVisuals = false;
 
 	OnBlueprintPreCompileHandle = GEditor->OnBlueprintPreCompile().AddSP(this, &SSaveActorEditorWidget::OnBlueprintPreCompile);
-	OnObjectSavedHandle = FCoreUObjectDelegates::OnObjectSaved.AddSP(this, &SSaveActorEditorWidget::OnObjectPreSave);
+	OnObjectPreSaveHandle = FCoreUObjectDelegates::OnObjectPreSave.AddSP(this, &SSaveActorEditorWidget::OnObjectPreSave);
 
 	WeakBlueprintEditor = InBlueprintEditor;
 	ChildSlot
@@ -50,10 +50,10 @@ void SSaveActorEditorWidget::Construct(const FArguments&, TWeakPtr<FBlueprintEdi
 SSaveActorEditorWidget::~SSaveActorEditorWidget()
 {
 	GEditor->OnBlueprintPreCompile().Remove(OnBlueprintPreCompileHandle);
-	FCoreUObjectDelegates::OnObjectSaved.Remove(OnObjectSavedHandle);
+	FCoreUObjectDelegates::OnObjectPreSave.Remove(OnObjectPreSaveHandle);
 }
 
-void SSaveActorEditorWidget::OnObjectPreSave(UObject* InObject)
+void SSaveActorEditorWidget::OnObjectPreSave(UObject* InObject, FObjectPreSaveContext Context)
 {
 	if (InObject && InObject == GetBlueprint())
 	{
@@ -124,7 +124,7 @@ TSharedPtr<SWidget> SSaveActorEditorWidget::GenerateSettingsWidget()
 	if (Actor)
 	{
 		return SNew(SBorder)
-		.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
+		.BorderImage(FAppStyle::GetBrush("DetailsView.CategoryMiddle"))
 		.Padding(0)
 		[
 			SNew(SVerticalBox)
@@ -143,7 +143,7 @@ TSharedPtr<SWidget> SSaveActorEditorWidget::GenerateSettingsWidget()
 			.Padding(6)
 			[
 				SNew(SBorder)
-				.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryMiddle"))
+				.BorderImage(FAppStyle::GetBrush("DetailsView.CategoryMiddle"))
 				.Padding(0)
 				[
 					SettingItems[2]

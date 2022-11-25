@@ -36,9 +36,9 @@ UTexture2D* USlotInfo::GetThumbnail() const
 			if (ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA))
 			{
 				Texture = UTexture2D::CreateTransient(ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), PF_B8G8R8A8);
-				void* TextureData = Texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+				void* TextureData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 				FMemory::Memcpy(TextureData, UncompressedBGRA.GetData(), UncompressedBGRA.Num());
-				Texture->PlatformData->Mips[0].BulkData.Unlock();
+				Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
 				Texture->UpdateResource();
 			}
 		}

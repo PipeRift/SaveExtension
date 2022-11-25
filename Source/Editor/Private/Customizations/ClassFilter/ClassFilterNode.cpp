@@ -129,7 +129,7 @@ FText FSEClassFilterNode::GetClassTooltip(bool bShortTooltip) const
 
 bool FSEClassFilterNode::IsBlueprintClass() const
 {
-	return BlueprintAssetPath != NAME_None;
+	return !BlueprintAssetPath.IsNull();
 }
 
 void FSEClassFilterNode::SetOwnFilterState(EClassFilterState State)

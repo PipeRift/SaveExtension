@@ -24,7 +24,7 @@ TSharedRef<SWidget>	SClassFilterGraphPin::GetDefaultValueWidget()
 	[
 		SAssignNew( ComboButton, SComboButton )
 		.OnGetMenuContent(this, &SClassFilterGraphPin::GetListContent)
-		.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+		.ButtonStyle(FAppStyle::Get(), "FlatButton")
 		.ForegroundColor(FSlateColor::UseForeground())
 		.ContentPadding(FMargin(0.0f, 2.0f))
 		.MenuPlacement(MenuPlacement_BelowAnchor)
@@ -95,7 +95,7 @@ TSharedRef<ITableRow> SClassFilterGraphPin::OnGeneratePreviewRow(TSharedPtr<FSEC
 		[
 			SNew(STextBlock)
 			.ColorAndOpacity(StateColor)
-			.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.8"))
+			.Font(FAppStyle::Get().GetFontStyle("FontAwesome.8"))
 			.Text(StateText)
 		]
 		+ SHorizontalBox::Slot()

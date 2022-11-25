@@ -1420,7 +1420,7 @@ namespace Automatron
 
 	inline bool FTestSpec::SetGameMode(UWorld* World, FTestWorldSettings& Settings)
 	{
-		if (!World->IsServer() || World->GetAuthGameMode())
+		if ((!World->IsNetMode(NM_DedicatedServer) && !World->IsNetMode(NM_ListenServer)) || World->GetAuthGameMode())
 		{
 			return false;
 		}

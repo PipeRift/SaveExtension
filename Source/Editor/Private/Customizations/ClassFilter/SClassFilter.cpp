@@ -13,7 +13,6 @@
 #include <ScopedTransaction.h>
 #include <Textures/SlateIcon.h>
 #include <PropertyHandle.h>
-#include <Toolkits/AssetEditorManager.h>
 #include <AssetToolsModule.h>
 #include <Widgets/Input/SHyperlink.h>
 #include <Widgets/Input/SSearchBox.h>
@@ -24,7 +23,7 @@
 #include "GameplayTagsSettings.h"
 #include "Layout/WidgetPath.h"
 #include "Framework/Application/SlateApplication.h"
-#include "AssetData.h"
+#include "AssetRegistry/AssetData.h"
 #include "Editor.h"
 #include "Framework/Commands/UIAction.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -77,7 +76,7 @@ void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableCla
 	ChildSlot
 	[
 		SNew(SBorder)
-		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
 		[
 			SNew(SVerticalBox)
 
@@ -234,10 +233,10 @@ bool SClassFilter::FilterChildrenCheck(const FSEClassFilterNodePtr& Class)
 TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FSEClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	return SNew(STableRow<FSEClassFilterNodePtr>, OwnerTable)
-	.Style(FEditorStyle::Get(), "GameplayTagTreeView")
+	.Style(FAppStyle::Get(), "GameplayTagTreeView")
 	[
 		SNew(SBorder)
-		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
 		.BorderBackgroundColor(this, &SClassFilter::GetClassBackgroundColor, Class)
 		.Padding(0)
 		.Content()
@@ -248,14 +247,14 @@ TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FSEClassFilterNodePtr Class, c
 			.HAlign(HAlign_Left)
 			[
 				SNew(SButton)
-				.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+				.ButtonStyle(FAppStyle::Get(), "FlatButton")
 				.OnClicked(this, &SClassFilter::OnClassClicked, Class)
 				.ForegroundColor(this, &SClassFilter::GetClassIconColor, Class)
 				.ContentPadding(0)
 				.IsEnabled(this, &SClassFilter::CanSelectClasses)
 				[
 					SNew(STextBlock)
-					.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.8"))
+					.Font(FAppStyle::Get().GetFontStyle("FontAwesome.8"))
 					.Text(this, &SClassFilter::GetClassIconText, Class)
 				]
 			]
@@ -353,7 +352,7 @@ void SClassFilter::MarkClass(FSEClassFilterNodePtr Class, EClassFilterState Stat
 				Filter.Filter->AllowedClasses.Add(ClassAsset);
 				Filter.Filter->IgnoredClasses.Remove(ClassAsset);
 			}
-			if (PropertyHandle) PropertyHandle->NotifyPostChange();
+			if (PropertyHandle) PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
 		}
 		break;
 	}
@@ -370,7 +369,8 @@ void SClassFilter::MarkClass(FSEClassFilterNodePtr Class, EClassFilterState Stat
 				Filter.Filter->IgnoredClasses.Add(ClassAsset);
 				Filter.Filter->AllowedClasses.Remove(ClassAsset);
 			}
-			if (PropertyHandle) PropertyHandle->NotifyPostChange();
+			if (PropertyHandle)
+				PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
 		}
 		break;
 	}
@@ -387,7 +387,8 @@ void SClassFilter::MarkClass(FSEClassFilterNodePtr Class, EClassFilterState Stat
 				Filter.Filter->IgnoredClasses.Remove(ClassAsset);
 				Filter.Filter->AllowedClasses.Remove(ClassAsset);
 			}
-			if (PropertyHandle) PropertyHandle->NotifyPostChange();
+			if (PropertyHandle)
+				PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
 		}
 		break;
 	}}

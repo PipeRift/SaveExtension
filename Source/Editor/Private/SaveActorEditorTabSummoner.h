@@ -19,7 +19,7 @@ class SSaveActorEditorWidget
 	bool bRefreshingVisuals;
 
 	FDelegateHandle OnBlueprintPreCompileHandle;
-	FDelegateHandle OnObjectSavedHandle;
+	FDelegateHandle OnObjectPreSaveHandle;
 
 
 public:
@@ -32,7 +32,7 @@ public:
 	~SSaveActorEditorWidget();
 
 
-	void OnObjectPreSave(UObject* InObject);
+	void OnObjectPreSave(UObject* InObject, class FObjectPreSaveContext Context);
 
 	void OnBlueprintPreCompile(UBlueprint* InBlueprint);
 

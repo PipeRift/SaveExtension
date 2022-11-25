@@ -101,13 +101,13 @@ public:
 	TWeakObjectPtr<UBlueprint> Blueprint;
 
 	/** Full object path to the class including _C, set for both blueprint and native */
-	FName ClassPath;
+	FTopLevelAssetPath ClassPath;
 
 	/** Full object path to the parent class, may be blueprint or native */
-	FName ParentClassPath;
+	FTopLevelAssetPath ParentClassPath;
 
 	/** Full path to the Blueprint that this class is loaded from, none for native classes*/
-	FName BlueprintAssetPath;
+	FTopLevelAssetPath BlueprintAssetPath;
 
 	/** true if the class passed the filter. */
 	bool bPassesFilter;

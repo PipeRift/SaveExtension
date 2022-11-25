@@ -27,13 +27,21 @@ public:
 
 	virtual bool IsA(const UClass* InClass) const override;
 
-	virtual void SetNormalBlueprintType(bool bInNormalBPType) override { bNormalBlueprintType = bInNormalBPType; }
+	virtual void SetNormalBlueprintType(bool bInNormalBPType) override
+	{
+		bNormalBlueprintType = bInNormalBPType;
+	}
 
-	virtual bool IsNormalBlueprintType() const override { return bNormalBlueprintType; }
-
+	virtual bool IsNormalBlueprintType() const override
+	{
+		return bNormalBlueprintType;
+	}
 	virtual TSharedPtr<FString> GetClassName() const override;
 
+	UE_DEPRECATED(5.1, "Class names are now represented by path names. Please use GetClassPathName.")
 	virtual FName GetClassPath() const override;
+
+	virtual FTopLevelAssetPath GetClassPathName() const override;
 
 	virtual const UClass* GetClassWithin() const override;
 
@@ -42,8 +50,8 @@ public:
 	/** Retrieves the Class Viewer node this data is associated with. */
 	const TWeakPtr<FSEClassFilterNode>& GetClassViewerNode() const;
 
-	/** Adds the name of an interface that this blueprint implements directly. */
-	void AddImplementedInterface(const FString& InterfaceName);
+	/** Adds the path of an interface that this blueprint implements directly. */
+	void AddImplementedInterface(const FString& InterfacePath);
 
 private:
 	/** Flags for the class. */
@@ -52,7 +60,7 @@ private:
 	/** Is this a normal blueprint type? */
 	bool bNormalBlueprintType;
 
-	/** The implemented interfaces for this class. */
+	/** The full paths for all directly implemented interfaces for this class. */
 	TArray<FString> ImplementedInterfaces;
 
 	/** The node this class is contained in, used to gather hierarchical data as needed. */

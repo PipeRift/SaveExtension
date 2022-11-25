@@ -6,8 +6,7 @@
 
 FUnloadedBlueprintData::FUnloadedBlueprintData(TWeakPtr<FSEClassFilterNode> InClassViewerNode)
 	: ClassViewerNode(InClassViewerNode)
-{
-}
+{}
 
 bool FUnloadedBlueprintData::HasAnyClassFlags(uint32 InFlagsToCheck) const
 {
@@ -24,7 +23,7 @@ void FUnloadedBlueprintData::SetClassFlags(uint32 InFlags)
 	ClassFlags = InFlags;
 }
 
-bool FUnloadedBlueprintData::IsChildOf(const UClass * InClass) const
+bool FUnloadedBlueprintData::IsChildOf(const UClass* InClass) const
 {
 	TSharedPtr<FSEClassFilterNode> CurrentNode = ClassViewerNode.Pin()->ParentNode.Pin();
 
@@ -41,12 +40,13 @@ bool FUnloadedBlueprintData::IsChildOf(const UClass * InClass) const
 	return false;
 }
 
-bool FUnloadedBlueprintData::ImplementsInterface(const UClass * InInterface) const
+bool FUnloadedBlueprintData::ImplementsInterface(const UClass* InInterface) const
 {
+	FString InterfacePath = InInterface->GetPathName();
 	// Does this blueprint implement the interface directly?
 	for (const FString& DirectlyImplementedInterface : ImplementedInterfaces)
 	{
-		if (DirectlyImplementedInterface == InInterface->GetName())
+		if (DirectlyImplementedInterface == InterfacePath)
 		{
 			return true;
 		}
@@ -60,7 +60,8 @@ bool FUnloadedBlueprintData::ImplementsInterface(const UClass * InInterface) con
 		{
 			return true;
 		}
-		else if (CurrentNode->UnloadedBlueprintData.IsValid() && CurrentNode->UnloadedBlueprintData->ImplementsInterface(InInterface))
+		else if (CurrentNode->UnloadedBlueprintData.IsValid() &&
+				 CurrentNode->UnloadedBlueprintData->ImplementsInterface(InInterface))
 		{
 			return true;
 		}
@@ -70,10 +71,11 @@ bool FUnloadedBlueprintData::ImplementsInterface(const UClass * InInterface) con
 	return false;
 }
 
-bool FUnloadedBlueprintData::IsA(const UClass * InClass) const
+bool FUnloadedBlueprintData::IsA(const UClass* InClass) const
 {
-	// Unloaded blueprints will always return true for IsA(UBlueprintGeneratedClass::StaticClass). With that in mind, even though we do not have the exact class, we can use that knowledge as a basis for a check.
-	return ((UObject*)UBlueprintGeneratedClass::StaticClass())->IsA(InClass);
+	// Unloaded blueprints will always return true for IsA(UBlueprintGeneratedClass::StaticClass). With that
+	// in mind, even though we do not have the exact class, we can use that knowledge as a basis for a check.
+	return ((UObject*) UBlueprintGeneratedClass::StaticClass())->IsA(InClass);
 }
 
 const UClass* FUnloadedBlueprintData::GetClassWithin() const
@@ -118,11 +120,7 @@ const UClass* FUnloadedBlueprintData::GetNativeParent() const
 
 TSharedPtr<FString> FUnloadedBlueprintData::GetClassName() const
 {
-	if (ClassViewerNode.IsValid())
-	{
-		return MakeShared<FString>(ClassViewerNode.Pin()->GetClassName());
-	}
-
+	// Not Implemented
 	return TSharedPtr<FString>();
 }
 
@@ -130,10 +128,20 @@ FName FUnloadedBlueprintData::GetClassPath() const
 {
 	if (ClassViewerNode.IsValid())
 	{
-		return ClassViewerNode.Pin()->ClassPath;
+		return FName(*ClassViewerNode.Pin()->ClassPath.ToString());
 	}
 
 	return FName();
+}
+
+FTopLevelAssetPath FUnloadedBlueprintData::GetClassPathName() const
+{
+	if (ClassViewerNode.IsValid())
+	{
+		return ClassViewerNode.Pin()->ClassPath;
+	}
+
+	return FTopLevelAssetPath();
 }
 
 const TWeakPtr<FSEClassFilterNode>& FUnloadedBlueprintData::GetClassViewerNode() const
@@ -141,7 +149,7 @@ const TWeakPtr<FSEClassFilterNode>& FUnloadedBlueprintData::GetClassViewerNode()
 	return ClassViewerNode;
 }
 
-void FUnloadedBlueprintData::AddImplementedInterface(const FString & InterfaceName)
+void FUnloadedBlueprintData::AddImplementedInterface(const FString& InterfaceName)
 {
 	ImplementedInterfaces.Add(InterfaceName);
 }

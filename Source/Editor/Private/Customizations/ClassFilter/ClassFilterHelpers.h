@@ -2,14 +2,13 @@
 #pragma once
 
 #include "ClassFilterNode.h"
-#include <AssetData.h>
+#include <AssetRegistry/AssetData.h>
 #include <Engine/Blueprint.h>
 #include <Kismet2/KismetEditorUtilities.h>
 #include <CoreGlobals.h>
 #include <Misc/MessageDialog.h>
 #include <PackageTools.h>
-#include <Toolkits/AssetEditorManager.h>
-#include <AssetRegistryModule.h>
+#include <AssetRegistry/AssetRegistryModule.h>
 #include <EditorDirectories.h>
 #include <Dialogs/Dialogs.h>
 #include <AssetToolsModule.h>
@@ -74,13 +73,14 @@ namespace ClassFilter
 		 *
 		 *	@return The parent node.
 		 */
-		FSEClassFilterNodePtr FindParent(const FSEClassFilterNodePtr& InRootNode, FName InParentClassname, const UClass* InParentClass);
+		FSEClassFilterNodePtr FindParent(const FSEClassFilterNodePtr& InRootNode,
+			FTopLevelAssetPath InParentClassPath, const UClass* InParentClass);
 
 		/** Updates the Class of a node. Uses the generated class package name to find the node.
 		 *	@param InGeneratedClassPath		The path of the generated class to find the node for.
 		 *	@param InNewClass				The class to update the node with.
 		*/
-		void UpdateClassInNode(FName InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint);
+		void UpdateClassInNode(FTopLevelAssetPath InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint);
 
 		/** Finds the node, recursively going deeper into the hierarchy. Does so by comparing class names.
 		*	@param InClassName			The name of the generated class package to find the node for.
@@ -105,14 +105,14 @@ namespace ClassFilter
 		void AddChildren_NoFilter(FSEClassFilterNodePtr& InOutRootNode, const TMultiMap<FName, FAssetData>& BlueprintPackageToAssetDataMap);
 
 		/** Called when hot reload has finished */
-		void OnHotReload(bool bWasTriggeredAutomatically);
+		void OnReloadComplete(EReloadCompleteReason Reason);
 
 		/** Finds the node, recursively going deeper into the hierarchy. Does so by comparing generated class package names.
 		 *	@param InGeneratedClassPath		The path of the generated class to find the node for.
 		 *
 		 *	@return The node.
 		 */
-		FSEClassFilterNodePtr FindNodeByGeneratedClassPath(const FSEClassFilterNodePtr& InRootNode, FName InGeneratedClassPath);
+		FSEClassFilterNodePtr FindNodeByGeneratedClassPath(const FSEClassFilterNodePtr& InRootNode, FTopLevelAssetPath InGeneratedClassPath);
 
 		/**
 		 * Loads the tag data for an unloaded blueprint asset.
@@ -137,7 +137,7 @@ namespace ClassFilter
 		 *
 		 * @return Returns true if the asset was found and deleted successfully.
 		 */
-		bool FindAndRemoveNodeByClassPath(const FSEClassFilterNodePtr& InRootNode, FName InClassPath);
+		bool FindAndRemoveNodeByClassPath(const FSEClassFilterNodePtr& InRootNode, FTopLevelAssetPath InClassPath);
 
 		/** Callback registered to the Asset Registry to be notified when an asset is added. */
 		void AddAsset(const FAssetData& InAddedAssetData);
@@ -163,7 +163,8 @@ namespace ClassFilter
 		// Pre-declare these functions.
 		static bool CheckIfBlueprintBase( FSEClassFilterNodePtr InNode );
 		static UBlueprint* GetBlueprint( UClass* InClass );
-		static void UpdateClassInNode(FName InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint );
+		static void UpdateClassInNode(
+			FTopLevelAssetPath InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint);
 
 		/** Util class to checks if a particular class can be made into a Blueprint, ignores deprecation
 		 *
@@ -544,7 +545,7 @@ namespace ClassFilter
 			{
 				FMessageLog EditorErrors("EditorErrors");
 				FFormatNamedArguments Arguments;
-				Arguments.Add(TEXT("ObjectName"), FText::FromName(InOutClassNode->ClassPath));
+				Arguments.Add(TEXT("ObjectName"), FText::FromString(InOutClassNode->ClassPath.ToString()));
 				EditorErrors.Error(FText::Format(LOCTEXT("PackageLoadFail", "Failed to load class {ObjectName}"), Arguments));
 			}
 		}
@@ -553,7 +554,8 @@ namespace ClassFilter
 		*	@param InGeneratedClassPath			The name of the generated class to find the node for.
 		*	@param InNewClass					The class to update the node with.
 		*/
-		static void UpdateClassInNode(FName InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint )
+		static void UpdateClassInNode(
+			FTopLevelAssetPath InGeneratedClassPath, UClass* InNewClass, UBlueprint* InNewBluePrint)
 		{
 			ClassHierarchy->UpdateClassInNode(InGeneratedClassPath, InNewClass, InNewBluePrint );
 		}

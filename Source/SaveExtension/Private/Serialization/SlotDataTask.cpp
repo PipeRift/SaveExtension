@@ -27,7 +27,7 @@ void USlotDataTask::Finish(bool bSuccess)
 	if (bRunning)
 	{
 		OnFinish(bSuccess);
-		MarkPendingKill();
+		MarkAsGarbage();
 		GetManager()->FinishTask(this);
 		bFinished = true;
 		bSucceeded = bSuccess;

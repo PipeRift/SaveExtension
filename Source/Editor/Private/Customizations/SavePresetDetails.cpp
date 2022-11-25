@@ -46,7 +46,7 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 			[
 				SNew(SBorder)
 				.Padding(2.f)
-				.BorderImage(FEditorStyle::GetBrush("ErrorReporting.EmptyBox"))
+				.BorderImage(FAppStyle::GetBrush("ErrorReporting.EmptyBox"))
 				.BorderBackgroundColor(this, &FSavePresetDetails::GetWarningColor)
 				[
 					SNew(STextBlock)

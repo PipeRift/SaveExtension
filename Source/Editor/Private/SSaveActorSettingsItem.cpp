@@ -85,11 +85,11 @@ const FSlateBrush* SSaveActorSettingsItem::GetBorderImage() const
 {
 	if (IsHovered())
 	{
-		return FEditorStyle::GetBrush("DetailsView.CategoryMiddle_Hovered");
+		return FAppStyle::GetBrush("DetailsView.CategoryMiddle_Hovered");
 	}
 	else
 	{
-		return FEditorStyle::GetBrush("DetailsView.CategoryMiddle");
+		return FAppStyle::GetBrush("DetailsView.CategoryMiddle");
 	}
 }
 

@@ -60,7 +60,7 @@ FScopedFileReader::FScopedFileReader(FStringView Filename, int32 Flags)
 FSaveFile::FSaveFile()
 	: FileTypeTag(SE_SAVEGAME_FILE_TYPE_TAG)
 	, SaveGameFileVersion(FSaveGameFileVersion::LatestVersion)
-	, PackageFileUE4Version(GPackageFileUE4Version)
+	, PackageFileUEVersion(GPackageFileUEVersion)
 	, SavedEngineVersion(FEngineVersion::Current())
 	, CustomVersionFormat(static_cast<int32>(ECustomVersionSerializationFormat::Latest))
 	, CustomVersions(FCurrentCustomVersions::GetAll())
@@ -96,9 +96,9 @@ void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 		// Read version for this file format
 		Ar << SaveGameFileVersion;
 		// Read engine and UE4 version information
-		Ar << PackageFileUE4Version;
+		Ar << PackageFileUEVersion;
 		Ar << SavedEngineVersion;
-		Ar.SetUE4Ver(PackageFileUE4Version);
+		Ar.SetUEVer(PackageFileUEVersion);
 		Ar.SetEngineVer(SavedEngineVersion);
 
 		if (SaveGameFileVersion >= FSaveGameFileVersion::AddedCustomVersions)
@@ -152,7 +152,7 @@ void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 	{ // Header information
 		Ar << FileTypeTag;
 		Ar << SaveGameFileVersion;
-		Ar << PackageFileUE4Version;
+		Ar << PackageFileUEVersion;
 		Ar << SavedEngineVersion;
 		Ar << CustomVersionFormat;
 		CustomVersions.Serialize(Ar, static_cast<ECustomVersionSerializationFormat::Type>(CustomVersionFormat));

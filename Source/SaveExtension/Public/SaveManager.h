@@ -577,7 +577,7 @@ inline USaveManager* USaveManager::Get(const UObject* Context)
 
 inline bool USaveManager::IsTickable() const
 {
-	return !HasAnyFlags(RF_ClassDefaultObject) && !IsPendingKill();
+	return !HasAnyFlags(RF_ClassDefaultObject) && IsValid(this);
 }
 
 inline UWorld* USaveManager::GetTickableGameObjectWorld() const
