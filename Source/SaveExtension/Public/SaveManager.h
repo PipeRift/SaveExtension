@@ -292,9 +292,15 @@ public:
 	 * @return the SlotInfo associated with an Id
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
-	FORCEINLINE USlotInfo* GetSlotInfo(int32 SlotId)
+	FORCEINLINE USlotInfo* GetSlotInfoById(int32 SlotId)
 	{
 		return LoadInfo(SlotId);
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
+	FORCEINLINE USlotInfo* GetSlotInfo(FName SlotName)
+	{
+		return LoadInfo(SlotName);
 	}
 
 	/** Check if an slot exists on disk
