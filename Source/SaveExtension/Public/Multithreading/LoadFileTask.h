@@ -1,9 +1,10 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
-#include <Async/AsyncWork.h>
 #include "FileAdapter.h"
+
+#include <Async/AsyncWork.h>
 
 
 /////////////////////////////////////////////////////
@@ -12,27 +13,23 @@
 class FLoadFileTask : public FNonAbandonableTask
 {
 protected:
-
 	TWeakObjectPtr<USaveManager> Manager;
 	const FString SlotName;
 
-	TWeakObjectPtr<USlotInfo> SlotInfo;
-	TWeakObjectPtr<USlotData> SlotData;
+	TWeakObjectPtr<USaveSlot> SlotInfo;
+	TWeakObjectPtr<USaveSlotData> SlotData;
 
 
 public:
-
-	explicit FLoadFileTask(USaveManager* Manager, FStringView SlotName)
-		: Manager(Manager)
-		, SlotName(SlotName)
+	explicit FLoadFileTask(USaveManager* Manager, FStringView SlotName) : Manager(Manager), SlotName(SlotName)
 	{}
 	~FLoadFileTask()
 	{
-		if(SlotInfo.IsValid())
+		if (SlotInfo.IsValid())
 		{
 			SlotInfo->ClearInternalFlags(EInternalObjectFlags::Async);
 		}
-		if(SlotData.IsValid())
+		if (SlotData.IsValid())
 		{
 			SlotData->ClearInternalFlags(EInternalObjectFlags::Async);
 		}
@@ -41,7 +38,7 @@ public:
 	void DoWork()
 	{
 		FScopedFileReader FileReader(FFileAdapter::GetSlotPath(SlotName));
-		if(FileReader.IsValid())
+		if (FileReader.IsValid())
 		{
 			FSaveFile File;
 			File.Read(FileReader, false);
@@ -50,12 +47,12 @@ public:
 		}
 	}
 
-	USlotInfo* GetInfo()
+	USaveSlot* GetInfo()
 	{
 		return SlotInfo.Get();
 	}
 
-	USlotData* GetData()
+	USaveSlotData* GetData()
 	{
 		return SlotData.Get();
 	}

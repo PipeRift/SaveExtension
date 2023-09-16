@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Misc/ClassFilter.h"
 
@@ -6,10 +6,7 @@
 #include <UObject/UObjectIterator.h>
 
 
-FSEClassFilter::FSEClassFilter(UClass* BaseClass)
-	: BaseClass{ BaseClass }
-	, IgnoredClasses {}
-{}
+FSEClassFilter::FSEClassFilter(UClass* BaseClass) : BaseClass{BaseClass}, IgnoredClasses{} {}
 
 void FSEClassFilter::Merge(const FSEClassFilter& Other)
 {
@@ -32,19 +29,19 @@ void FSEClassFilter::BakeAllowedClasses() const
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEClassFilter::BakeAllowedClasses);
 	BakedAllowedClasses.Empty();
 
-	if(AllowedClasses.Num() <= 0)
+	if (AllowedClasses.Num() <= 0)
 	{
 		return;
 	}
 
 	TArray<UClass*> ChildrenOfAllowedClasses;
 	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(First Pass: Potential classes);
-		for(auto& AllowedClass : AllowedClasses)
+		TRACE_CPUPROFILER_EVENT_SCOPE(First Pass : Potential classes);
+		for (auto& AllowedClass : AllowedClasses)
 		{
 			UClass* const AllowedClassPtr = AllowedClass.Get();
 
-			if(!AllowedClassPtr)
+			if (!AllowedClassPtr)
 			{
 				continue;
 			}
@@ -54,7 +51,7 @@ void FSEClassFilter::BakeAllowedClasses() const
 		}
 	}
 	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(Second Pass: Bake Classes);
+		TRACE_CPUPROFILER_EVENT_SCOPE(Second Pass : Bake Classes);
 		for (UClass* Class : ChildrenOfAllowedClasses)
 		{
 			// Iterate parent classes of a class
@@ -129,5 +126,5 @@ bool FSEClassFilter::operator==(const FSEClassFilter& Other) const
 {
 	// Do all classes match?
 	return AllowedClasses.Difference(Other.AllowedClasses).Num() <= 0 &&
-		IgnoredClasses.Difference(Other.IgnoredClasses).Num() <= 0;
+		   IgnoredClasses.Difference(Other.IgnoredClasses).Num() <= 0;
 }

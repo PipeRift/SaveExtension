@@ -1,14 +1,15 @@
-﻿// Copyright 2015-2020 Piperift. All Rights Reserved.
+﻿// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "SavePresetDetails.h"
 
-#include "DetailLayoutBuilder.h"
 #include "DetailCategoryBuilder.h"
+#include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
-#include <Widgets/Layout/SBorder.h>
-#include <EditorStyleSet.h>
-
 #include "SavePreset.h"
+
+#include <EditorStyleSet.h>
+#include <Widgets/Layout/SBorder.h>
+
 
 #define LOCTEXT_NAMESPACE "FSavePresetDetails"
 
@@ -39,23 +40,22 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 			Category.AddProperty(TEXT("MultithreadedSerialization"));
 			Category.AddProperty(TEXT("FrameSplittedSerialization"));
 			Category.AddCustomRow(LOCTEXT("AsyncWarning", "Asynchronous Warning"))
-			.Visibility({ this, &FSavePresetDetails::GetWarningVisibility })
-			.ValueContent()
-			.MinDesiredWidth(300.f)
-			.MaxDesiredWidth(400.f)
-			[
-				SNew(SBorder)
-				.Padding(2.f)
-				.BorderImage(FAppStyle::GetBrush("ErrorReporting.EmptyBox"))
-				.BorderBackgroundColor(this, &FSavePresetDetails::GetWarningColor)
-				[
-					SNew(STextBlock)
-					.Text(LOCTEXT("AsyncWarningText", "WARNING: Frame-splitted loading or saving is not recommended while using Level Streaming or World Composition"))
-					.AutoWrapText(true)
-				]
-			];
+				.Visibility({this, &FSavePresetDetails::GetWarningVisibility})
+				.ValueContent()
+				.MinDesiredWidth(300.f)
+				.MaxDesiredWidth(
+					400.f)[SNew(SBorder)
+							   .Padding(2.f)
+							   .BorderImage(FAppStyle::GetBrush("ErrorReporting.EmptyBox"))
+							   .BorderBackgroundColor(this, &FSavePresetDetails::GetWarningColor)
+								   [SNew(STextBlock)
+										   .Text(LOCTEXT("AsyncWarningText",
+											   "WARNING: Frame-splitted loading or saving is not recommended "
+											   "while using Level Streaming or World Composition"))
+										   .AutoWrapText(true)]];
 
-			Category.AddProperty(TEXT("MaxFrameMs")).EditCondition({ this, &FSavePresetDetails::CanEditAsynchronous }, nullptr);
+			Category.AddProperty(TEXT("MaxFrameMs"))
+				.EditCondition({this, &FSavePresetDetails::CanEditAsynchronous}, nullptr);
 		}
 
 		DetailBuilder.EditCategory(TEXT("Level Streaming"));
@@ -64,14 +64,15 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 
 FSlateColor FSavePresetDetails::GetWarningColor() const
 {
-	return FLinearColor{ FColor{ 234, 220, 25, 128 } };
+	return FLinearColor{FColor{234, 220, 25, 128}};
 }
 
 EVisibility FSavePresetDetails::GetWarningVisibility() const
 {
 	if (Settings.IsValid())
 	{
-		return Settings->GetFrameSplitSerialization() == ESaveASyncMode::OnlySync ? EVisibility::Collapsed : EVisibility::Visible;
+		return Settings->GetFrameSplitSerialization() == ESaveASyncMode::OnlySync ? EVisibility::Collapsed
+																				  : EVisibility::Visible;
 	}
 	return EVisibility::Collapsed;
 }

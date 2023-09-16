@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Automatron.h"
 #include "Helpers/TestActor.h"
@@ -82,8 +82,7 @@ void FSaveSpec_Preset::Define()
 				TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
 			});
 
-			It("bool", [this]()
-			{
+			It("bool", [this]() {
 				TestActor->bMyBool = true;
 				SaveManager->SaveSlot(0);
 				TestTrue("bool didn't change after save", TestActor->bMyBool);
@@ -95,8 +94,7 @@ void FSaveSpec_Preset::Define()
 				TestTrue("bool was saved", TestActor->bMyBool);
 			});
 
-			It("uint8", [this]()
-			{
+			It("uint8", [this]() {
 				TestActor->MyU8 = 34;
 				SaveManager->SaveSlot(0);
 				TestEqual("uint8 didn't change after save", TestActor->MyU8, 34);
@@ -106,8 +104,7 @@ void FSaveSpec_Preset::Define()
 				TestEqual("uint8 was saved", TestActor->MyU8, 34);
 			});
 
-			It("uint16", [this]()
-			{
+			It("uint16", [this]() {
 				TestActor->MyU16 = 34;
 				SaveManager->SaveSlot(0);
 				TestEqual("uint16 didn't change after save", TestActor->MyU16, 34);
@@ -117,8 +114,7 @@ void FSaveSpec_Preset::Define()
 				TestEqual("uint16 was saved", TestActor->MyU16, 34);
 			});
 
-			It("uint32", [this]()
-			{
+			It("uint32", [this]() {
 				TestActor->MyU32 = 34;
 				SaveManager->SaveSlot(0);
 				TestEqual("uint32 didn't change after save", TestActor->MyU32, 34);
@@ -128,8 +124,7 @@ void FSaveSpec_Preset::Define()
 				TestEqual("uint32 was saved", TestActor->MyU32, 34);
 			});
 
-			It("uint64", [this]()
-			{
+			It("uint64", [this]() {
 				TestActor->MyU64 = 34;
 				SaveManager->SaveSlot(0);
 				TestEqual("uint16 didn't change after save", TestActor->MyU64, 34);
@@ -139,8 +134,7 @@ void FSaveSpec_Preset::Define()
 				TestEqual("uint16 was saved", TestActor->MyU64, 34);
 			});
 
-			It("int8", [this]()
-			{
+			It("int8", [this]() {
 				TestActor->MyI8 = 34;
 				SaveManager->SaveSlot(0);
 				TestEqual("int8 didn't change after save", TestActor->MyI8, 34);
@@ -150,8 +144,7 @@ void FSaveSpec_Preset::Define()
 				TestEqual("int8 was saved", TestActor->MyI8, 34);
 			});
 
-			It("int16", [this]()
-			{
+			It("int16", [this]() {
 				TestActor->MyI16 = 34;
 				SaveManager->SaveSlot(0);
 				TestEqual("int16 didn't change after save", TestActor->MyI16, 34);
@@ -161,8 +154,7 @@ void FSaveSpec_Preset::Define()
 				TestEqual("int16 was saved", TestActor->MyI16, 34);
 			});
 
-			It("int32", [this]()
-			{
+			It("int32", [this]() {
 				TestActor->MyI32 = 34;
 				SaveManager->SaveSlot(0);
 				TestEqual("int32 didn't change after save", TestActor->MyI32, 34);
@@ -172,8 +164,7 @@ void FSaveSpec_Preset::Define()
 				TestEqual("int32 was saved", TestActor->MyI32, 34);
 			});
 
-			It("int64", [this]()
-			{
+			It("int64", [this]() {
 				TestActor->MyI64 = 34;
 				SaveManager->SaveSlot(0);
 				TestEqual("int64 didn't change after save", TestActor->MyI64, 34);

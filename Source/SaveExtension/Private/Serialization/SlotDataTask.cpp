@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Serialization/SlotDataTask.h"
 
@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////
 // USaveDataTask
 
-USlotDataTask* USlotDataTask::Start()
+USaveSlotDataTask* USaveSlotDataTask::Start()
 {
 	const USaveManager* Manager = GetManager();
 
@@ -22,7 +22,7 @@ USlotDataTask* USlotDataTask::Start()
 	return this;
 }
 
-void USlotDataTask::Finish(bool bSuccess)
+void USaveSlotDataTask::Finish(bool bSuccess)
 {
 	if (bRunning)
 	{
@@ -34,59 +34,59 @@ void USlotDataTask::Finish(bool bSuccess)
 	}
 }
 
-bool USlotDataTask::IsScheduled() const
+bool USaveSlotDataTask::IsScheduled() const
 {
 	return GetManager()->Tasks.Contains(this);
 }
 
-USaveManager* USlotDataTask::GetManager() const
+USaveManager* USaveSlotDataTask::GetManager() const
 {
 	return Cast<USaveManager>(GetOuter());
 }
 
-void USlotDataTask::BakeAllFilters()
+void USaveSlotDataTask::BakeAllFilters()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask::BakeAllFilters);
+	TRACE_CPUPROFILER_EVENT_SCOPE(USaveSlotDataTask::BakeAllFilters);
 	SlotData->GeneralLevelFilter.BakeAllowedClasses();
 
-	if(SlotData->MainLevel.bOverrideGeneralFilter)
+	if (SlotData->MainLevel.bOverrideGeneralFilter)
 	{
 		SlotData->MainLevel.Filter.BakeAllowedClasses();
 	}
 
-	for(const auto& Level : SlotData->SubLevels)
+	for (const auto& Level : SlotData->SubLevels)
 	{
-		if(Level.bOverrideGeneralFilter)
+		if (Level.bOverrideGeneralFilter)
 		{
 			Level.Filter.BakeAllowedClasses();
 		}
 	}
 }
 
-const FSELevelFilter& USlotDataTask::GetGeneralFilter() const
+const FSELevelFilter& USaveSlotDataTask::GetGeneralFilter() const
 {
 	check(SlotData);
 	return SlotData->GeneralLevelFilter;
 }
 
-const FSELevelFilter& USlotDataTask::GetLevelFilter(const FLevelRecord& Level) const
+const FSELevelFilter& USaveSlotDataTask::GetLevelFilter(const FLevelRecord& Level) const
 {
-	if(Level.bOverrideGeneralFilter)
+	if (Level.bOverrideGeneralFilter)
 	{
 		return Level.Filter;
 	}
 	return GetGeneralFilter();
 }
 
-FLevelRecord* USlotDataTask::FindLevelRecord(const ULevelStreaming* Level) const
+FLevelRecord* USaveSlotDataTask::FindLevelRecord(const ULevelStreaming* Level) const
 {
 	if (!Level)
 		return &SlotData->MainLevel;
-	else // Find the Sub-Level
+	else	// Find the Sub-Level
 		return SlotData->SubLevels.FindByKey(Level);
 }
 
-UWorld* USlotDataTask::GetWorld() const
+UWorld* USaveSlotDataTask::GetWorld() const
 {
 	return GetOuter()->GetWorld();
 }

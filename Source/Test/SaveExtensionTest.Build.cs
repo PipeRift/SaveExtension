@@ -5,11 +5,12 @@ using System.IO;
 
 namespace UnrealBuildTool.Rules
 {
-	public class SaveExtensionTest : ModuleRules {
+	public class SaveExtensionTest : ModuleRules
+	{
 		public SaveExtensionTest(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-			bEnforceIWYU = true;
+			IWYUSupport = IWYUSupport.Full;
 
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
@@ -20,10 +21,10 @@ namespace UnrealBuildTool.Rules
 				"EngineSettings"
 			});
 
-            if (Target.bBuildEditor == true)
-            {
-                PrivateDependencyModuleNames.Add("UnrealEd");
-            }
-        }
+			if (Target.bBuildEditor == true)
+			{
+				PrivateDependencyModuleNames.Add("UnrealEd");
+			}
+		}
 	}
 }

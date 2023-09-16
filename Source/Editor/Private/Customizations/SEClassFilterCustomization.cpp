@@ -1,14 +1,17 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Customizations/SEClassFilterCustomization.h"
 
 #include <DetailWidgetRow.h>
-#include <Widgets/Input/SComboButton.h>
-#include <Widgets/Input/SButton.h>
-#include <ScopedTransaction.h>
 #include <Editor.h>
+#include <PropertyCustomizationHelpers.h>
+#include <ScopedTransaction.h>
+#include <Styling/AppStyle.h>
 #include <Widgets/Images/SImage.h>
+#include <Widgets/Input/SButton.h>
+#include <Widgets/Input/SComboButton.h>
 #include <Widgets/Layout/SScaleBox.h>
+
 
 #define LOCTEXT_NAMESPACE "FSEClassFilterCustomization"
 
@@ -18,13 +21,15 @@ FSEClassFilterCustomization::~FSEClassFilterCustomization()
 	GEditor->UnregisterForUndo(this);
 }
 
-void FSEClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle> StructPropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
+void FSEClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle> StructPropertyHandle,
+	FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {
 	StructHandle = StructPropertyHandle;
 	FilterHandle = GetFilterHandle(StructPropertyHandle);
 
 	BuildEditableFilterList();
 
+	// clang-format off
 	HeaderRow
 	.NameContent()
 	[
@@ -59,28 +64,16 @@ void FSEClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHand
 		.AutoWidth()
 		.VAlign(VAlign_Fill)
 		[
-			SNew(SButton)
-			.ButtonStyle(FAppStyle::Get(), "HoverHintOnly")
-			.ContentPadding(FMargin(2.0f, 2.0f))
-			.OnClicked(this, &FSEClassFilterCustomization::OnClearClicked)
-			.ForegroundColor(FSlateColor::UseForeground())
-			.Text(LOCTEXT("ClassFilter_Clear", "Clear"))
-			.ToolTipText(LOCTEXT("ClassFilter_ClearTooltip", "Clear all allowed and ignored classes"))
-			[
-				SNew(SScaleBox)
-				[
-					SNew(SImage)
-					.Image(FAppStyle::GetBrush("PropertyWindow.Button_EmptyArray"))
-					.ColorAndOpacity(FSlateColor::UseForeground())
-				]
-			]
+			PropertyCustomizationHelpers::MakeEmptyButton(FSimpleDelegate::CreateSP(this, &FSEClassFilterCustomization::OnClearClicked), LOCTEXT("ClassFilter_ClearTooltip", "Clear all allowed and ignored classes"))
 		]
 	];
+	// clang-format on
 
 	GEditor->RegisterForUndo(this);
 }
 
-void FSEClassFilterCustomization::CustomizeChildren(TSharedRef<class IPropertyHandle> StructPropertyHandle, class IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
+void FSEClassFilterCustomization::CustomizeChildren(TSharedRef<class IPropertyHandle> StructPropertyHandle,
+	class IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {}
 
 void FSEClassFilterCustomization::BuildEditableFilterList()
@@ -97,7 +90,8 @@ void FSEClassFilterCustomization::BuildEditableFilterList()
 
 		for (int32 ContainerIdx = 0; ContainerIdx < RawStructData.Num(); ++ContainerIdx)
 		{
-			EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(FirstOuter, (FSEClassFilter*)RawStructData[ContainerIdx]));
+			EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(
+				FirstOuter, (FSEClassFilter*) RawStructData[ContainerIdx]));
 		}
 	}
 }
@@ -111,13 +105,13 @@ TSharedRef<SWidget> FSEClassFilterCustomization::GetListContent()
 
 	bool bReadOnly = FilterHandle->IsEditConst();
 
-	TSharedRef<SClassFilter> EditPopup = SNew(SClassFilter, EditableFilters)
-	.ReadOnly(bReadOnly)
-	.OnFilterChanged(this, &FSEClassFilterCustomization::RefreshClassList)
-	.PropertyHandle(FilterHandle);
-
+	// clang-format off
+	TSharedRef<SClassFilter> EditPopup =
+		SNew(SClassFilter, EditableFilters)
+		.ReadOnly(bReadOnly)
+		.OnFilterChanged(this, &FSEClassFilterCustomization::RefreshClassList)
+		.PropertyHandle(FilterHandle);
 	LastFilterPopup = EditPopup;
-
 	return SNew(SVerticalBox)
 	+ SVerticalBox::Slot()
 	.AutoHeight()
@@ -125,6 +119,7 @@ TSharedRef<SWidget> FSEClassFilterCustomization::GetListContent()
 	[
 		EditPopup
 	];
+	// clang-format on
 }
 
 void FSEClassFilterCustomization::OnPopupStateChanged(bool bIsOpened)
@@ -139,22 +134,16 @@ void FSEClassFilterCustomization::OnPopupStateChanged(bool bIsOpened)
 	}
 }
 
-FReply FSEClassFilterCustomization::OnClearClicked()
+void FSEClassFilterCustomization::OnClearClicked()
 {
 	FScopedTransaction Transaction(LOCTEXT("ClassFilter_Filter", "Clear Filter"));
+	FilterHandle->NotifyPreChange();
 	for (auto& Filter : EditableFilters)
 	{
-		// Reset Filter
-		if (Filter.Owner.IsValid())
-		{
-			Filter.Owner->Modify();
-		}
-
 		*Filter.Filter = {};
 	}
-
+	FilterHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
 	RefreshClassList();
-	return FReply::Handled();
 }
 
 EVisibility FSEClassFilterCustomization::GetClassPreviewVisibility() const
@@ -170,6 +159,7 @@ TSharedRef<SWidget> FSEClassFilterCustomization::GetClassPreview()
 {
 	RefreshClassList();
 
+	// clang-format off
 	return SNew(SBox)
 	.MinDesiredWidth(100.f)
 	[
@@ -178,9 +168,11 @@ TSharedRef<SWidget> FSEClassFilterCustomization::GetClassPreview()
 		.ListItemsSource(&PreviewClasses)
 		.OnGenerateRow(this, &FSEClassFilterCustomization::OnGeneratePreviewRow)
 	];
+	// clang-format on
 }
 
-TSharedRef<ITableRow> FSEClassFilterCustomization::OnGeneratePreviewRow(TSharedPtr<FSEClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable)
+TSharedRef<ITableRow> FSEClassFilterCustomization::OnGeneratePreviewRow(
+	TSharedPtr<FSEClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	FLinearColor StateColor;
 	FText StateText;
@@ -195,6 +187,7 @@ TSharedRef<ITableRow> FSEClassFilterCustomization::OnGeneratePreviewRow(TSharedP
 		StateText = FText::FromString(FString(TEXT("\xf00d"))) /*fa-times*/;
 	}
 
+	// clang-format off
 	return SNew(STableRow<TSharedPtr<FSEClassFilterItem>>, OwnerTable)
 	[
 		SNew(SHorizontalBox)
@@ -215,6 +208,7 @@ TSharedRef<ITableRow> FSEClassFilterCustomization::OnGeneratePreviewRow(TSharedP
 			SNew(STextBlock).Text(FText::FromString(Class->ClassName))
 		]
 	];
+	// clang-format on
 }
 
 void FSEClassFilterCustomization::PostUndo(bool bSuccess)

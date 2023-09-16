@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 
 
 class USaveManager;
-class USlotInfo;
+class USaveSlot;
 struct FScreenshotSize;
 
 /**
@@ -25,7 +25,6 @@ enum class ESaveGameResult : uint8
 /** FSaveGameAction */
 class FSaveGameAction : public FPendingLatentAction
 {
-
 public:
 	ESaveGameResult& Result;
 
@@ -34,11 +33,12 @@ public:
 	FWeakObjectPtr CallbackTarget;
 
 
-	FSaveGameAction(USaveManager* Manager, FName SlotName, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, ESaveGameResult& OutResult, const FLatentActionInfo& LatentInfo);
+	FSaveGameAction(USaveManager* Manager, FName SlotName, bool bOverrideIfNeeded, bool bScreenshot,
+		const FScreenshotSize Size, ESaveGameResult& OutResult, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 
-	void OnSaveFinished(USlotInfo* SavedSlot);
+	void OnSaveFinished(USaveSlot* SavedSlot);
 
 #if WITH_EDITOR
 	// Returns a human readable description of the latent operation's current state

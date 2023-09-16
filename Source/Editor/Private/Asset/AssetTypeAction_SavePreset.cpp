@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "AssetTypeAction_SavePreset.h"
 
@@ -10,7 +10,7 @@
 
 FText FAssetTypeAction_SavePreset::GetName() const
 {
-	  return LOCTEXT("FAssetTypeAction_SavePresetName", "Save Preset");
+	return LOCTEXT("FAssetTypeAction_SavePresetName", "Save Preset");
 }
 
 FColor FAssetTypeAction_SavePreset::GetTypeColor() const

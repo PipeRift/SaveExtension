@@ -1,13 +1,14 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Serialization/LevelRecords.h"
-#include "SlotData.h"
+
+#include "SaveSlotData.h"
 
 
 /////////////////////////////////////////////////////
 // LevelRecords
 
-const FName FPersistentLevelRecord::PersistentName{ "Persistent" };
+const FName FPersistentLevelRecord::PersistentName{"Persistent"};
 
 
 bool FLevelRecord::Serialize(FArchive& Ar)
@@ -17,7 +18,7 @@ bool FLevelRecord::Serialize(FArchive& Ar)
 	Ar << bOverrideGeneralFilter;
 	if (bOverrideGeneralFilter)
 	{
-		static UScriptStruct* const LevelFilterType{ FSELevelFilter::StaticStruct() };
+		static UScriptStruct* const LevelFilterType{FSELevelFilter::StaticStruct()};
 		LevelFilterType->SerializeItem(Ar, &Filter, nullptr);
 	}
 

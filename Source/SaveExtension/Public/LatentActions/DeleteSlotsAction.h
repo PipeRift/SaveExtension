@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 
 
 class USaveManager;
-class USlotInfo;
+class USaveSlot;
 
 /**
  * Enum used to indicate quote execution results
@@ -35,7 +35,8 @@ public:
 	/**
 	 * @param SlotId will load that Saved Game if Id > 0, otherwise it will load all infos
 	 */
-	FDeleteSlotsAction(USaveManager* Manager, EDeleteSlotsResult& OutResult, const FLatentActionInfo& LatentInfo);
+	FDeleteSlotsAction(
+		USaveManager* Manager, EDeleteSlotsResult& OutResult, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 

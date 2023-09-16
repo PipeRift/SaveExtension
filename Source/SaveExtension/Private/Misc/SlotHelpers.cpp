@@ -1,13 +1,14 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include <Misc/SlotHelpers.h>
-#include <Misc/Paths.h>
+#include "Misc/SlotHelpers.h"
+
 #include <HAL/PlatformFilemanager.h>
+#include <Misc/Paths.h>
 
 
 void FSlotHelpers::FindSlotFileNames(TArray<FString>& FoundSlots)
 {
-	FFindSlotVisitor Visitor{ FoundSlots };
+	FFindSlotVisitor Visitor{FoundSlots};
 	FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(*FFileAdapter::GetSaveFolder(), Visitor);
 }
 
@@ -30,4 +31,3 @@ bool FSlotHelpers::FFindSlotVisitor::Visit(const TCHAR* FilenameOrDirectory, boo
 	}
 	return true;
 }
-

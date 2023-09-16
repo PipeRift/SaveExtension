@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -11,9 +11,7 @@ class ITaskHolder
 public:
 	virtual bool Tick() = 0;
 	virtual void Cancel(bool bFinishSynchronously) = 0;
-	virtual ~ITaskHolder()
-	{
-	}
+	virtual ~ITaskHolder() {}
 };
 
 template <class TaskType>
@@ -27,17 +25,13 @@ public:
 	bool bNotified = false;
 	FFinishedEvent _OnFinished;
 
-	FTaskHolder() : ITaskHolder(), Super()
-	{
-	}
-	virtual ~FTaskHolder()
-	{
-	}
+	FTaskHolder() : ITaskHolder(), Super() {}
+	virtual ~FTaskHolder() {}
 
 	template <typename... ArgTypes>
-	FTaskHolder(ArgTypes&&... CtrArgs) : Super(Forward<ArgTypes>(CtrArgs)...), ITaskHolder()
-	{
-	}
+	FTaskHolder(ArgTypes&&... CtrArgs) : Super(Forward<ArgTypes>(CtrArgs)...)
+									   , ITaskHolder()
+	{}
 
 	auto& OnFinished(TFunction<void(FTaskHolder<TaskType>&)> Delegate)
 	{
@@ -74,7 +68,6 @@ public:
 	}
 
 private:
-
 	void TryNotifyFinish()
 	{
 		if (!bNotified)
@@ -91,9 +84,7 @@ class FScopedTaskList
 	TArray<TUniquePtr<ITaskHolder>> Tasks;
 
 public:
-	FScopedTaskList()
-	{
-	}
+	FScopedTaskList() {}
 
 	template <class TaskType, typename... ArgTypes>
 	inline FTaskHolder<TaskType>& CreateTask(ArgTypes&&... CtrArgs)
@@ -107,7 +98,9 @@ public:
 	void Tick()
 	{
 		// Tick all running tasks and remove the ones that finished
-		Tasks.RemoveAllSwap([](auto& Task) { return Task->Tick(); });
+		Tasks.RemoveAllSwap([](auto& Task) {
+			return Task->Tick();
+		});
 	}
 
 	void CancelAll()

@@ -1,15 +1,17 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 
 #pragma once
 
-#include <CoreMinimal.h>
-#include <Engine/LevelStreaming.h>
-#include <Engine/LevelScriptActor.h>
-
-#include "Records.h"
 #include "LevelFilter.h"
+#include "Records.h"
+
+#include <CoreMinimal.h>
+#include <Engine/LevelScriptActor.h>
+#include <Engine/LevelStreaming.h>
+
 #include "LevelRecords.generated.h"
+
 
 
 /** Represents a level in the world (streaming or persistent) */
@@ -33,7 +35,10 @@ struct FLevelRecord : public FBaseRecord
 
 	virtual bool Serialize(FArchive& Ar) override;
 
-	bool IsValid() const { return !Name.IsNone(); }
+	bool IsValid() const
+	{
+		return !Name.IsNone();
+	}
 
 	void CleanRecords();
 };

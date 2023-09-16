@@ -1,12 +1,13 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
-#include <Async/AsyncWork.h>
 #include "FileAdapter.h"
 #include "Multithreading/Delegates.h"
+#include "SaveSlot.h"
 
-#include "SlotInfo.h"
+#include <Async/AsyncWork.h>
+
 
 class USaveManager;
 
@@ -18,31 +19,28 @@ class USaveManager;
 class FLoadSlotInfosTask : public FNonAbandonableTask
 {
 protected:
-
 	const USaveManager* Manager;
 
 	const bool bSortByRecent = false;
 	// If not empty, only this specific slot will be loaded
 	const FName SlotName;
 
-	TArray<USlotInfo*> LoadedSlots;
+	TArray<USaveSlot*> LoadedSlots;
 
 	FOnSlotInfosLoaded Delegate;
 
 
 public:
-
 	/** All infos Constructor */
-	explicit FLoadSlotInfosTask(const USaveManager* Manager, bool bInSortByRecent, const FOnSlotInfosLoaded& Delegate)
+	explicit FLoadSlotInfosTask(
+		const USaveManager* Manager, bool bInSortByRecent, const FOnSlotInfosLoaded& Delegate)
 		: Manager(Manager)
 		, bSortByRecent(bInSortByRecent)
 		, Delegate(Delegate)
 	{}
 
 	/** One info Constructor */
-	explicit FLoadSlotInfosTask(USaveManager* Manager, FName SlotName)
-		: Manager(Manager)
-		, SlotName(SlotName)
+	explicit FLoadSlotInfosTask(USaveManager* Manager, FName SlotName) : Manager(Manager), SlotName(SlotName)
 	{}
 
 	void DoWork();
@@ -50,7 +48,7 @@ public:
 	/** Called after the task has finished */
 	void AfterFinish();
 
-	const TArray<USlotInfo*>& GetLoadedSlots() const
+	const TArray<USaveSlot*>& GetLoadedSlots() const
 	{
 		return LoadedSlots;
 	}

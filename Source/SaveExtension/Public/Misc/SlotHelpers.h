@@ -1,11 +1,12 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
+
+#include "FileAdapter.h"
 
 #include <CoreMinimal.h>
 #include <HAL/PlatformFile.h>
 
-#include "FileAdapter.h"
 
 
 struct FSlotHelpers
@@ -18,9 +19,7 @@ struct FSlotHelpers
 	public:
 		TArray<FString>& FoundSlots;
 
-		FFindSlotVisitor(TArray<FString>& FoundSlots)
-			: FoundSlots(FoundSlots)
-		{}
+		FFindSlotVisitor(TArray<FString>& FoundSlots) : FoundSlots(FoundSlots) {}
 
 		virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override;
 	};

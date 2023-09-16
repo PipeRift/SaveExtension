@@ -1,12 +1,12 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "LifetimeComponent.h"
+
 #include "Serialization/MTTask.h"
 
 
-ULifetimeComponent::ULifetimeComponent()
-	: Super()
-{}
+
+ULifetimeComponent::ULifetimeComponent() : Super() {}
 
 void ULifetimeComponent::BeginPlay()
 {
@@ -25,7 +25,8 @@ void ULifetimeComponent::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogSaveExtension, Error, TEXT("LifetimeComponent couldnt find a SaveManager. It will do nothing."))
+		UE_LOG(LogSaveExtension, Error,
+			TEXT("LifetimeComponent couldnt find a SaveManager. It will do nothing."))
 	}
 }
 

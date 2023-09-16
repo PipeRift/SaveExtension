@@ -1,17 +1,32 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "SlotInfo.h"
+#include "SaveSlot.h"
 
+#include <Engine/Engine.h>
+#include <Engine/GameViewportClient.h>
 #include <EngineUtils.h>
+#include <HighResScreenshot.h>
 #include <IImageWrapper.h>
 #include <IImageWrapperModule.h>
-#include <HighResScreenshot.h>
-#include <Engine/GameViewportClient.h>
 #include <Misc/FileHelper.h>
-#include <Engine/Engine.h>
 
 
-UTexture2D* USlotInfo::GetThumbnail() const
+USaveSlot::USaveSlot()
+{
+	Data = NewObject<USaveSlotData>(this, DataClass);
+}
+
+bool USaveSlot::OnSetId(int32 Id)
+{
+	FileName = FName{FString::FromInt(SlotId)};
+}
+
+int32 USaveSlot::OnGetId() const
+{
+	return FCString::Atoi(FileName.ToString());
+}
+
+UTexture2D* USaveSlot::GetThumbnail() const
 {
 	if (ThumbnailPath.IsEmpty())
 	{
@@ -24,18 +39,20 @@ UTexture2D* USlotInfo::GetThumbnail() const
 	}
 
 	// Load thumbnail as Texture2D
-	UTexture2D* Texture{ nullptr };
+	UTexture2D* Texture{nullptr};
 	TArray<uint8> RawFileData;
 	if (GEngine && FFileHelper::LoadFileToArray(RawFileData, *ThumbnailPath))
 	{
-		IImageWrapperModule & ImageWrapperModule = FModuleManager::LoadModuleChecked < IImageWrapperModule >(FName("ImageWrapper"));
+		IImageWrapperModule& ImageWrapperModule =
+			FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
 		TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
 		if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num()))
 		{
 			TArray64<uint8> UncompressedBGRA;
 			if (ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA))
 			{
-				Texture = UTexture2D::CreateTransient(ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), PF_B8G8R8A8);
+				Texture = UTexture2D::CreateTransient(
+					ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), PF_B8G8R8A8);
 				void* TextureData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 				FMemory::Memcpy(TextureData, UncompressedBGRA.GetData(), UncompressedBGRA.Num());
 				Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
@@ -43,11 +60,11 @@ UTexture2D* USlotInfo::GetThumbnail() const
 			}
 		}
 	}
-	const_cast<USlotInfo*>(this)->CachedThumbnail = Texture;
+	const_cast<USaveSlot*>(this)->CachedThumbnail = Texture;
 	return Texture;
 }
 
-bool USlotInfo::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height /*= 360*/)
+bool USaveSlot::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height /*= 360*/)
 {
 	if (!GEngine || !GEngine->GameViewport || FileName.IsNone())
 	{
@@ -67,9 +84,9 @@ bool USlotInfo::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height
 
 		FHighResScreenshotConfig& HighResScreenshotConfig = GetHighResScreenshotConfig();
 		HighResScreenshotConfig.SetHDRCapture(false);
-		//Set Screenshot path
+		// Set Screenshot path
 		HighResScreenshotConfig.FilenameOverride = ThumbnailPath;
-		//Set Screenshot Resolution
+		// Set Screenshot Resolution
 		GScreenshotResolutionX = Width;
 		GScreenshotResolutionY = Height;
 		Viewport->TakeHighResScreenShot();
@@ -78,7 +95,18 @@ bool USlotInfo::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height
 	return false;
 }
 
-void USlotInfo::_SetThumbnailPath(const FString& Path)
+
+int32 USaveSlot::GetMaxIds() const
+{
+	return MaxSlots <= 0 ? 16384 : MaxSlots;
+}
+
+bool USaveSlot::IsValidId(int32 CheckedId)
+{
+	return CheckedId >= 0 && CheckedId < GetMaxIds();
+}
+
+void USaveSlot::_SetThumbnailPath(const FString& Path)
 {
 	if (ThumbnailPath != Path)
 	{
@@ -87,3 +115,12 @@ void USlotInfo::_SetThumbnailPath(const FString& Path)
 	}
 }
 
+bool USaveSlot::SetId_Implementation(int32 Id)
+{
+	return OnSetId(Id);
+}
+
+int32 USaveSlot::GetId_Implementation() const
+{
+	return OnGetId();
+}

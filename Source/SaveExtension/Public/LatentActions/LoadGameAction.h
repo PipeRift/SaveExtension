@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 
 
 class USaveManager;
-class USlotInfo;
+class USaveSlot;
 
 /**
  * Enum used to indicate quote execution results
@@ -32,11 +32,12 @@ public:
 	FWeakObjectPtr CallbackTarget;
 
 
-	FLoadGameAction(USaveManager* Manager, FName SlotName, ELoadGameResult& Result, const FLatentActionInfo& LatentInfo);
+	FLoadGameAction(
+		USaveManager* Manager, FName SlotName, ELoadGameResult& Result, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 
-	void OnLoadFinished(USlotInfo* SavedSlot);
+	void OnLoadFinished(USaveSlot* SavedSlot);
 
 #if WITH_EDITOR
 	// Returns a human readable description of the latent operation's current state

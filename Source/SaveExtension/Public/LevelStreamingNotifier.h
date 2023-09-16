@@ -1,16 +1,18 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
 #include <CoreMinimal.h>
 #include <Engine/LevelStreaming.h>
+
 #include "LevelStreamingNotifier.generated.h"
 
 
-DECLARE_DELEGATE_OneParam(FLevelNotifierLoaded,   ULevelStreaming* );
-DECLARE_DELEGATE_OneParam(FLevelNotifierUnloaded, ULevelStreaming* );
-DECLARE_DELEGATE_OneParam(FLevelNotifierShown,    ULevelStreaming* );
-DECLARE_DELEGATE_OneParam(FLevelNotifierHidden,   ULevelStreaming* );
+
+DECLARE_DELEGATE_OneParam(FLevelNotifierLoaded, ULevelStreaming*);
+DECLARE_DELEGATE_OneParam(FLevelNotifierUnloaded, ULevelStreaming*);
+DECLARE_DELEGATE_OneParam(FLevelNotifierShown, ULevelStreaming*);
+DECLARE_DELEGATE_OneParam(FLevelNotifierHidden, ULevelStreaming*);
 
 
 /** ULevelStreamingNotifier is an adapter that expands UE4's native
@@ -22,7 +24,6 @@ class SAVEEXTENSION_API ULevelStreamingNotifier : public UObject
 	GENERATED_BODY()
 
 public:
-
 	void SetLevelStreaming(ULevelStreaming* InLevelStreaming)
 	{
 		UnBind();
@@ -38,13 +39,24 @@ public:
 		}
 	}
 
-	FLevelNotifierLoaded&   OnLevelLoaded()   { return LoadedDelegate;   }
-	FLevelNotifierUnloaded& OnLevelUnloaded() { return UnloadedDelegate; }
-	FLevelNotifierShown&    OnLevelShown()    { return ShownDelegate;    }
-	FLevelNotifierHidden&   OnLevelHidden()   { return HiddenDelegate;   }
+	FLevelNotifierLoaded& OnLevelLoaded()
+	{
+		return LoadedDelegate;
+	}
+	FLevelNotifierUnloaded& OnLevelUnloaded()
+	{
+		return UnloadedDelegate;
+	}
+	FLevelNotifierShown& OnLevelShown()
+	{
+		return ShownDelegate;
+	}
+	FLevelNotifierHidden& OnLevelHidden()
+	{
+		return HiddenDelegate;
+	}
 
 private:
-
 	void UnBind()
 	{
 		if (LevelStreaming.IsValid())
@@ -68,29 +80,33 @@ private:
 	// Associated Level Streaming
 	TWeakObjectPtr<ULevelStreaming> LevelStreaming;
 
-	FLevelNotifierLoaded   LoadedDelegate;
+	FLevelNotifierLoaded LoadedDelegate;
 	FLevelNotifierUnloaded UnloadedDelegate;
-	FLevelNotifierShown    ShownDelegate;
-	FLevelNotifierHidden   HiddenDelegate;
+	FLevelNotifierShown ShownDelegate;
+	FLevelNotifierHidden HiddenDelegate;
 
 
 	UFUNCTION()
-	void OnLoaded() {
+	void OnLoaded()
+	{
 		LoadedDelegate.ExecuteIfBound(LevelStreaming.Get());
 	}
 
 	UFUNCTION()
-	void OnUnloaded() {
+	void OnUnloaded()
+	{
 		UnloadedDelegate.ExecuteIfBound(LevelStreaming.Get());
 	}
 
 	UFUNCTION()
-	void OnShown() {
+	void OnShown()
+	{
 		ShownDelegate.ExecuteIfBound(LevelStreaming.Get());
 	}
 
 	UFUNCTION()
-	void OnHidden() {
+	void OnHidden()
+	{
 		HiddenDelegate.ExecuteIfBound(LevelStreaming.Get());
 	}
 };

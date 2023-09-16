@@ -1,14 +1,16 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 #pragma once
+
+#include "ClassFilter/SClassFilter.h"
+#include "SEClassFilterCustomization.h"
+#include "SGraphPin.h"
 
 #include <CoreMinimal.h>
 #include <Widgets/DeclarativeSyntaxSupport.h>
 #include <Widgets/SWidget.h>
-#include <Widgets/Views/STableViewBase.h>
 #include <Widgets/Views/STableRow.h>
-#include "ClassFilter/SClassFilter.h"
-#include "SGraphPin.h"
-#include "SEClassFilterCustomization.h"
+#include <Widgets/Views/STableViewBase.h>
+
 
 
 class SComboButton;
@@ -22,11 +24,10 @@ public:
 	void Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinObj);
 
 	//~ Begin SGraphPin Interface
-	virtual TSharedRef<SWidget>	GetDefaultValueWidget() override;
+	virtual TSharedRef<SWidget> GetDefaultValueWidget() override;
 	//~ End SGraphPin Interface
 
 private:
-
 	/** Refreshes the list of tags displayed on the node. */
 	void RefreshPreviewList();
 
@@ -46,10 +47,10 @@ private:
 	 * Callback for populating rows of the SelectedTags List View.
 	 * @return widget that contains the name of a tag.
 	 */
-	TSharedRef<ITableRow> OnGeneratePreviewRow(TSharedPtr<FSEClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable);
+	TSharedRef<ITableRow> OnGeneratePreviewRow(
+		TSharedPtr<FSEClassFilterItem> Class, const TSharedRef<STableViewBase>& OwnerTable);
 
 private:
-
 	// Combo Button for the drop down list.
 	TSharedPtr<SComboButton> ComboButton;
 

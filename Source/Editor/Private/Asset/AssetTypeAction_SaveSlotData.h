@@ -5,10 +5,10 @@
 #include "SaveExtensionEditor.h"
 
 #include <AssetTypeActions_Base.h>
-#include <SavePreset.h>
+#include <SaveSlotData.h>
 
 
-class FAssetTypeAction_SavePreset : public FAssetTypeActions_Base
+class FAssetTypeAction_SaveSlotData : public FAssetTypeActions_Base
 {
 public:
 	virtual uint32 GetCategories() override
@@ -21,7 +21,7 @@ public:
 
 	virtual UClass* GetSupportedClass() const override
 	{
-		return USavePreset::StaticClass();
+		return USaveSlotData::StaticClass();
 	}
 };
 

@@ -1,16 +1,16 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
+
+#include "Multithreading/LoadSlotInfosTask.h"
 
 #include <CoreMinimal.h>
 #include <Engine/LatentActionManager.h>
 #include <LatentActions.h>
 
-#include "Multithreading/LoadSlotInfosTask.h"
-
 
 class USaveManager;
-class USlotInfo;
+class USaveSlot;
 
 /**
  * Enum used to indicate quote execution results
@@ -24,11 +24,10 @@ enum class ELoadInfoResult : uint8
 /** FLoadInfosction */
 class FLoadInfosAction : public FPendingLatentAction
 {
-
 public:
 	ELoadInfoResult& Result;
 
-	TArray<USlotInfo*>& SlotInfos;
+	TArray<USaveSlot*>& SlotInfos;
 	bool bFinished;
 
 	FName ExecutionFunction;
@@ -39,7 +38,8 @@ public:
 	/**
 	 * @param SlotId will load that Saved Game if Id > 0, otherwise it will load all infos
 	 */
-	FLoadInfosAction(USaveManager* Manager, const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos, ELoadInfoResult& OutResult, const FLatentActionInfo& LatentInfo);
+	FLoadInfosAction(USaveManager* Manager, const bool bSortByRecent, TArray<USaveSlot*>& SaveInfos,
+		ELoadInfoResult& OutResult, const FLatentActionInfo& LatentInfo);
 
 	virtual void UpdateOperation(FLatentResponse& Response) override;
 

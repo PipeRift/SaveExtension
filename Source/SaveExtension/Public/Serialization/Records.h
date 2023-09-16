@@ -1,15 +1,16 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 
 #pragma once
 
 #include <CoreMinimal.h>
-#include <Engine/LevelStreaming.h>
 #include <Engine/LevelScriptActor.h>
+#include <Engine/LevelStreaming.h>
 
 #include "Records.generated.h"
 
-class USlotData;
+
+class USaveSlotData;
 
 
 USTRUCT()
@@ -31,11 +32,19 @@ struct FBaseRecord
 	virtual ~FBaseRecord() {}
 };
 
-template<>
+template <>
 struct TStructOpsTypeTraits<FBaseRecord> : public TStructOpsTypeTraitsBase2<FBaseRecord>
-{ enum { WithSerializer = true }; };
+{
+	enum
+	{
+		WithSerializer = true
+	};
+};
 
-FORCEINLINE bool operator==(const FBaseRecord& A, const FBaseRecord& B) { return A.Name == B.Name; }
+FORCEINLINE bool operator==(const FBaseRecord& A, const FBaseRecord& B)
+{
+	return A.Name == B.Name;
+}
 
 
 /** Represents a serialized Object */
@@ -61,7 +70,7 @@ struct FObjectRecord : public FBaseRecord
 		return !Name.IsNone() && Class && Data.Num() > 0;
 	}
 
-	FORCEINLINE bool operator== (const UObject* Other) const
+	FORCEINLINE bool operator==(const UObject* Other) const
 	{
 		return Other && Name == Other->GetFName() && Class == Other->GetClass();
 	}

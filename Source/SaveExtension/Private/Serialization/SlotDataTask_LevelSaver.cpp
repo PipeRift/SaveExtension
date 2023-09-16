@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Serialization/SlotDataTask_LevelSaver.h"
 
@@ -6,7 +6,7 @@
 /////////////////////////////////////////////////////
 // FSaveDataTask_LevelSaver
 
-void USlotDataTask_LevelSaver::OnStart()
+void USaveSlotDataTask_LevelSaver::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{

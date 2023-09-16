@@ -1,21 +1,21 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "Asset/SavePresetFactory.h"
+#include "Asset/SaveSlotFactory.h"
 
 #include <Kismet2/KismetEditorUtilities.h>
 
 
-USavePresetFactory::USavePresetFactory() : Super()
+USaveSlotFactory::USaveSlotFactory() : Super()
 {
 	bCreateNew = true;
 	bEditAfterNew = true;
-	SupportedClass = USavePreset::StaticClass();
+	SupportedClass = USaveSlot::StaticClass();
 }
 
-UObject* USavePresetFactory::FactoryCreateNew(UClass* Class, UObject* InParent, FName Name,
-	EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
+UObject* USaveSlotFactory::FactoryCreateNew(UClass* Class, UObject* InParent, FName Name, EObjectFlags Flags,
+	UObject* Context, FFeedbackContext* Warn)
 {
-	check(Class->IsChildOf(USavePreset::StaticClass()));
+	check(Class->IsChildOf(USaveSlot::StaticClass()));
 
 	if (!FKismetEditorUtilities::CanCreateBlueprintOfClass(Class))
 	{

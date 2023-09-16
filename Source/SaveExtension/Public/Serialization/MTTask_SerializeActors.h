@@ -1,27 +1,25 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
-#include "MTTask_SerializeActors.h"
-
-#include <GameFramework/Actor.h>
-#include <Engine/LevelScriptActor.h>
-#include <GameFramework/Controller.h>
-#include <Async/AsyncWork.h>
-
-#include "SavePreset.h"
-
 #include "MTTask.h"
-#include "Serialization/Records.h"
+#include "MTTask_SerializeActors.h"
+#include "SavePreset.h"
 #include "Serialization/LevelRecords.h"
+#include "Serialization/Records.h"
+
+#include <Async/AsyncWork.h>
+#include <Engine/LevelScriptActor.h>
+#include <GameFramework/Actor.h>
+#include <GameFramework/Controller.h>
 
 
-class USlotData;
+class USaveSlotData;
 
 /** Called when game has been saved
  * @param SlotInfo the saved slot. Null if save failed
  */
-DECLARE_DELEGATE_OneParam(FOnGameSaved, USlotInfo*);
+DECLARE_DELEGATE_OneParam(FOnGameSaved, USaveSlot*);
 
 
 /////////////////////////////////////////////////////
@@ -42,9 +40,9 @@ class FMTTask_SerializeActors : public FMTTask
 
 
 public:
-	FMTTask_SerializeActors(const UWorld* World, USlotData* SlotData,
-		const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum, bool bStoreGameInstance,
-		FLevelRecord* InLevelRecord, const FSELevelFilter& Filter)
+	FMTTask_SerializeActors(const UWorld* World, USaveSlotData* SlotData,
+		const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum,
+		bool bStoreGameInstance, FLevelRecord* InLevelRecord, const FSELevelFilter& Filter)
 		: FMTTask(false, World, SlotData, Filter)
 		, LevelActors(InLevelActors)
 		, StartIndex(InStartIndex)
@@ -61,7 +59,8 @@ public:
 	void DoWork();
 
 	/** Called after task has completed to recover resulting information */
-	void DumpData() {
+	void DumpData()
+	{
 		if (LevelScriptRecord.IsValid())
 			LevelRecord->LevelScript = LevelScriptRecord;
 
@@ -75,12 +74,12 @@ public:
 	}
 
 private:
-
 	void SerializeGameInstance();
 
 	/** Serializes an actor into this Actor Record */
 	bool SerializeActor(const AActor* Actor, FActorRecord& Record) const;
 
 	/** Serializes the components of an actor into a provided Actor Record */
-	inline void SerializeActorComponents(const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0) const;
+	inline void SerializeActorComponents(
+		const AActor* Actor, FActorRecord& ActorRecord, int8 indent = 0) const;
 };

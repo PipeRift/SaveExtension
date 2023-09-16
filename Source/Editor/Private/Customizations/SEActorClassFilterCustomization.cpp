@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Customizations/SEActorClassFilterCustomization.h"
 
@@ -8,9 +8,11 @@
 #define LOCTEXT_NAMESPACE "FSEActorClassFilterCustomization"
 
 
-TSharedPtr<IPropertyHandle> FSEActorClassFilterCustomization::GetFilterHandle(TSharedRef<IPropertyHandle> StructPropertyHandle)
+TSharedPtr<IPropertyHandle> FSEActorClassFilterCustomization::GetFilterHandle(
+	TSharedRef<IPropertyHandle> StructPropertyHandle)
 {
-	return StructHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FSEActorClassFilter, ClassFilter));;
+	return StructHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FSEActorClassFilter, ClassFilter));
+	;
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -1,22 +1,22 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "FileAdapter.h"
 
-#include <UObject/UObjectGlobals.h>
-#include <UObject/Package.h>
+#include "Multithreading/SaveFileTask.h"
+#include "SavePreset.h"
+#include "SaveSlot.h"
+#include "SaveSlotData.h"
+
+#include <SaveGameSystem.h>
+#include <Serialization/ArchiveLoadCompressedProxy.h>
+#include <Serialization/ArchiveSaveCompressedProxy.h>
 #include <Serialization/MemoryReader.h>
 #include <Serialization/MemoryWriter.h>
-#include <Serialization/ArchiveSaveCompressedProxy.h>
-#include <Serialization/ArchiveLoadCompressedProxy.h>
-#include <SaveGameSystem.h>
-
-#include "SavePreset.h"
-#include "SlotInfo.h"
-#include "SlotData.h"
-#include "Multithreading/SaveFileTask.h"
+#include <UObject/Package.h>
+#include <UObject/UObjectGlobals.h>
 
 
-static const int SE_SAVEGAME_FILE_TYPE_TAG = 0x0001;		// "sAvG"
+static const int SE_SAVEGAME_FILE_TYPE_TAG = 0x0001;	// "sAvG"
 
 struct FSaveGameFileVersion
 {
@@ -83,7 +83,7 @@ void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 	Empty();
 	FArchive& Ar = Reader.GetArchive();
 
-	{ // Header information
+	{	 // Header information
 		Ar << FileTypeTag;
 		if (FileTypeTag != SE_SAVEGAME_FILE_TYPE_TAG)
 		{
@@ -104,7 +104,8 @@ void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 		if (SaveGameFileVersion >= FSaveGameFileVersion::AddedCustomVersions)
 		{
 			Ar << CustomVersionFormat;
-			CustomVersions.Serialize(Ar, static_cast<ECustomVersionSerializationFormat::Type>(CustomVersionFormat));
+			CustomVersions.Serialize(
+				Ar, static_cast<ECustomVersionSerializationFormat::Type>(CustomVersionFormat));
 			Ar.SetCustomVersions(CustomVersions);
 		}
 	}
@@ -113,13 +114,13 @@ void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 	Ar << InfoBytes;
 
 	Ar << DataClassName;
-	if(bSkipData || DataClassName.IsEmpty())
+	if (bSkipData || DataClassName.IsEmpty())
 	{
 		return;
 	}
 
 	Ar << bIsDataCompressed;
-	if(bIsDataCompressed)
+	if (bIsDataCompressed)
 	{
 		TArray<uint8> CompressedDataBytes;
 		Ar << CompressedDataBytes;
@@ -149,26 +150,27 @@ void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 	bIsDataCompressed = bCompressData;
 	FArchive& Ar = Writer.GetArchive();
 
-	{ // Header information
+	{	 // Header information
 		Ar << FileTypeTag;
 		Ar << SaveGameFileVersion;
 		Ar << PackageFileUEVersion;
 		Ar << SavedEngineVersion;
 		Ar << CustomVersionFormat;
-		CustomVersions.Serialize(Ar, static_cast<ECustomVersionSerializationFormat::Type>(CustomVersionFormat));
+		CustomVersions.Serialize(
+			Ar, static_cast<ECustomVersionSerializationFormat::Type>(CustomVersionFormat));
 	}
 
 	Ar << InfoClassName;
 	Ar << InfoBytes;
 
 	Ar << DataClassName;
-	if(!DataClassName.IsEmpty())
+	if (!DataClassName.IsEmpty())
 	{
 		Ar << bIsDataCompressed;
-		if(bIsDataCompressed)
+		if (bIsDataCompressed)
 		{
 			TArray<uint8> CompressedDataBytes;
-			{ // Compression
+			{	 // Compression
 				TRACE_CPUPROFILER_EVENT_SCOPE(Compression);
 				// Compress Object data
 				FArchiveSaveCompressedProxy Compressor(CompressedDataBytes, NAME_Zlib);
@@ -185,7 +187,7 @@ void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 	Ar.Close();
 }
 
-void FSaveFile::SerializeInfo(USlotInfo* SlotInfo)
+void FSaveFile::SerializeInfo(USaveSlot* SlotInfo)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::SerializeInfo);
 	check(SlotInfo);
@@ -196,7 +198,7 @@ void FSaveFile::SerializeInfo(USlotInfo* SlotInfo)
 	FObjectAndNameAsStringProxyArchive Ar(BytesWriter, false);
 	SlotInfo->Serialize(Ar);
 }
-void FSaveFile::SerializeData(USlotData* SlotData)
+void FSaveFile::SerializeData(USaveSlotData* SlotData)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::SerializeData);
 	check(SlotData);
@@ -208,23 +210,23 @@ void FSaveFile::SerializeData(USlotData* SlotData)
 	SlotData->Serialize(Ar);
 }
 
-USlotInfo* FSaveFile::CreateAndDeserializeInfo(const UObject* Outer) const
+USaveSlot* FSaveFile::CreateAndDeserializeInfo(const UObject* Outer) const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeInfo);
-	UObject* Object = nullptr;
-	FFileAdapter::DeserializeObject(Object, InfoClassName, Outer, InfoBytes);
-	return Cast<USlotInfo>(Object);
+	UObject* Slot = nullptr;
+	FFileAdapter::DeserializeObject(Slot, InfoClassName, Outer, InfoBytes);
+	return Cast<USaveSlot>(Slot);
 }
 
-USlotData* FSaveFile::CreateAndDeserializeData(const UObject* Outer) const
+void FSaveFile::CreateAndDeserializeData(USaveSlot* Slot) const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeData);
-	UObject* Object = nullptr;
-	FFileAdapter::DeserializeObject(Object, DataClassName, Outer, DataBytes);
-	return Cast<USlotData>(Object);
+	UObject* Data = nullptr;
+	FFileAdapter::DeserializeObject(Data, DataClassName, Slot, DataBytes);
+	Slot->AssignData(Cast<USaveSlotData>(Data));
 }
 
-bool FFileAdapter::SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Data, const bool bUseCompression)
+bool FFileAdapter::SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bUseCompression)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FFileAdapter::SaveFile);
 
@@ -233,38 +235,41 @@ bool FFileAdapter::SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Da
 		return false;
 	}
 
-	if (!ensureMsgf(Info, TEXT("Info object must be valid")) ||
-		!ensureMsgf(Data, TEXT("Data object must be valid")))
+	if (!ensureMsgf(Slot, TEXT("Slot object must be valid")) ||
+		!ensureMsgf(Slot->GetData(), TEXT("Slot Data object must be valid")))
 	{
 		return false;
 	}
 
 	FScopedFileWriter FileWriter(GetSlotPath(SlotName));
-	if(FileWriter.IsValid())
+	if (FileWriter.IsValid())
 	{
 		FSaveFile File{};
-		File.SerializeInfo(Info);
-		File.SerializeData(Data);
+		File.SerializeInfo(Slot);
+		File.SerializeData(Slot->GetData());
 		File.Write(FileWriter, bUseCompression);
 		return !FileWriter.IsError();
 	}
 	return false;
 }
 
-bool FFileAdapter::LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& Data, bool bLoadData, const UObject* Outer)
+USaveSlot* FFileAdapter::LoadFile(FStringView SlotName, bool bLoadData, const UObject* Outer)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FFileAdapter::LoadFile);
 
 	FScopedFileReader Reader(GetSlotPath(SlotName));
-	if(Reader.IsValid())
+	if (Reader.IsValid())
 	{
 		FSaveFile File{};
 		File.Read(Reader, !bLoadData);
-		Info = File.CreateAndDeserializeInfo(Outer);
-		Data = File.CreateAndDeserializeData(Outer);
-		return true;
+		USaveSlot* Slot = File.CreateAndDeserializeInfo(Outer);
+		if (bLoadData)
+		{
+			File.CreateAndDeserializeData(Slot);
+		}
+		return Slot;
 	}
-	return false;
+	return nullptr;
 }
 
 bool FFileAdapter::DeleteFile(FStringView SlotName)
@@ -272,7 +277,7 @@ bool FFileAdapter::DeleteFile(FStringView SlotName)
 	return IFileManager::Get().Delete(*GetSlotPath(SlotName), true, false, true);
 }
 
-bool FFileAdapter::DoesFileExist(FStringView SlotName)
+bool FFileAdapter::FileExists(FStringView SlotName)
 {
 	return IFileManager::Get().FileSize(*GetSlotPath(SlotName)) >= 0;
 }
@@ -293,7 +298,8 @@ FString FFileAdapter::GetThumbnailPath(FStringView SlotName)
 	return GetSaveFolder() / FString::Printf(TEXT("%s.png"), SlotName.GetData());
 }
 
-void FFileAdapter::DeserializeObject(UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
+void FFileAdapter::DeserializeObject(
+	UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
 {
 	if (ClassName.IsEmpty() || Bytes.Num() <= 0)
 	{
@@ -310,9 +316,9 @@ void FFileAdapter::DeserializeObject(UObject*& Object, FStringView ClassName, co
 		return;
 	}
 
-	if(!Object)
+	if (!Object)
 	{
-		if(!Outer)
+		if (!Outer)
 		{
 			Outer = GetTransientPackage();
 		}
@@ -320,14 +326,14 @@ void FFileAdapter::DeserializeObject(UObject*& Object, FStringView ClassName, co
 		Object = NewObject<UObject>(const_cast<UObject*>(Outer), ObjectClass);
 	}
 	// Can only reuse object if class matches
-	else if(Object->GetClass() != ObjectClass)
+	else if (Object->GetClass() != ObjectClass)
 	{
 		return;
 	}
 
-	if(Object)
+	if (Object)
 	{
-		FMemoryReader Reader{ Bytes };
+		FMemoryReader Reader{Bytes};
 		FObjectAndNameAsStringProxyArchive Ar(Reader, true);
 		Object->Serialize(Ar);
 	}

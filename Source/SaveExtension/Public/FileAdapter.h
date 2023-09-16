@@ -1,22 +1,22 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
-#include <CoreMinimal.h>
+#include "ISaveExtension.h"
+
 #include <Containers/StringView.h>
+#include <CoreMinimal.h>
 #include <GameFramework/SaveGame.h>
 #include <Misc/EngineVersion.h>
-#include <Templates/SubclassOf.h>
+#include <PlatformFeatures.h>
 #include <Serialization/CustomVersion.h>
 #include <Serialization/ObjectAndNameAsStringProxyArchive.h>
-#include <PlatformFeatures.h>
-
-#include "ISaveExtension.h"
+#include <Templates/SubclassOf.h>
 
 
 class USavePreset;
-class USlotInfo;
-class USlotData;
+class USaveSlot;
+class USaveSlotData;
 class FMemoryReader;
 class FMemoryWriter;
 
@@ -33,9 +33,18 @@ public:
 		delete Writer;
 	}
 
-	FArchive& GetArchive() { return *Writer; }
-	bool IsValid() const { return Writer != nullptr; }
-	bool IsError() const { return Writer && (Writer->IsError() || Writer->IsCriticalError()); }
+	FArchive& GetArchive()
+	{
+		return *Writer;
+	}
+	bool IsValid() const
+	{
+		return Writer != nullptr;
+	}
+	bool IsError() const
+	{
+		return Writer && (Writer->IsError() || Writer->IsCriticalError());
+	}
 };
 
 
@@ -52,8 +61,14 @@ public:
 		delete Reader;
 	}
 
-	FArchive& GetArchive() { return *Reader; }
-	bool IsValid() const { return Reader != nullptr; }
+	FArchive& GetArchive()
+	{
+		return *Reader;
+	}
+	bool IsValid() const
+	{
+		return Reader != nullptr;
+	}
 };
 
 
@@ -62,7 +77,7 @@ struct FSaveFile
 {
 	int32 FileTypeTag = 0;
 	int32 SaveGameFileVersion = 0;
-	FPackageFileVersion PackageFileUEVersion {};
+	FPackageFileVersion PackageFileUEVersion{};
 	FEngineVersion SavedEngineVersion;
 	int32 CustomVersionFormat = int32(ECustomVersionSerializationFormat::Unknown);
 	FCustomVersionContainer CustomVersions;
@@ -83,10 +98,10 @@ struct FSaveFile
 	void Read(FScopedFileReader& Reader, bool bSkipData);
 	void Write(FScopedFileWriter& Writer, bool bCompressData);
 
-	void SerializeInfo(USlotInfo* SlotInfo);
-	void SerializeData(USlotData* SlotData);
-	USlotInfo* CreateAndDeserializeInfo(const UObject* Outer) const;
-	USlotData* CreateAndDeserializeData(const UObject* Outer) const;
+	void SerializeInfo(USaveSlot* SlotInfo);
+	void SerializeData(USaveSlotData* SlotData);
+	USaveSlot* CreateAndDeserializeInfo(const UObject* Outer) const;
+	void CreateAndDeserializeData(USaveSlot* Slot) const;
 };
 
 
@@ -94,11 +109,10 @@ struct FSaveFile
 class SAVEEXTENSION_API FFileAdapter
 {
 public:
-
-	static bool SaveFile(FStringView SlotName, USlotInfo* Info, USlotData* Data, const bool bUseCompression);
+	static bool SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bUseCompression);
 
 	// Not safe for Multi-threading
-	static bool LoadFile(FStringView SlotName, USlotInfo*& Info, USlotData*& Data, bool bLoadData, const UObject* Outer);
+	static USaveSlot* LoadFile(FStringView SlotName, bool bLoadData, const UObject* Outer);
 
 	static bool DeleteFile(FStringView SlotName);
 	static bool DoesFileExist(FStringView SlotName);
@@ -107,5 +121,6 @@ public:
 	static FString GetSlotPath(FStringView SlotName);
 	static FString GetThumbnailPath(FStringView SlotName);
 
-	static void DeserializeObject(UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes);
+	static void DeserializeObject(
+		UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes);
 };

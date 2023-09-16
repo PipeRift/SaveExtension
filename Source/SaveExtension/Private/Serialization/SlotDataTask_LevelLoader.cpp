@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Serialization/SlotDataTask_LevelLoader.h"
 
@@ -6,7 +6,7 @@
 /////////////////////////////////////////////////////
 // USaveDataTask_LevelLoader
 
-void USlotDataTask_LevelLoader::OnStart()
+void USaveSlotDataTask_LevelLoader::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
@@ -33,7 +33,7 @@ void USlotDataTask_LevelLoader::OnStart()
 	Finish(false);
 }
 
-void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
+void USaveSlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 {
 	FLevelRecord& LevelRecord = *FindLevelRecord(CurrentSLevel.Get());
 
@@ -47,7 +47,7 @@ void USlotDataTask_LevelLoader::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 	// Continue Iterating actors every tick
 	for (; CurrentActorIndex < CurrentLevelActors.Num(); ++CurrentActorIndex)
 	{
-		AActor* Actor{ CurrentLevelActors[CurrentActorIndex].Get() };
+		AActor* Actor{CurrentLevelActors[CurrentActorIndex].Get()};
 		if (Actor)
 		{
 			DeserializeLevel_Actor(Actor, LevelRecord, Filter);

@@ -1,6 +1,6 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "AssetTypeAction_SlotData.h"
+#include "AssetTypeAction_SaveSlot.h"
 
 #define LOCTEXT_NAMESPACE "AssetTypeActions"
 
@@ -8,12 +8,12 @@
 //////////////////////////////////////////////////////////////////////////
 // FAssetTypeAction_SavePreset
 
-FText FAssetTypeAction_SlotData::GetName() const
+FText FAssetTypeAction_SaveSlot::GetName() const
 {
-	  return LOCTEXT("FAssetTypeAction_SlotDataName", "Save Data");
+	return LOCTEXT("FAssetTypeAction_SaveSlotName", "Save Info");
 }
 
-FColor FAssetTypeAction_SlotData::GetTypeColor() const
+FColor FAssetTypeAction_SaveSlot::GetTypeColor() const
 {
 	return FColor(63, 126, 255);
 }

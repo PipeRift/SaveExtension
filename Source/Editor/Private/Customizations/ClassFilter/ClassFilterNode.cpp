@@ -1,10 +1,12 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "ClassFilterNode.h"
+
+#include "Misc/ClassFilter.h"
+
 #include <Engine/Blueprint.h>
 #include <PropertyHandle.h>
 
-#include "Misc/ClassFilter.h"
 
 
 FSEClassFilterNode::FSEClassFilterNode(const FString& InClassName, const FString& InClassDisplayName)
@@ -18,7 +20,7 @@ FSEClassFilterNode::FSEClassFilterNode(const FString& InClassName, const FString
 	Blueprint = nullptr;
 }
 
-FSEClassFilterNode::FSEClassFilterNode( const FSEClassFilterNode& InCopyObject)
+FSEClassFilterNode::FSEClassFilterNode(const FSEClassFilterNode& InCopyObject)
 {
 	ClassName = InCopyObject.ClassName;
 	ClassDisplayName = InCopyObject.ClassDisplayName;
@@ -47,7 +49,7 @@ FSEClassFilterNode::FSEClassFilterNode( const FSEClassFilterNode& InCopyObject)
 void FSEClassFilterNode::AddChild(FSEClassFilterNodePtr& Child)
 {
 	ChildrenList.Add(Child);
-	Child->ParentNode = TSharedRef<FSEClassFilterNode>{ AsShared() };
+	Child->ParentNode = TSharedRef<FSEClassFilterNode>{AsShared()};
 }
 
 void FSEClassFilterNode::AddUniqueChild(FSEClassFilterNodePtr& Child)
@@ -65,7 +67,8 @@ void FSEClassFilterNode::AddUniqueChild(FSEClassFilterNodePtr& Child)
 				if (bNewChildHasMoreInfo && !bOldChildHasMoreInfo)
 				{
 					// make sure, that new child has all needed children
-					for (int OldChildIndex = 0; OldChildIndex < CurrentChild->ChildrenList.Num(); ++OldChildIndex)
+					for (int OldChildIndex = 0; OldChildIndex < CurrentChild->ChildrenList.Num();
+						 ++OldChildIndex)
 					{
 						Child->AddUniqueChild(CurrentChild->ChildrenList[OldChildIndex]);
 					}
@@ -85,27 +88,28 @@ FString FSEClassFilterNode::GetClassName(EClassViewerNameTypeToDisplay NameType)
 {
 	switch (NameType)
 	{
-	case EClassViewerNameTypeToDisplay::ClassName:
-		return ClassName;
+		case EClassViewerNameTypeToDisplay::ClassName:
+			return ClassName;
 
-	case EClassViewerNameTypeToDisplay::DisplayName:
-		return ClassDisplayName;
+		case EClassViewerNameTypeToDisplay::DisplayName:
+			return ClassDisplayName;
 
-	case EClassViewerNameTypeToDisplay::Dynamic:
-		FString CombinedName;
-		FString SanitizedName = FName::NameToDisplayString(ClassName, false);
-		if (ClassDisplayName.IsEmpty() && !ClassDisplayName.Equals(SanitizedName) && !ClassDisplayName.Equals(ClassName))
-		{
-			TArray<FStringFormatArg> Args;
-			Args.Add(ClassName);
-			Args.Add(ClassDisplayName);
-			CombinedName = FString::Format(TEXT("{0} ({1})"), Args);
-		}
-		else
-		{
-			CombinedName = ClassName;
-		}
-		return MoveTemp(CombinedName);
+		case EClassViewerNameTypeToDisplay::Dynamic:
+			FString CombinedName;
+			FString SanitizedName = FName::NameToDisplayString(ClassName, false);
+			if (ClassDisplayName.IsEmpty() && !ClassDisplayName.Equals(SanitizedName) &&
+				!ClassDisplayName.Equals(ClassName))
+			{
+				TArray<FStringFormatArg> Args;
+				Args.Add(ClassName);
+				Args.Add(ClassDisplayName);
+				CombinedName = FString::Format(TEXT("{0} ({1})"), Args);
+			}
+			else
+			{
+				CombinedName = ClassName;
+			}
+			return MoveTemp(CombinedName);
 	}
 
 	ensureMsgf(false, TEXT("FSEClassFilterNode::GetClassName called with invalid name type."));
@@ -139,7 +143,7 @@ void FSEClassFilterNode::SetOwnFilterState(EClassFilterState State)
 
 void FSEClassFilterNode::SetStateFromFilter(const FSEClassFilter& Filter)
 {
-	const TSoftClassPtr<> ClassAsset{ ClassPath.ToString() };
+	const TSoftClassPtr<> ClassAsset{ClassPath.ToString()};
 
 	if (Filter.AllowedClasses.Contains(ClassAsset))
 	{

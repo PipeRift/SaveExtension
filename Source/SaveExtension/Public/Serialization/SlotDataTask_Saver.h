@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
@@ -7,25 +7,25 @@
 #include "MTTask_SerializeActors.h"
 #include "Multithreading/SaveFileTask.h"
 #include "SavePreset.h"
-#include "SlotData.h"
+#include "SaveSlotData.h"
 #include "SlotDataTask.h"
 
-#include <Engine/Level.h>
-#include <Engine/LevelStreaming.h>
-#include <GameFramework/Actor.h>
-#include <Engine/LevelScriptActor.h>
-#include <GameFramework/Controller.h>
 #include <AIController.h>
 #include <Async/AsyncWork.h>
+#include <Engine/Level.h>
+#include <Engine/LevelScriptActor.h>
+#include <Engine/LevelStreaming.h>
+#include <GameFramework/Actor.h>
+#include <GameFramework/Controller.h>
 
 #include "SlotDataTask_Saver.generated.h"
 
 
 /**
-* Manages the saving process of a SaveData file
-*/
+ * Manages the saving process of a SaveData file
+ */
 UCLASS()
-class USlotDataTask_Saver : public USlotDataTask
+class USaveSlotDataTask_Saver : public USaveSlotDataTask
 {
 	GENERATED_BODY()
 
@@ -38,9 +38,8 @@ class USlotDataTask_Saver : public USlotDataTask
 	FOnGameSaved Delegate;
 
 protected:
-
 	UPROPERTY()
-	USlotInfo* SlotInfo;
+	USaveSlot* SlotInfo;
 
 	/** Start Async variables */
 	TWeakObjectPtr<ULevel> CurrentLevel;
@@ -56,13 +55,10 @@ protected:
 
 
 public:
+	USaveSlotDataTask_Saver() : USaveSlotDataTask(), SaveTask(nullptr) {}
 
-	USlotDataTask_Saver()
-		: USlotDataTask()
-		, SaveTask(nullptr)
-	{}
-
-	auto* Setup(FName InSlotName, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
+	auto* Setup(
+		FName InSlotName, bool bInOverride, bool bInSaveThumbnail, const int32 InWidth, const int32 InHeight)
 	{
 		SlotName = InSlotName;
 		bOverride = bInOverride;
@@ -73,7 +69,11 @@ public:
 		return this;
 	}
 
-	auto* Bind(const FOnGameSaved& OnSaved) { Delegate = OnSaved; return this; }
+	auto* Bind(const FOnGameSaved& OnSaved)
+	{
+		Delegate = OnSaved;
+		return this;
+	}
 
 	// Where all magic happens
 	virtual void OnStart() override;
@@ -82,21 +82,20 @@ public:
 	virtual void BeginDestroy() override;
 
 protected:
-
 	/** BEGIN Serialization */
 	/** Serializes all world actors. */
 	void SerializeWorld();
 
 	void PrepareAllLevels(const TArray<ULevelStreaming*>& Levels);
 
-	void SerializeLevelSync(const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
+	void SerializeLevelSync(
+		const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
 
 	/** END Serialization */
 
 	void RunScheduledTasks();
 
 private:
-
 	/** BEGIN FileSaving */
 	void SaveFile();
 	/** End FileSaving */

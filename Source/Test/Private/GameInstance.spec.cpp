@@ -1,4 +1,4 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Automatron.h"
 #include "Helpers/TestGameInstance.h"
@@ -41,8 +41,7 @@ void FSaveSpec_GameInstance::Define()
 		TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
 	});
 
-	It("GameInstance can be saved", [this]()
-	{
+	It("GameInstance can be saved", [this]() {
 		auto* GI = GetMainWorld()->GetGameInstance<UTestGameInstance>();
 		GI->bMyBool = true;
 
@@ -56,13 +55,11 @@ void FSaveSpec_GameInstance::Define()
 		TestTrue("Saved variable loaded", GI->bMyBool);
 	});
 
-	AfterEach([this]()
-	{
+	AfterEach([this]() {
 		if (SaveManager)
 		{
 			bFinishTick = false;
-			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]()
-			{
+			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
 				bFinishTick = true;
 			}));
 

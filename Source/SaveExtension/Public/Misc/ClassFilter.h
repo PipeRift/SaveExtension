@@ -1,11 +1,14 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include <GameFramework/Actor.h>
+
 #include <Components/ActorComponent.h>
+#include <GameFramework/Actor.h>
+
 #include "ClassFilter.generated.h"
+
 
 
 USTRUCT(BlueprintType)
@@ -14,13 +17,11 @@ struct SAVEEXTENSION_API FSEClassFilter
 	GENERATED_BODY()
 
 private:
-
 	// Used from editor side to limit displayed classes
 	UPROPERTY()
 	UClass* BaseClass;
 
 public:
-
 	/** This classes are allowed (and their children) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Serialization")
 	TSet<TSoftClassPtr<UObject>> AllowedClasses;
@@ -30,13 +31,11 @@ public:
 	TSet<TSoftClassPtr<UObject>> IgnoredClasses;
 
 protected:
-
 	UPROPERTY(Transient)
 	mutable TSet<const UClass*> BakedAllowedClasses;
 
 
 public:
-
 	FSEClassFilter() : FSEClassFilter(UObject::StaticClass()) {}
 	FSEClassFilter(UClass* const BaseClass);
 
@@ -52,7 +51,10 @@ public:
 		return BakedAllowedClasses.Contains(Class);
 	}
 
-	FORCEINLINE UClass* GetBaseClass() const { return BaseClass; }
+	FORCEINLINE UClass* GetBaseClass() const
+	{
+		return BaseClass;
+	}
 
 	FString ToString();
 	void FromString(FString String);
@@ -70,13 +72,14 @@ struct FSEActorClassFilter
 	FSEClassFilter ClassFilter;
 
 
-	FSEActorClassFilter()
-		: ClassFilter(AActor::StaticClass())
-	{}
+	FSEActorClassFilter() : ClassFilter(AActor::StaticClass()) {}
 	FSEActorClassFilter(TSubclassOf<AActor> actorClass) : ClassFilter(actorClass) {}
 
 	/** Bakes a set of allowed classes based on the current settings */
-	void BakeAllowedClasses() const { ClassFilter.BakeAllowedClasses(); }
+	void BakeAllowedClasses() const
+	{
+		ClassFilter.BakeAllowedClasses();
+	}
 
 	FORCEINLINE bool IsClassAllowed(UClass* const Class) const
 	{
@@ -94,13 +97,14 @@ struct FSEComponentClassFilter
 	FSEClassFilter ClassFilter;
 
 
-	FSEComponentClassFilter()
-		: ClassFilter(UActorComponent::StaticClass())
-	{}
+	FSEComponentClassFilter() : ClassFilter(UActorComponent::StaticClass()) {}
 	FSEComponentClassFilter(TSubclassOf<UActorComponent> compClass) : ClassFilter(compClass) {}
 
 	/** Bakes a set of allowed classes based on the current settings */
-	void BakeAllowedClasses() const { ClassFilter.BakeAllowedClasses(); }
+	void BakeAllowedClasses() const
+	{
+		ClassFilter.BakeAllowedClasses();
+	}
 
 	FORCEINLINE bool IsClassAllowed(UClass* const Class) const
 	{

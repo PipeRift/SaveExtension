@@ -1,21 +1,21 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Multithreading/DeleteSlotsTask.h"
 
+#include "FileAdapter.h"
+#include "HAL/FileManager.h"
+#include "Misc/SlotHelpers.h"
+#include "SaveManager.h"
+#include "SavePreset.h"
+
 #include <HAL/PlatformFilemanager.h>
 
-#include "FileAdapter.h"
-#include "SavePreset.h"
-#include "SaveManager.h"
-#include "Misc/SlotHelpers.h"
-#include "HAL/FileManager.h"
 
 
-FDeleteSlotsTask::FDeleteSlotsTask(const USaveManager* InManager, FName SlotName)
-	: Manager(InManager)
+FDeleteSlotsTask::FDeleteSlotsTask(const USaveManager* InManager, FName SlotName) : Manager(InManager)
 {
 	check(Manager);
-	if(!SlotName.IsNone())
+	if (!SlotName.IsNone())
 	{
 		SpecificSlotName = SlotName.ToString();
 	}

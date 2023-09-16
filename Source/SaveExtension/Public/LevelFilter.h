@@ -1,9 +1,11 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
 #include "SavePreset.h"
+
 #include "LevelFilter.generated.h"
+
 
 class USaveManager;
 
@@ -23,7 +25,6 @@ struct FSELevelFilter
 	static const FName TagTransform;
 
 public:
-
 	UPROPERTY(SaveGame)
 	FSEActorClassFilter ActorFilter;
 
@@ -72,20 +73,17 @@ public:
 
 	bool ShouldSave(const UActorComponent* Component) const
 	{
-		return IsValid(Component)
-			&& ComponentFilter.IsClassAllowed(Component->GetClass());
+		return IsValid(Component) && ComponentFilter.IsClassAllowed(Component->GetClass());
 	}
 
 	bool ShouldLoad(const UActorComponent* Component) const
 	{
-		return IsValid(Component)
-			&& LoadComponentFilter.IsClassAllowed(Component->GetClass());
+		return IsValid(Component) && LoadComponentFilter.IsClassAllowed(Component->GetClass());
 	}
 
 	static bool StoresTransform(const UActorComponent* Component)
 	{
-		return Component->GetClass()->IsChildOf<USceneComponent>()
-			&& HasTag(Component, TagTransform);
+		return Component->GetClass()->IsChildOf<USceneComponent>() && HasTag(Component, TagTransform);
 	}
 
 	static bool StoresTags(const UActorComponent* Component)
@@ -98,10 +96,22 @@ public:
 		return Tag == TagNoTransform || Tag == TagNoPhysics || Tag == TagNoTags;
 	}
 
-	static FORCEINLINE bool StoresTransform(const AActor* Actor) { return Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform); }
-	static FORCEINLINE bool StoresPhysics(const AActor* Actor)   { return !HasTag(Actor, TagNoPhysics); }
-	static FORCEINLINE bool StoresTags(const AActor* Actor)      { return !HasTag(Actor, TagNoTags); }
-	static FORCEINLINE bool IsProcedural(const AActor* Actor)    { return Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted); }
+	static FORCEINLINE bool StoresTransform(const AActor* Actor)
+	{
+		return Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform);
+	}
+	static FORCEINLINE bool StoresPhysics(const AActor* Actor)
+	{
+		return !HasTag(Actor, TagNoPhysics);
+	}
+	static FORCEINLINE bool StoresTags(const AActor* Actor)
+	{
+		return !HasTag(Actor, TagNoTags);
+	}
+	static FORCEINLINE bool IsProcedural(const AActor* Actor)
+	{
+		return Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);
+	}
 
 	static FORCEINLINE bool HasTag(const AActor* Actor, const FName Tag)
 	{
@@ -109,7 +119,7 @@ public:
 		return Actor->ActorHasTag(Tag);
 	}
 
-	static FORCEINLINE bool HasTag(const UActorComponent * Component, const FName Tag)
+	static FORCEINLINE bool HasTag(const UActorComponent* Component, const FName Tag)
 	{
 		check(Component);
 		return Component->ComponentHasTag(Tag);

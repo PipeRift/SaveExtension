@@ -4,19 +4,18 @@
 
 #include "AssetTypeActions_Base.h"
 #include "Factories/Factory.h"
-#include "SavePreset.h"
+#include "SaveSlotData.h"
 
-#include "SavePresetFactory.generated.h"
-
+#include "SaveSlotDataFactory.generated.h"
 
 
 UCLASS()
-class SAVEEXTENSIONEDITOR_API USavePresetFactory : public UFactory
+class SAVEEXTENSIONEDITOR_API USaveSaveSlotDataFactory : public UFactory
 {
 	GENERATED_BODY()
 
 public:
-	USavePresetFactory();
+	USaveSaveSlotDataFactory();
 
 	virtual UObject* FactoryCreateNew(UClass* Class, UObject* InParent, FName Name, EObjectFlags Flags,
 		UObject* Context, FFeedbackContext* Warn) override;

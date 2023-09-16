@@ -1,35 +1,34 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 
 #pragma once
 
 #include "ISaveExtension.h"
+#include "Serialization/LevelRecords.h"
+#include "Serialization/Records.h"
 
- #include <CoreMinimal.h>
-#include <Engine/LevelStreaming.h>
+#include <CoreMinimal.h>
 #include <Engine/LevelScriptActor.h>
+#include <Engine/LevelStreaming.h>
 #include <GameFramework/SaveGame.h>
 #include <Serialization/ObjectAndNameAsStringProxyArchive.h>
 
-#include "Serialization/Records.h"
-#include "Serialization/LevelRecords.h"
-
-#include "SlotData.generated.h"
+#include "SaveSlotData.generated.h"
 
 
 /**
- * USaveData stores all information that can be accessible only while the game is loaded.
+ * USaveSlotData stores all information that can be accessible only while the game is loaded.
  * Works like a common SaveGame object
  * E.g: Items, Quests, Enemies, World Actors, AI, Physics
  */
-UCLASS(ClassGroup = SaveExtension, hideCategories = ("Activation", "Actor Tick", "Actor", "Input", "Rendering", "Replication", "Socket", "Thumbnail"))
-class SAVEEXTENSION_API USlotData : public USaveGame
+UCLASS(ClassGroup = SaveExtension, hideCategories = ("Activation", "Actor Tick", "Actor", "Input",
+									   "Rendering", "Replication", "Socket", "Thumbnail"))
+class SAVEEXTENSION_API USaveSlotData : public USaveGame
 {
 	GENERATED_BODY()
 
 public:
-
-	USlotData() : Super() {}
+	USaveSlotData() : Super() {}
 
 
 	/** Full Name of the Map where this SlotData was saved */
