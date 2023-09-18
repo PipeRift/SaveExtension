@@ -1,16 +1,15 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "Multithreading/LoadSlotInfosTask.h"
+#include "Multithreading/LoadSlotsTask.h"
 
-#include "FileAdapter.h"
 #include "Misc/SlotHelpers.h"
+#include "SaveFileHelpers.h"
 #include "SaveManager.h"
-#include "SavePreset.h"
 
 #include <HAL/PlatformFilemanager.h>
 
 
-void FLoadSlotInfosTask::DoWork()
+void FLoadSlotsTask::DoWork()
 {
 	if (!Manager)
 	{
@@ -33,7 +32,7 @@ void FLoadSlotInfosTask::DoWork()
 	for (const FString& FileName : FileNames)
 	{
 		// Load all files
-		FScopedFileReader Reader(FFileAdapter::GetSlotPath(FileName));
+		FScopedFileReader Reader(FSaveFileHelpers::GetSlotPath(FileName));
 		if (Reader.IsValid())
 		{
 			auto& File = LoadedFiles.AddDefaulted_GetRef();
@@ -45,7 +44,9 @@ void FLoadSlotInfosTask::DoWork()
 	LoadedSlots.Reserve(LoadedFiles.Num());
 	for (const auto& File : LoadedFiles)
 	{
-		LoadedSlots.Add(File.CreateAndDeserializeInfo(Manager));
+		USaveSlot* Slot = nullptr;
+		File.CreateAndDeserializeSlot(Slot, Manager);
+		LoadedSlots.Add(Slot);
 	}
 
 	if (!bLoadingSingleInfo && bSortByRecent)
@@ -56,7 +57,7 @@ void FLoadSlotInfosTask::DoWork()
 	}
 }
 
-void FLoadSlotInfosTask::AfterFinish()
+void FLoadSlotsTask::AfterFinish()
 {
 	for (auto& Slot : LoadedSlots)
 	{

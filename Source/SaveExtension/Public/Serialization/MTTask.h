@@ -4,7 +4,6 @@
 
 #include "ISaveExtension.h"
 #include "LevelFilter.h"
-#include "SavePreset.h"
 
 #include <Engine/Level.h>
 #include <Engine/LevelStreaming.h>

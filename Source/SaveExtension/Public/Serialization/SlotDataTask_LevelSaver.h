@@ -3,7 +3,6 @@
 #pragma once
 
 #include "ISaveExtension.h"
-#include "SavePreset.h"
 #include "SlotDataTask_Saver.h"
 
 #include "SlotDataTask_LevelSaver.generated.h"
@@ -32,6 +31,6 @@ private:
 	virtual void OnStart() override;
 	virtual void OnFinish(bool bSuccess) override
 	{
-		SELog(Preset, "Finished Serializing level", FColor::Green);
+		SELog(Slot, "Finished Serializing level", FColor::Green);
 	}
 };

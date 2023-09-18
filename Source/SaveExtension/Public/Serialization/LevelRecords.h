@@ -13,15 +13,14 @@
 #include "LevelRecords.generated.h"
 
 
-
 /** Represents a level in the world (streaming or persistent) */
 USTRUCT()
 struct FLevelRecord : public FBaseRecord
 {
 	GENERATED_BODY()
 
-	bool bOverrideGeneralFilter = false;
-	// Filter is used if bOverrideGeneralFilter is true
+	bool bOverrideGlobalFilter = false;
+	// Filter is used if bOverrideGlobalFilter is true
 	FSELevelFilter Filter;
 
 	/** Record of the Level Script Actor */

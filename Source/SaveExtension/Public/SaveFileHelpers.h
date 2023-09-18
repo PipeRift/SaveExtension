@@ -14,7 +14,6 @@
 #include <Templates/SubclassOf.h>
 
 
-class USavePreset;
 class USaveSlot;
 class USaveSlotData;
 class FMemoryReader;
@@ -98,24 +97,24 @@ struct FSaveFile
 	void Read(FScopedFileReader& Reader, bool bSkipData);
 	void Write(FScopedFileWriter& Writer, bool bCompressData);
 
-	void SerializeInfo(USaveSlot* SlotInfo);
+	void SerializeInfo(USaveSlot* Slot);
 	void SerializeData(USaveSlotData* SlotData);
-	USaveSlot* CreateAndDeserializeInfo(const UObject* Outer) const;
+	void CreateAndDeserializeSlot(USaveSlot*& Slot, const UObject* Outer) const;
 	void CreateAndDeserializeData(USaveSlot* Slot) const;
 };
 
 
 /** Based on GameplayStatics to add multi-threading */
-class SAVEEXTENSION_API FFileAdapter
+class SAVEEXTENSION_API FSaveFileHelpers
 {
 public:
 	static bool SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bUseCompression);
 
 	// Not safe for Multi-threading
-	static USaveSlot* LoadFile(FStringView SlotName, bool bLoadData, const UObject* Outer);
+	static bool LoadFile(FStringView SlotName, USaveSlot*& Slot, bool bLoadData, const UObject* Outer);
 
 	static bool DeleteFile(FStringView SlotName);
-	static bool DoesFileExist(FStringView SlotName);
+	static bool FileExists(FStringView SlotName);
 
 	static const FString& GetSaveFolder();
 	static FString GetSlotPath(FStringView SlotName);

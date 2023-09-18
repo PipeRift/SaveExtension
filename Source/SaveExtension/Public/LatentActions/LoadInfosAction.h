@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Multithreading/LoadSlotInfosTask.h"
+#include "Multithreading/LoadSlotsTask.h"
 
 #include <CoreMinimal.h>
 #include <Engine/LatentActionManager.h>
@@ -27,7 +27,7 @@ class FLoadInfosAction : public FPendingLatentAction
 public:
 	ELoadInfoResult& Result;
 
-	TArray<USaveSlot*>& SlotInfos;
+	TArray<USaveSlot*>& Slots;
 	bool bFinished;
 
 	FName ExecutionFunction;

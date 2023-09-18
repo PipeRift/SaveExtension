@@ -1,36 +1,36 @@
 ﻿// Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "SavePresetDetails.h"
+#include "SaveSlotDetails.h"
 
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
-#include "SavePreset.h"
 
 #include <EditorStyleSet.h>
+#include <SaveSlot.h>
 #include <Widgets/Layout/SBorder.h>
 
 
-#define LOCTEXT_NAMESPACE "FSavePresetDetails"
+#define LOCTEXT_NAMESPACE "FSaveSlotDetails"
 
 
 /************************************************************************
- * FSavePresetDetails
+ * FSaveSlotDetails
  */
 
-TSharedRef<IDetailCustomization> FSavePresetDetails::MakeInstance()
+TSharedRef<IDetailCustomization> FSaveSlotDetails::MakeInstance()
 {
-	return MakeShareable(new FSavePresetDetails);
+	return MakeShareable(new FSaveSlotDetails);
 }
 
-void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
+void FSaveSlotDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
 	TArray<TWeakObjectPtr<UObject>> Objects;
 	DetailBuilder.GetObjectsBeingCustomized(Objects);
 
 	if (Objects.Num() && Objects[0] != nullptr)
 	{
-		Settings = CastChecked<USavePreset>(Objects[0].Get());
+		Slot = CastChecked<USaveSlot>(Objects[0].Get());
 
 		DetailBuilder.EditCategory(TEXT("Gameplay"));
 		DetailBuilder.EditCategory(TEXT("Serialization"));
@@ -40,14 +40,14 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 			Category.AddProperty(TEXT("MultithreadedSerialization"));
 			Category.AddProperty(TEXT("FrameSplittedSerialization"));
 			Category.AddCustomRow(LOCTEXT("AsyncWarning", "Asynchronous Warning"))
-				.Visibility({this, &FSavePresetDetails::GetWarningVisibility})
+				.Visibility({this, &FSaveSlotDetails::GetWarningVisibility})
 				.ValueContent()
 				.MinDesiredWidth(300.f)
 				.MaxDesiredWidth(
 					400.f)[SNew(SBorder)
 							   .Padding(2.f)
 							   .BorderImage(FAppStyle::GetBrush("ErrorReporting.EmptyBox"))
-							   .BorderBackgroundColor(this, &FSavePresetDetails::GetWarningColor)
+							   .BorderBackgroundColor(this, &FSaveSlotDetails::GetWarningColor)
 								   [SNew(STextBlock)
 										   .Text(LOCTEXT("AsyncWarningText",
 											   "WARNING: Frame-splitted loading or saving is not recommended "
@@ -55,33 +55,33 @@ void FSavePresetDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 										   .AutoWrapText(true)]];
 
 			Category.AddProperty(TEXT("MaxFrameMs"))
-				.EditCondition({this, &FSavePresetDetails::CanEditAsynchronous}, nullptr);
+				.EditCondition({this, &FSaveSlotDetails::CanEditAsynchronous}, nullptr);
 		}
 
 		DetailBuilder.EditCategory(TEXT("Level Streaming"));
 	}
 }
 
-FSlateColor FSavePresetDetails::GetWarningColor() const
+FSlateColor FSaveSlotDetails::GetWarningColor() const
 {
 	return FLinearColor{FColor{234, 220, 25, 128}};
 }
 
-EVisibility FSavePresetDetails::GetWarningVisibility() const
+EVisibility FSaveSlotDetails::GetWarningVisibility() const
 {
-	if (Settings.IsValid())
+	if (Slot.IsValid())
 	{
-		return Settings->GetFrameSplitSerialization() == ESaveASyncMode::OnlySync ? EVisibility::Collapsed
-																				  : EVisibility::Visible;
+		return Slot->GetFrameSplitSerialization() == ESaveASyncMode::OnlySync ? EVisibility::Collapsed
+																			  : EVisibility::Visible;
 	}
 	return EVisibility::Collapsed;
 }
 
-bool FSavePresetDetails::CanEditAsynchronous() const
+bool FSaveSlotDetails::CanEditAsynchronous() const
 {
-	if (Settings.IsValid())
+	if (Slot.IsValid())
 	{
-		return Settings->GetFrameSplitSerialization() != ESaveASyncMode::OnlySync;
+		return Slot->GetFrameSplitSerialization() != ESaveASyncMode::OnlySync;
 	}
 	return true;
 }

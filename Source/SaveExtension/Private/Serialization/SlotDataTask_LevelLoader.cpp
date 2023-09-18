@@ -19,7 +19,7 @@ void USaveSlotDataTask_LevelLoader::OnStart()
 
 		GetLevelFilter(*LevelRecord).BakeAllowedClasses();
 
-		if (Preset->IsFrameSplitLoad())
+		if (Slot->IsFrameSplitLoad())
 		{
 			DeserializeLevelASync(StreamingLevel->GetLoadedLevel(), StreamingLevel);
 		}

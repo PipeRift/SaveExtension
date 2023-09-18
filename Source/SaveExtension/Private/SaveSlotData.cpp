@@ -2,8 +2,6 @@
 
 #include "SaveSlotData.h"
 
-#include "SavePreset.h"
-
 #include <TimerManager.h>
 
 
@@ -18,7 +16,7 @@ void USaveSlotData::Serialize(FArchive& Ar)
 	Ar << GameInstance;
 
 	static UScriptStruct* const LevelFilterType{FSELevelFilter::StaticStruct()};
-	LevelFilterType->SerializeItem(Ar, &GeneralLevelFilter, nullptr);
+	LevelFilterType->SerializeItem(Ar, &GlobalLevelFilter, nullptr);
 	MainLevel.Serialize(Ar);
 	Ar << SubLevels;
 }

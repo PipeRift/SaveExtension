@@ -12,7 +12,6 @@ TSharedPtr<IPropertyHandle> FSEComponentClassFilterCustomization::GetFilterHandl
 	TSharedRef<IPropertyHandle> StructPropertyHandle)
 {
 	return StructHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FSEComponentClassFilter, ClassFilter));
-	;
 }
 
 #undef LOCTEXT_NAMESPACE

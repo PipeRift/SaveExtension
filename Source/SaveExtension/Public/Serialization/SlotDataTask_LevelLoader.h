@@ -3,7 +3,6 @@
 #pragma once
 
 #include "ISaveExtension.h"
-#include "SavePreset.h"
 #include "SlotDataTask_Loader.h"
 
 #include "SlotDataTask_LevelLoader.generated.h"

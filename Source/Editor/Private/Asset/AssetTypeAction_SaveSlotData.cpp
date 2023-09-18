@@ -6,7 +6,7 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// FAssetTypeAction_SavePreset
+// FAssetTypeAction_SaveSlotData
 
 FText FAssetTypeAction_SaveSlotData::GetName() const
 {

@@ -9,7 +9,8 @@
 void FSlotHelpers::FindSlotFileNames(TArray<FString>& FoundSlots)
 {
 	FFindSlotVisitor Visitor{FoundSlots};
-	FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(*FFileAdapter::GetSaveFolder(), Visitor);
+	FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(
+		*FSaveFileHelpers::GetSaveFolder(), Visitor);
 }
 
 bool FSlotHelpers::FFindSlotVisitor::Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory)

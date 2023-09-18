@@ -2,12 +2,13 @@
 
 #pragma once
 
-#include "SavePreset.h"
+#include "Misc/ClassFilter.h"
 
 #include "LevelFilter.generated.h"
 
 
 class USaveManager;
+class USaveSlot;
 
 
 /**
@@ -41,87 +42,27 @@ public:
 	FSEComponentClassFilter LoadComponentFilter;
 
 
-	FSELevelFilter() {}
+	FSELevelFilter() = default;
 
-	void FromPreset(const USavePreset& Preset)
-	{
-		ActorFilter = Preset.GetActorFilter(true);
-		LoadActorFilter = Preset.GetActorFilter(false);
-		bStoreComponents = Preset.bStoreComponents;
-		ComponentFilter = Preset.GetComponentFilter(true);
-		LoadComponentFilter = Preset.GetComponentFilter(false);
-	}
+	void FromSlot(const USaveSlot& Slot);
 
-	void BakeAllowedClasses() const
-	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(FSELevelFilter::BakeAllowedClasses);
-		ActorFilter.BakeAllowedClasses();
-		ComponentFilter.BakeAllowedClasses();
-		LoadActorFilter.BakeAllowedClasses();
-		LoadComponentFilter.BakeAllowedClasses();
-	}
+	void BakeAllowedClasses() const;
 
-	bool ShouldSave(const AActor* Actor) const
-	{
-		return ActorFilter.IsClassAllowed(Actor->GetClass());
-	}
+	bool ShouldSave(const AActor* Actor) const;
+	bool ShouldSave(const UActorComponent* Component) const;
+	bool ShouldLoad(const AActor* Actor) const;
+	bool ShouldLoad(const UActorComponent* Component) const;
 
-	bool ShouldLoad(const AActor* Actor) const
-	{
-		return LoadActorFilter.IsClassAllowed(Actor->GetClass());
-	}
+	static bool StoresTransform(const UActorComponent* Component);
+	static bool StoresTags(const UActorComponent* Component);
 
-	bool ShouldSave(const UActorComponent* Component) const
-	{
-		return IsValid(Component) && ComponentFilter.IsClassAllowed(Component->GetClass());
-	}
+	static bool IsSaveTag(const FName& Tag);
 
-	bool ShouldLoad(const UActorComponent* Component) const
-	{
-		return IsValid(Component) && LoadComponentFilter.IsClassAllowed(Component->GetClass());
-	}
+	static bool StoresTransform(const AActor* Actor);
+	static bool StoresPhysics(const AActor* Actor);
+	static bool StoresTags(const AActor* Actor);
+	static bool IsProcedural(const AActor* Actor);
 
-	static bool StoresTransform(const UActorComponent* Component)
-	{
-		return Component->GetClass()->IsChildOf<USceneComponent>() && HasTag(Component, TagTransform);
-	}
-
-	static bool StoresTags(const UActorComponent* Component)
-	{
-		return !HasTag(Component, TagNoTags);
-	}
-
-	static bool IsSaveTag(const FName& Tag)
-	{
-		return Tag == TagNoTransform || Tag == TagNoPhysics || Tag == TagNoTags;
-	}
-
-	static FORCEINLINE bool StoresTransform(const AActor* Actor)
-	{
-		return Actor->IsRootComponentMovable() && !HasTag(Actor, TagNoTransform);
-	}
-	static FORCEINLINE bool StoresPhysics(const AActor* Actor)
-	{
-		return !HasTag(Actor, TagNoPhysics);
-	}
-	static FORCEINLINE bool StoresTags(const AActor* Actor)
-	{
-		return !HasTag(Actor, TagNoTags);
-	}
-	static FORCEINLINE bool IsProcedural(const AActor* Actor)
-	{
-		return Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);
-	}
-
-	static FORCEINLINE bool HasTag(const AActor* Actor, const FName Tag)
-	{
-		check(Actor);
-		return Actor->ActorHasTag(Tag);
-	}
-
-	static FORCEINLINE bool HasTag(const UActorComponent* Component, const FName Tag)
-	{
-		check(Component);
-		return Component->ComponentHasTag(Tag);
-	}
+	static bool HasTag(const AActor* Actor, const FName Tag);
+	static bool HasTag(const UActorComponent* Component, const FName Tag);
 };

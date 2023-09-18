@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "FileAdapter.h"
 #include "Multithreading/Delegates.h"
+#include "SaveFileHelpers.h"
 #include "SaveSlot.h"
 
 #include <Async/AsyncWork.h>
@@ -13,10 +13,10 @@ class USaveManager;
 
 
 /**
- * FLoadSlotInfosTask
+ * FLoadSlotsTask
  * Async task to load one or many slot infos
  */
-class FLoadSlotInfosTask : public FNonAbandonableTask
+class FLoadSlotsTask : public FNonAbandonableTask
 {
 protected:
 	const USaveManager* Manager;
@@ -27,21 +27,19 @@ protected:
 
 	TArray<USaveSlot*> LoadedSlots;
 
-	FOnSlotInfosLoaded Delegate;
+	FOnSlotsLoaded Delegate;
 
 
 public:
 	/** All infos Constructor */
-	explicit FLoadSlotInfosTask(
-		const USaveManager* Manager, bool bInSortByRecent, const FOnSlotInfosLoaded& Delegate)
+	explicit FLoadSlotsTask(const USaveManager* Manager, bool bInSortByRecent, const FOnSlotsLoaded& Delegate)
 		: Manager(Manager)
 		, bSortByRecent(bInSortByRecent)
 		, Delegate(Delegate)
 	{}
 
 	/** One info Constructor */
-	explicit FLoadSlotInfosTask(USaveManager* Manager, FName SlotName) : Manager(Manager), SlotName(SlotName)
-	{}
+	explicit FLoadSlotsTask(USaveManager* Manager, FName SlotName) : Manager(Manager), SlotName(SlotName) {}
 
 	void DoWork();
 
@@ -55,6 +53,6 @@ public:
 
 	FORCEINLINE TStatId GetStatId() const
 	{
-		RETURN_QUICK_DECLARE_CYCLE_STAT(FLoadAllSlotInfosTask, STATGROUP_ThreadPoolAsyncTasks);
+		RETURN_QUICK_DECLARE_CYCLE_STAT(FLoadAllSlotsTask, STATGROUP_ThreadPoolAsyncTasks);
 	}
 };

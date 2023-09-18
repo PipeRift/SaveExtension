@@ -2,10 +2,10 @@
 
 #include "SaveManager.h"
 
-#include "FileAdapter.h"
 #include "LatentActions/LoadInfosAction.h"
 #include "Multithreading/DeleteSlotsTask.h"
-#include "Multithreading/LoadSlotInfosTask.h"
+#include "Multithreading/LoadSlotsTask.h"
+#include "SaveFileHelpers.h"
 #include "SaveSettings.h"
 #include "Serialization/SlotDataTask_LevelLoader.h"
 #include "Serialization/SlotDataTask_LevelSaver.h"
@@ -49,7 +49,7 @@ void USaveManager::Deinitialize()
 
 	MTTasks.CancelAll();
 
-	if (GetActivePreset()->bSaveOnExit)
+	if (GetActiveSlot()->bSaveOnClose)
 		SaveCurrentSlot();
 
 	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
@@ -63,15 +63,14 @@ bool USaveManager::SaveSlot(FName SlotName, bool bOverrideIfNeeded, bool bScreen
 	if (!CanLoadOrSave())
 		return false;
 
-	const USavePreset* Preset = GetActivePreset();
 	if (SlotName.IsNone())
 	{
-		SELog(Preset, "Can't use an empty slot name to save.", true);
+		SELog(ActiveSlot, "Can't use an empty slot name to save.", true);
 		return false;
 	}
 
 	// Saving
-	SELog(Preset, "Saving to Slot " + SlotName.ToString());
+	SELog(ActiveSlot, "Saving to Slot " + SlotName.ToString());
 
 	UWorld* World = GetWorld();
 	check(World);
@@ -116,9 +115,9 @@ bool USaveManager::DeleteSlot(FName SlotName)
 	return bSuccess;
 }
 
-void USaveManager::FindAllSlots(bool bSortByRecent, FOnSlotInfosLoaded Delegate)
+void USaveManager::FindAllSlots(bool bSortByRecent, FOnSlotsLoaded Delegate)
 {
-	MTTasks.CreateTask<FLoadSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	MTTasks.CreateTask<FLoadSlotsTask>(this, bSortByRecent, MoveTemp(Delegate))
 		.OnFinished([](auto& Task) {
 			Task->AfterFinish();
 		})
@@ -127,10 +126,10 @@ void USaveManager::FindAllSlots(bool bSortByRecent, FOnSlotInfosLoaded Delegate)
 
 void USaveManager::FindAllSlotsSync(bool bSortByRecent, TArray<USaveSlot*>& Slots)
 {
-	auto Delegate = [](const TArray<class USaveSlot*>& FoundSlots) {
+	auto Delegate = FOnSlotsLoaded::CreateLambda([&Slots](const TArray<USaveSlot*>& FoundSlots) {
 		Slots = FoundSlots;
-	};
-	MTTasks.CreateTask<FLoadSlotInfosTask>(this, bSortByRecent, Delegate)
+	});
+	MTTasks.CreateTask<FLoadSlotsTask>(this, bSortByRecent, Delegate)
 		.OnFinished([](auto& Task) {
 			Task->AfterFinish();
 		})
@@ -216,7 +215,7 @@ void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentAc
 
 bool USaveManager::IsSlotSaved(FName SlotName) const
 {
-	return FFileAdapter::FileExists(SlotName.ToString());
+	return FSaveFileHelpers::FileExists(SlotName.ToString());
 }
 
 bool USaveManager::CanLoadOrSave()
@@ -230,15 +229,18 @@ bool USaveManager::CanLoadOrSave()
 	return IsValid(GetWorld());
 }
 
-void USaveManager::AssureActiveSlot(bool bForced)
+void USaveManager::AssureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass, bool bForced)
 {
 	if (IsInSlot() && !bForced)
 		return;
 
-	UClass* ActiveSlotClass = GetDefault<USaveSettings>()->ActiveSlot.Get();
 	if (!ActiveSlotClass)
 	{
-		ActiveSlotClass = USaveSlot::StaticClass();
+		ActiveSlotClass = GetDefault<USaveSettings>()->ActiveSlot.Get();
+		if (!ActiveSlotClass)
+		{
+			ActiveSlotClass = USaveSlot::StaticClass();
+		}
 	}
 	ActiveSlot = NewObject<USaveSlot>(this, ActiveSlotClass);
 }
@@ -284,11 +286,11 @@ USaveSlot* USaveManager::LoadInfo(FName SlotName)
 {
 	if (SlotName.IsNone())
 	{
-		SELog(GetActivePreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
+		SELog(ActiveSlot, "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
-	auto& Task = MTTasks.CreateTask<FLoadSlotInfosTask>(this, SlotName).OnFinished([](auto& Task) {
+	auto& Task = MTTasks.CreateTask<FLoadSlotsTask>(this, SlotName).OnFinished([](auto& Task) {
 		Task->AfterFinish();
 	});
 	Task.StartSynchronousTask();
@@ -302,7 +304,7 @@ USaveSlot* USaveManager::LoadInfo(FName SlotName)
 USaveSlotDataTask* USaveManager::CreateTask(TSubclassOf<USaveSlotDataTask> TaskType)
 {
 	USaveSlotDataTask* Task = NewObject<USaveSlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentInfo->GetData(), *GetActivePreset());
+	Task->Prepare(ActiveSlot);
 	Tasks.Add(Task);
 	return Task;
 }
@@ -318,14 +320,15 @@ void USaveManager::FinishTask(USaveSlotDataTask* Task)
 	}
 }
 
-FName USaveManager::GetSlotNameFromId(const int32 SlotId) const
+FName USaveManager::GetFileNameFromId(const int32 SlotId) const
 {
-	if (const auto* Preset = GetActivePreset())
-	{
-		FName Name;
-		Preset->BPGetSlotNameFromId(SlotId, Name);
-		return Name;
-	}
+	// TODO: Expose custom names
+	// if (const auto* Preset = GetActivePreset())
+	//{
+	//	FName Name;
+	//	Preset->BPGetSlotNameFromId(SlotId, Name);
+	//	return Name;
+	//}
 	return FName{FString::FromInt(SlotId)};
 }
 
@@ -393,7 +396,7 @@ void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bErro
 
 	if (!bError)
 	{
-		OnGameSaved.Broadcast(CurrentInfo);
+		OnGameSaved.Broadcast(ActiveSlot);
 	}
 }
 
@@ -430,13 +433,13 @@ void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bErro
 
 	if (!bError)
 	{
-		OnGameLoaded.Broadcast(CurrentInfo);
+		OnGameLoaded.Broadcast(ActiveSlot);
 	}
 }
 
 void USaveManager::OnMapLoadStarted(const FString& MapName)
 {
-	SELog(GetActivePreset(), "Loading Map '" + MapName + "'", FColor::Purple);
+	SELog(ActiveSlot, "Loading Map '" + MapName + "'", FColor::Purple);
 }
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)

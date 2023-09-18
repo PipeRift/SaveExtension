@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "FileAdapter.h"
+#include "SaveFileHelpers.h"
 
 #include <Async/AsyncWork.h>
 
@@ -26,7 +26,7 @@ public:
 
 	void DoWork()
 	{
-		FFileAdapter::SaveFile(SlotName, Info, bUseCompression);
+		FSaveFileHelpers::SaveFile(SlotName, Info, bUseCompression);
 	}
 
 	FORCEINLINE TStatId GetStatId() const

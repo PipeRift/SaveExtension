@@ -4,8 +4,7 @@
 
 #include "Engine/Engine.h"
 #include "Modules/ModuleManager.h"
-#include "SavePreset.h"
-
+#include "SaveSlot.h"
 
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSaveExtension, All, All);
@@ -22,15 +21,15 @@ public:
 		return FModuleManager::Get().IsModuleLoaded("SaveExtension");
 	}
 
-	static void Log(const USavePreset* Preset, const FString Message, bool bError)
+	static void Log(const USaveSlot* Slot, const FString& Message, bool bError)
 	{
-		Log(Preset, Message, FColor::White, bError, 2.f);
+		Log(Slot, Message, FColor::White, bError, 2.f);
 	}
 
-	static void Log(const USavePreset* Preset, const FString Message, FColor Color = FColor::White,
+	static void Log(const USaveSlot* Slot, const FString& Message, FColor Color = FColor::White,
 		bool bError = false, const float Duration = 2.f)
 	{
-		if (Preset->bDebug)
+		if (Slot->bDebug)
 		{
 			if (bError)
 			{
@@ -48,7 +47,7 @@ public:
 				UE_LOG(LogSaveExtension, Log, TEXT("%s"), *ComposedMessage);
 			}
 
-			if (Preset->bDebugInScreen && GEngine)
+			if (Slot->bDebugInScreen && GEngine)
 			{
 				GEngine->AddOnScreenDebugMessage(-1, Duration, Color, ComposedMessage);
 			}

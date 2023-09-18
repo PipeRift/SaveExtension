@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "ISaveExtension.h"
 #include "Serialization/LevelRecords.h"
 #include "Serialization/Records.h"
 
@@ -46,7 +45,7 @@ public:
 	bool bStoreGameInstance = false;
 	FObjectRecord GameInstance;
 
-	FSELevelFilter GeneralLevelFilter;
+	FSELevelFilter GlobalLevelFilter;
 	FPersistentLevelRecord MainLevel;
 	TArray<FStreamingLevelRecord> SubLevels;
 

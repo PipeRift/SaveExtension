@@ -1,9 +1,10 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Automatron.h"
-#include "FileAdapter.h"
 #include "Helpers/TestActor.h"
-#include "SaveManager.h"
+
+#include <SaveFileHelpers.h>
+#include <SaveManager.h>
 
 
 class FSaveSpec_Files : public Automatron::FTestSpec
@@ -13,7 +14,6 @@ class FSaveSpec_Files : public Automatron::FTestSpec
 
 	USaveManager* SaveManager = nullptr;
 	ATestActor* TestActor = nullptr;
-	USavePreset* TestPreset = nullptr;
 
 	// Helper for some test delegates
 	bool bFinishTick = false;
@@ -34,33 +34,31 @@ void FSaveSpec_Files::Define()
 
 		SaveManager->bTickWithGameWorld = true;
 
-		// Set test preset
-		TestPreset = SaveManager->SetActivePreset(USavePreset::StaticClass());
-		TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
+		SaveManager->GetActiveSlot()->MultithreadedSerialization = ESaveASyncMode::OnlySync;
 	});
 
 	It("Can save files synchronously", [this]() {
-		TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
+		SaveManager->GetActiveSlot()->MultithreadedFiles = ESaveASyncMode::OnlySync;
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
 
-		TestTrue("Info File exists in disk", FFileAdapter::FileExists(TEXT("0")));
+		TestTrue("Info File exists in disk", FSaveFileHelpers::FileExists(TEXT("0")));
 	});
 
 	It("Can save files asynchronously", [this]() {
-		TestPreset->MultithreadedFiles = ESaveASyncMode::SaveAsync;
+		SaveManager->GetActiveSlot()->MultithreadedFiles = ESaveASyncMode::SaveAsync;
 		bFinishTick = false;
 
 		bool bSaving =
 			SaveManager->SaveSlot(0, true, false, {}, FOnGameSaved::CreateLambda([this](auto* Info) {
 				// Notified that files have been saved asynchronously
-				TestTrue("Info File exists in disk", FFileAdapter::FileExists(TEXT("0")));
+				TestTrue("Info File exists in disk", FSaveFileHelpers::FileExists(TEXT("0")));
 				bFinishTick = true;
 			}));
 		TestTrue("Started Saving", bSaving);
 
 		// Files shouldn't exist yet
-		TestFalse("Info File exists in disk", FFileAdapter::FileExists(TEXT("0")));
+		TestFalse("Info File exists in disk", FSaveFileHelpers::FileExists(TEXT("0")));
 
 		TickWorldUntil(GetMainWorld(), true, [this](float) {
 			return !bFinishTick;
@@ -68,12 +66,12 @@ void FSaveSpec_Files::Define()
 	});
 
 	It("Can load files synchronously", [this]() {
-		TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
+		SaveManager->GetActiveSlot()->MultithreadedFiles = ESaveASyncMode::OnlySync;
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
 
 		USaveSlot* Slot = nullptr;
-		TestNotNull("File was loaded", FFileAdapter::LoadFile(TEXT("0"), Slot, true, SaveManager));
+		TestTrue("File was loaded", FSaveFileHelpers::LoadFile(TEXT("0"), Slot, true, SaveManager));
 		TestNotNull("Info is valid", Slot);
 		TestNotNull("Data is valid", Slot->GetData());
 	});

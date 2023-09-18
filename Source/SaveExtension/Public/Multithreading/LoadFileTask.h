@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "FileAdapter.h"
+#include "SaveFileHelpers.h"
 
 #include <Async/AsyncWork.h>
 
@@ -16,7 +16,7 @@ protected:
 	TWeakObjectPtr<USaveManager> Manager;
 	const FString SlotName;
 
-	TWeakObjectPtr<USaveSlot> SlotInfo;
+	TWeakObjectPtr<USaveSlot> Slot;
 	TWeakObjectPtr<USaveSlotData> SlotData;
 
 
@@ -25,9 +25,9 @@ public:
 	{}
 	~FLoadFileTask()
 	{
-		if (SlotInfo.IsValid())
+		if (Slot.IsValid())
 		{
-			SlotInfo->ClearInternalFlags(EInternalObjectFlags::Async);
+			Slot->ClearInternalFlags(EInternalObjectFlags::Async);
 		}
 		if (SlotData.IsValid())
 		{
@@ -37,19 +37,21 @@ public:
 
 	void DoWork()
 	{
-		FScopedFileReader FileReader(FFileAdapter::GetSlotPath(SlotName));
+		FScopedFileReader FileReader(FSaveFileHelpers::GetSlotPath(SlotName));
 		if (FileReader.IsValid())
 		{
 			FSaveFile File;
 			File.Read(FileReader, false);
-			SlotInfo = File.CreateAndDeserializeInfo(Manager.Get());
-			SlotData = File.CreateAndDeserializeData(Manager.Get());
+			USaveSlot* NewSlot = Slot.Get();
+			File.CreateAndDeserializeSlot(NewSlot, Manager.Get());
+			File.CreateAndDeserializeData(NewSlot);
+			Slot = NewSlot;
 		}
 	}
 
 	USaveSlot* GetInfo()
 	{
-		return SlotInfo.Get();
+		return Slot.Get();
 	}
 
 	USaveSlotData* GetData()
@@ -57,7 +59,7 @@ public:
 		return SlotData.Get();
 	}
 
-	FORCEINLINE TStatId GetStatId() const
+	TStatId GetStatId() const
 	{
 		RETURN_QUICK_DECLARE_CYCLE_STAT(FLoadFileTask, STATGROUP_ThreadPoolAsyncTasks);
 	}

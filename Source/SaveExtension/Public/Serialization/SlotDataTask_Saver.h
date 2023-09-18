@@ -6,7 +6,6 @@
 #include "ISaveExtension.h"
 #include "MTTask_SerializeActors.h"
 #include "Multithreading/SaveFileTask.h"
-#include "SavePreset.h"
 #include "SaveSlotData.h"
 #include "SlotDataTask.h"
 
@@ -39,7 +38,7 @@ class USaveSlotDataTask_Saver : public USaveSlotDataTask
 
 protected:
 	UPROPERTY()
-	USaveSlot* SlotInfo;
+	USaveSlot* Slot;
 
 	/** Start Async variables */
 	TWeakObjectPtr<ULevel> CurrentLevel;

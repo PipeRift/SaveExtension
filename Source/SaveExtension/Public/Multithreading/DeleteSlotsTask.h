@@ -2,12 +2,13 @@
 
 #pragma once
 
-#include "FileAdapter.h"
 #include "Multithreading/Delegates.h"
+#include "SaveFileHelpers.h"
 #include "SaveSlot.h"
 
 #include <Async/AsyncWork.h>
 #include <CoreMinimal.h>
+
 
 
 class USaveManager;

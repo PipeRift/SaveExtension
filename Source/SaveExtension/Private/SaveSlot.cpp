@@ -13,17 +13,18 @@
 
 USaveSlot::USaveSlot()
 {
-	Data = NewObject<USaveSlotData>(this, DataClass);
+	Data = NewObject<USaveSlotData>(this, DataClass, TEXT("SlotData"));
 }
 
-bool USaveSlot::OnSetId(int32 Id)
+bool USaveSlot::OnSetIndex(int32 Index)
 {
-	FileName = FName{FString::FromInt(SlotId)};
+	FileName = FName{FString::FromInt(Index)};
+	return true;
 }
 
-int32 USaveSlot::OnGetId() const
+int32 USaveSlot::OnGetIndex() const
 {
-	return FCString::Atoi(FileName.ToString());
+	return FCString::Atoi(*FileName.ToString());
 }
 
 UTexture2D* USaveSlot::GetThumbnail() const
@@ -73,7 +74,7 @@ bool USaveSlot::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height
 
 	if (auto* Viewport = GEngine->GameViewport->Viewport)
 	{
-		_SetThumbnailPath(FFileAdapter::GetThumbnailPath(FileName.ToString()));
+		_SetThumbnailPath(FSaveFileHelpers::GetThumbnailPath(FileName.ToString()));
 
 		// TODO: Removal of a thumbnail should be standarized in a function
 		IFileManager& FM = IFileManager::Get();
@@ -96,14 +97,14 @@ bool USaveSlot::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height
 }
 
 
-int32 USaveSlot::GetMaxIds() const
+int32 USaveSlot::GetMaxIndexes() const
 {
 	return MaxSlots <= 0 ? 16384 : MaxSlots;
 }
 
-bool USaveSlot::IsValidId(int32 CheckedId)
+bool USaveSlot::IsValidIndex(int32 Index) const
 {
-	return CheckedId >= 0 && CheckedId < GetMaxIds();
+	return Index >= 0 && Index < GetMaxIndexes();
 }
 
 void USaveSlot::_SetThumbnailPath(const FString& Path)
@@ -115,12 +116,72 @@ void USaveSlot::_SetThumbnailPath(const FString& Path)
 	}
 }
 
-bool USaveSlot::SetId_Implementation(int32 Id)
+bool USaveSlot::SetIndex_Implementation(int32 Index)
 {
-	return OnSetId(Id);
+	return OnSetIndex(Index);
 }
 
-int32 USaveSlot::GetId_Implementation() const
+int32 USaveSlot::GetIndex_Implementation() const
 {
-	return OnGetId();
+	return OnGetIndex();
+}
+
+
+const FSEActorClassFilter& USaveSlot::GetActorFilter(bool bIsLoading) const
+{
+	return (bIsLoading && bUseLoadActorFilter) ? LoadActorFilter : ActorFilter;
+}
+
+const FSEComponentClassFilter& USaveSlot::GetComponentFilter(bool bIsLoading) const
+{
+	return (bIsLoading && bUseLoadActorFilter) ? LoadComponentFilter : ComponentFilter;
+}
+
+bool USaveSlot::IsMTSerializationLoad() const
+{
+	return MultithreadedSerialization == ESaveASyncMode::LoadAsync ||
+		   MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
+}
+bool USaveSlot::IsMTSerializationSave() const
+{
+	return MultithreadedSerialization == ESaveASyncMode::SaveAsync ||
+		   MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
+}
+
+ESaveASyncMode USaveSlot::GetFrameSplitSerialization() const
+{
+	return FrameSplittedSerialization;
+}
+float USaveSlot::GetMaxFrameMs() const
+{
+	return MaxFrameMs;
+}
+
+bool USaveSlot::IsFrameSplitLoad() const
+{
+	return !IsMTSerializationLoad() && (FrameSplittedSerialization == ESaveASyncMode::LoadAsync ||
+										   FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
+}
+bool USaveSlot::IsFrameSplitSave() const
+{
+	return !IsMTSerializationSave() && (FrameSplittedSerialization == ESaveASyncMode::SaveAsync ||
+										   FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
+}
+
+bool USaveSlot::IsMTFilesLoad() const
+{
+	return MultithreadedFiles == ESaveASyncMode::LoadAsync ||
+		   MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
+}
+bool USaveSlot::IsMTFilesSave() const
+{
+	return MultithreadedFiles == ESaveASyncMode::SaveAsync ||
+		   MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
+}
+
+FSELevelFilter USaveSlot::ToFilter() const
+{
+	FSELevelFilter Filter{};
+	Filter.FromSlot(*this);
+	return Filter;
 }

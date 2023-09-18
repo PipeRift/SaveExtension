@@ -1,7 +1,8 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
+#include "GameInstanceSpec.h"
+
 #include "Automatron.h"
-#include "Helpers/TestGameInstance.h"
 #include "SaveManager.h"
 
 
@@ -11,7 +12,6 @@ class FSaveSpec_GameInstance : public Automatron::FTestSpec
 		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
 	USaveManager* SaveManager = nullptr;
-	USavePreset* TestPreset = nullptr;
 
 	// Helper for some test delegates
 	bool bFinishTick = false;
@@ -34,11 +34,7 @@ void FSaveSpec_GameInstance::Define()
 
 		SaveManager->bTickWithGameWorld = true;
 
-		TestPreset = SaveManager->SetActivePreset(USavePreset::StaticClass());
-		TestPreset->bStoreGameInstance = true;
-
-		TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
-		TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
+		SaveManager->AssureActiveSlot(UTestSaveSlot::StaticClass(), true);
 	});
 
 	It("GameInstance can be saved", [this]() {

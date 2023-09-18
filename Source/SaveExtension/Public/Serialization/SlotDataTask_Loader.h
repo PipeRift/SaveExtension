@@ -5,7 +5,6 @@
 #include "Delegates.h"
 #include "ISaveExtension.h"
 #include "Multithreading/LoadFileTask.h"
-#include "SavePreset.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
 #include "SlotDataTask.h"
@@ -39,10 +38,11 @@ class USaveSlotDataTask_Loader : public USaveSlotDataTask
 {
 	GENERATED_BODY()
 
+protected:
 	FName SlotName;
 
 	UPROPERTY()
-	USaveSlot* NewSlotInfo;
+	USaveSlot* Slot;
 
 	FOnGameLoaded Delegate;
 

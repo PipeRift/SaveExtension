@@ -1,7 +1,8 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
+#include "SavingSpec.h"
+
 #include "Automatron.h"
-#include "Helpers/TestActor.h"
 #include "SaveManager.h"
 
 
@@ -12,7 +13,6 @@ class FSaveSpec_Preset : public Automatron::FTestSpec
 
 	USaveManager* SaveManager = nullptr;
 	ATestActor* TestActor = nullptr;
-	USavePreset* TestPreset = nullptr;
 
 	// Helper for some test delegates
 	bool bFinishTick = false;
@@ -57,18 +57,12 @@ void FSaveSpec_Preset::Define()
 
 	Describe("Serialization", [this]() {
 		BeforeEach([this]() {
-			TestPreset = SaveManager->SetActivePreset(USavePreset::StaticClass());
-			TestPreset->ActorFilter.ClassFilter.AllowedClasses.Add(ATestActor::StaticClass());
-
-			// We don't need Async files are tested independently
-			TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
+			SaveManager->AssureActiveSlot(UTestSaveSlot_SyncSaving::StaticClass(), true);
 
 			TestActor = GetMainWorld()->SpawnActor<ATestActor>();
 		});
 
 		It("Can save an actor synchronously", [this]() {
-			TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
-
 			TestTrue("Saved", SaveManager->SaveSlot(0));
 			TestTrue("Loaded", SaveManager->LoadSlot(0));
 		});
@@ -78,10 +72,6 @@ void FSaveSpec_Preset::Define()
 		});
 
 		Describe("Properties", [this]() {
-			BeforeEach([this]() {
-				TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
-			});
-
 			It("bool", [this]() {
 				TestActor->bMyBool = true;
 				SaveManager->SaveSlot(0);

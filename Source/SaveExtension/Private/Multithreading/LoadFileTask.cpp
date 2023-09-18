@@ -2,8 +2,6 @@
 
 #include "Multithreading/LoadFileTask.h"
 
-#include "SavePreset.h"
-
 
 /////////////////////////////////////////////////////
 // FSaveFileTask

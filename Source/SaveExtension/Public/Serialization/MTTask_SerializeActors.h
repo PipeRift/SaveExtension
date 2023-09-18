@@ -4,7 +4,6 @@
 
 #include "MTTask.h"
 #include "MTTask_SerializeActors.h"
-#include "SavePreset.h"
 #include "Serialization/LevelRecords.h"
 #include "Serialization/Records.h"
 
@@ -16,8 +15,9 @@
 
 class USaveSlotData;
 
+
 /** Called when game has been saved
- * @param SlotInfo the saved slot. Null if save failed
+ * @param Slot the saved slot. Null if save failed
  */
 DECLARE_DELEGATE_OneParam(FOnGameSaved, USaveSlot*);
 

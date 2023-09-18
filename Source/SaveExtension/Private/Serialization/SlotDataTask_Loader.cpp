@@ -4,7 +4,6 @@
 
 #include "Misc/SlotHelpers.h"
 #include "SaveManager.h"
-#include "SavePreset.h"
 #include "Serialization/SEArchive.h"
 
 #include <Components/PrimitiveComponent.h>
@@ -48,12 +47,11 @@ void USaveSlotDataTask_Loader::OnStart()
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveSlotDataTask_Loader::OnStart);
 	USaveManager* Manager = GetManager();
 
-	SELog(Preset, "Loading from Slot " + SlotName.ToString());
-
-	NewSlotInfo = Manager->LoadInfo(SlotName);
-	if (!NewSlotInfo)
+	Slot = Manager->LoadInfo(SlotName);
+	SELog(Slot, "Loading from Slot " + SlotName.ToString());
+	if (!Slot)
 	{
-		SELog(Preset, "Slot Info not found! Can't load.", FColor::White, true, 1);
+		SELog(Slot, "Slot Info not found! Can't load.", FColor::White, true, 1);
 		Finish(false);
 		return;
 	}
@@ -66,23 +64,23 @@ void USaveSlotDataTask_Loader::OnStart()
 	// Cross-Level loading
 	// TODO: Handle empty Map as empty world
 	FName CurrentMapName{FSlotHelpers::GetWorldName(World)};
-	if (CurrentMapName != NewSlotInfo->Map)
+	if (CurrentMapName != Slot->Map)
 	{
 		LoadState = ELoadDataTaskState::LoadingMap;
-		FString MapToOpen = NewSlotInfo->Map.ToString();
+		FString MapToOpen = Slot->Map.ToString();
 		if (!GEngine->MakeSureMapNameIsValid(MapToOpen))
 		{
 			UE_LOG(LogSaveExtension, Warning,
 				TEXT("Slot '%s' was saved in map '%s' but it did not exist while loading. Corrupted save "
 					 "file?"),
-				*NewSlotInfo->FileName.ToString(), *MapToOpen);
+				*Slot->FileName.ToString(), *MapToOpen);
 			Finish(false);
 			return;
 		}
 
 		UGameplayStatics::OpenLevel(this, FName{MapToOpen});
 
-		SELog(Preset,
+		SELog(Slot,
 			"Slot '" + SlotName.ToString() + "' is recorded on another Map. Loading before charging slot.",
 			FColor::White, false, 1);
 		return;
@@ -122,13 +120,13 @@ void USaveSlotDataTask_Loader::OnFinish(bool bSuccess)
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveSlotDataTask_Loader::OnFinish);
 	if (bSuccess)
 	{
-		SELog(Preset, "Finished Loading", FColor::Green);
+		SELog(Slot, "Finished Loading", FColor::Green);
 	}
 
 	// Execute delegates
-	Delegate.ExecuteIfBound((bSuccess) ? NewSlotInfo : nullptr);
+	Delegate.ExecuteIfBound((bSuccess) ? Slot : nullptr);
 
-	GetManager()->OnLoadFinished(SlotData ? GetGeneralFilter() : FSELevelFilter{}, !bSuccess);
+	GetManager()->OnLoadFinished(SlotData ? GetGlobalFilter() : FSELevelFilter{}, !bSuccess);
 }
 
 void USaveSlotDataTask_Loader::BeginDestroy()
@@ -156,7 +154,7 @@ void USaveSlotDataTask_Loader::OnMapLoaded()
 		Finish(false);
 	}
 	const FName NewMapName{FSlotHelpers::GetWorldName(World)};
-	if (NewMapName == NewSlotInfo->Map)
+	if (NewMapName == Slot->Map)
 	{
 		if (IsDataLoaded())
 		{
@@ -172,7 +170,7 @@ void USaveSlotDataTask_Loader::OnMapLoaded()
 void USaveSlotDataTask_Loader::StartDeserialization()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveSlotDataTask_Loader::StartDeserialization);
-	check(NewSlotInfo);
+	check(Slot);
 
 	LoadState = ELoadDataTaskState::Deserializing;
 
@@ -184,17 +182,17 @@ void USaveSlotDataTask_Loader::StartDeserialization()
 		return;
 	}
 
-	NewSlotInfo->LoadDate = FDateTime::Now();
+	Slot->Stats.LoadDate = FDateTime::Now();
 
-	GetManager()->OnLoadBegan(GetGeneralFilter());
+	GetManager()->OnLoadBegan(GetGlobalFilter());
 	// Apply current Info if succeeded
-	GetManager()->__SetCurrentInfo(NewSlotInfo);
+	GetManager()->AssignActiveSlot(Slot);
 
 	BakeAllFilters();
 
 	BeforeDeserialize();
 
-	if (Preset->IsFrameSplitLoad())
+	if (Slot->IsFrameSplitLoad())
 		DeserializeASync();
 	else
 		DeserializeSync();
@@ -204,7 +202,7 @@ void USaveSlotDataTask_Loader::StartLoadingData()
 {
 	LoadDataTask = new FAsyncTask<FLoadFileTask>(GetManager(), SlotName.ToString());
 
-	if (Preset->IsMTFilesLoad())
+	if (Slot->IsMTFilesLoad())
 		LoadDataTask->StartBackgroundTask();
 	else
 		LoadDataTask->StartSynchronousTask();
@@ -240,7 +238,7 @@ void USaveSlotDataTask_Loader::DeserializeSync()
 	const UWorld* World = GetWorld();
 	check(World);
 
-	SELog(Preset, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+	SELog(Slot, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	PrepareAllLevels();
 
@@ -271,7 +269,7 @@ void USaveSlotDataTask_Loader::DeserializeLevelSync(
 
 	const FName LevelName =
 		StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	if (FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel))
 	{
@@ -292,7 +290,7 @@ void USaveSlotDataTask_Loader::DeserializeASync()
 {
 	// Deserialize world
 	{
-		SELog(Preset, "World '" + GetWorld()->GetName() + "'", FColor::Green, false, 1);
+		SELog(Slot, "World '" + GetWorld()->GetName() + "'", FColor::Green, false, 1);
 
 		PrepareAllLevels();
 		DeserializeLevelASync(GetWorld()->GetCurrentLevel());
@@ -305,7 +303,7 @@ void USaveSlotDataTask_Loader::DeserializeLevelASync(ULevel* Level, ULevelStream
 
 	const FName LevelName =
 		StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SELog(Preset, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
 	if (!LevelRecord)
@@ -428,8 +426,7 @@ void USaveSlotDataTask_Loader::FinishedDeserializing()
 {
 	// Clean serialization data
 	SlotData->CleanRecords(true);
-	GetManager()->__SetCurrentData(SlotData);
-
+	Slot->AssignData(SlotData);
 	Finish(true);
 }
 
@@ -509,7 +506,7 @@ void USaveSlotDataTask_Loader::DeserializeGameInstance()
 		GameInstance->Serialize(Archive);
 	}
 
-	SELog(Preset, "Game Instance '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
+	SELog(Slot, "Game Instance '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 bool USaveSlotDataTask_Loader::DeserializeActor(
@@ -573,7 +570,7 @@ void USaveSlotDataTask_Loader::DeserializeActorComponents(
 			const FComponentRecord* Record = ActorRecord.ComponentRecords.FindByKey(Component);
 			if (!Record)
 			{
-				SELog(Preset, "Component '" + Component->GetFName().ToString() + "' - Record not found",
+				SELog(Slot, "Component '" + Component->GetFName().ToString() + "' - Record not found",
 					FColor::Red, false, Indent + 1);
 				continue;
 			}

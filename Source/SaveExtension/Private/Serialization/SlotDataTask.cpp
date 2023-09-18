@@ -3,7 +3,6 @@
 #include "Serialization/SlotDataTask.h"
 
 #include "SaveManager.h"
-#include "SavePreset.h"
 
 
 /////////////////////////////////////////////////////
@@ -47,35 +46,35 @@ USaveManager* USaveSlotDataTask::GetManager() const
 void USaveSlotDataTask::BakeAllFilters()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveSlotDataTask::BakeAllFilters);
-	SlotData->GeneralLevelFilter.BakeAllowedClasses();
+	SlotData->GlobalLevelFilter.BakeAllowedClasses();
 
-	if (SlotData->MainLevel.bOverrideGeneralFilter)
+	if (SlotData->MainLevel.bOverrideGlobalFilter)
 	{
 		SlotData->MainLevel.Filter.BakeAllowedClasses();
 	}
 
 	for (const auto& Level : SlotData->SubLevels)
 	{
-		if (Level.bOverrideGeneralFilter)
+		if (Level.bOverrideGlobalFilter)
 		{
 			Level.Filter.BakeAllowedClasses();
 		}
 	}
 }
 
-const FSELevelFilter& USaveSlotDataTask::GetGeneralFilter() const
+const FSELevelFilter& USaveSlotDataTask::GetGlobalFilter() const
 {
 	check(SlotData);
-	return SlotData->GeneralLevelFilter;
+	return SlotData->GlobalLevelFilter;
 }
 
 const FSELevelFilter& USaveSlotDataTask::GetLevelFilter(const FLevelRecord& Level) const
 {
-	if (Level.bOverrideGeneralFilter)
+	if (Level.bOverrideGlobalFilter)
 	{
 		return Level.Filter;
 	}
-	return GetGeneralFilter();
+	return GetGlobalFilter();
 }
 
 FLevelRecord* USaveSlotDataTask::FindLevelRecord(const ULevelStreaming* Level) const

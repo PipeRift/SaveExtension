@@ -1,9 +1,8 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "FileAdapter.h"
+#include "SaveFileHelpers.h"
 
 #include "Multithreading/SaveFileTask.h"
-#include "SavePreset.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
 
@@ -187,16 +186,16 @@ void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 	Ar.Close();
 }
 
-void FSaveFile::SerializeInfo(USaveSlot* SlotInfo)
+void FSaveFile::SerializeInfo(USaveSlot* Slot)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::SerializeInfo);
-	check(SlotInfo);
+	check(Slot);
 	InfoBytes.Reset();
-	InfoClassName = SlotInfo->GetClass()->GetPathName();
+	InfoClassName = Slot->GetClass()->GetPathName();
 
 	FMemoryWriter BytesWriter(InfoBytes);
 	FObjectAndNameAsStringProxyArchive Ar(BytesWriter, false);
-	SlotInfo->Serialize(Ar);
+	Slot->Serialize(Ar);
 }
 void FSaveFile::SerializeData(USaveSlotData* SlotData)
 {
@@ -210,25 +209,25 @@ void FSaveFile::SerializeData(USaveSlotData* SlotData)
 	SlotData->Serialize(Ar);
 }
 
-USaveSlot* FSaveFile::CreateAndDeserializeInfo(const UObject* Outer) const
+void FSaveFile::CreateAndDeserializeSlot(USaveSlot*& Slot, const UObject* Outer) const
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeInfo);
-	UObject* Slot = nullptr;
-	FFileAdapter::DeserializeObject(Slot, InfoClassName, Outer, InfoBytes);
-	return Cast<USaveSlot>(Slot);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeSlot);
+	UObject* Object = nullptr;
+	FSaveFileHelpers::DeserializeObject(Object, InfoClassName, Outer, InfoBytes);
+	Slot = Cast<USaveSlot>(Object);
 }
 
 void FSaveFile::CreateAndDeserializeData(USaveSlot* Slot) const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeData);
-	UObject* Data = nullptr;
-	FFileAdapter::DeserializeObject(Data, DataClassName, Slot, DataBytes);
-	Slot->AssignData(Cast<USaveSlotData>(Data));
+	UObject* Object = nullptr;
+	FSaveFileHelpers::DeserializeObject(Object, DataClassName, Slot, DataBytes);
+	Slot->AssignData(Cast<USaveSlotData>(Object));
 }
 
-bool FFileAdapter::SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bUseCompression)
+bool FSaveFileHelpers::SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bUseCompression)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FFileAdapter::SaveFile);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFileHelpers::SaveFile);
 
 	if (SlotName.IsEmpty())
 	{
@@ -253,52 +252,52 @@ bool FFileAdapter::SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bU
 	return false;
 }
 
-USaveSlot* FFileAdapter::LoadFile(FStringView SlotName, bool bLoadData, const UObject* Outer)
+bool FSaveFileHelpers::LoadFile(FStringView SlotName, USaveSlot*& Slot, bool bLoadData, const UObject* Outer)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FFileAdapter::LoadFile);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFileHelpers::LoadFile);
 
 	FScopedFileReader Reader(GetSlotPath(SlotName));
 	if (Reader.IsValid())
 	{
 		FSaveFile File{};
 		File.Read(Reader, !bLoadData);
-		USaveSlot* Slot = File.CreateAndDeserializeInfo(Outer);
+		File.CreateAndDeserializeSlot(Slot, Outer);
 		if (bLoadData)
 		{
 			File.CreateAndDeserializeData(Slot);
 		}
-		return Slot;
+		return true;
 	}
-	return nullptr;
+	return false;
 }
 
-bool FFileAdapter::DeleteFile(FStringView SlotName)
+bool FSaveFileHelpers::DeleteFile(FStringView SlotName)
 {
 	return IFileManager::Get().Delete(*GetSlotPath(SlotName), true, false, true);
 }
 
-bool FFileAdapter::FileExists(FStringView SlotName)
+bool FSaveFileHelpers::FileExists(FStringView SlotName)
 {
 	return IFileManager::Get().FileSize(*GetSlotPath(SlotName)) >= 0;
 }
 
-const FString& FFileAdapter::GetSaveFolder()
+const FString& FSaveFileHelpers::GetSaveFolder()
 {
 	static const FString Folder = FString::Printf(TEXT("%sSaveGames/"), *FPaths::ProjectSavedDir());
 	return Folder;
 }
 
-FString FFileAdapter::GetSlotPath(FStringView SlotName)
+FString FSaveFileHelpers::GetSlotPath(FStringView SlotName)
 {
 	return GetSaveFolder() / FString::Printf(TEXT("%s.sav"), SlotName.GetData());
 }
 
-FString FFileAdapter::GetThumbnailPath(FStringView SlotName)
+FString FSaveFileHelpers::GetThumbnailPath(FStringView SlotName)
 {
 	return GetSaveFolder() / FString::Printf(TEXT("%s.png"), SlotName.GetData());
 }
 
-void FFileAdapter::DeserializeObject(
+void FSaveFileHelpers::DeserializeObject(
 	UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
 {
 	if (ClassName.IsEmpty() || Bytes.Num() <= 0)
@@ -306,7 +305,7 @@ void FFileAdapter::DeserializeObject(
 		return;
 	}
 
-	UClass* ObjectClass = FindObject<UClass>(ANY_PACKAGE, ClassName.GetData());
+	UClass* ObjectClass = FindObject<UClass>(nullptr, ClassName.GetData());
 	if (!ObjectClass)
 	{
 		ObjectClass = LoadObject<UClass>(nullptr, ClassName.GetData());

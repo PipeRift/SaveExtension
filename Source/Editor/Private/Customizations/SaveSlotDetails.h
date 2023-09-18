@@ -14,10 +14,10 @@
 
 class IDetailsView;
 class IDetailLayoutBuilder;
-class USavePreset;
+class USaveSlot;
 
 
-class FSavePresetDetails : public IDetailCustomization
+class FSaveSlotDetails : public IDetailCustomization
 {
 public:
 	/** Makes a new instance of this detail layout class for a specific detail view requesting it */
@@ -32,5 +32,5 @@ private:
 	bool CanEditAsynchronous() const;
 
 
-	TWeakObjectPtr<USavePreset> Settings;
+	TWeakObjectPtr<USaveSlot> Slot;
 };

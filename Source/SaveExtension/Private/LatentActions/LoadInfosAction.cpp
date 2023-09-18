@@ -7,17 +7,17 @@
 
 
 FLoadInfosAction::FLoadInfosAction(USaveManager* Manager, const bool bSortByRecent,
-	TArray<USaveSlot*>& InSlotInfos, ELoadInfoResult& OutResult, const FLatentActionInfo& LatentInfo)
+	TArray<USaveSlot*>& InSlots, ELoadInfoResult& OutResult, const FLatentActionInfo& LatentInfo)
 	: Result(OutResult)
-	, SlotInfos(InSlotInfos)
+	, Slots(InSlots)
 	, bFinished(false)
 	, ExecutionFunction(LatentInfo.ExecutionFunction)
 	, OutputLink(LatentInfo.Linkage)
 	, CallbackTarget(LatentInfo.CallbackTarget)
 {
-	Manager->LoadAllSlotInfos(
-		bSortByRecent, FOnSlotInfosLoaded::CreateLambda([this](const TArray<USaveSlot*>& Results) {
-			SlotInfos = Results;
+	Manager->FindAllSlots(
+		bSortByRecent, FOnSlotsLoaded::CreateLambda([this](const TArray<USaveSlot*>& Results) {
+			Slots = Results;
 			bFinished = true;
 		}));
 }

@@ -34,19 +34,15 @@ protected:
 	USaveSlotData* SlotData;
 
 	UPROPERTY()
-	const USavePreset* Preset;
-
-	UPROPERTY()
 	float MaxFrameMs = 0.f;
 
 public:
 	USaveSlotDataTask() : Super(), bRunning(false), bFinished(false) {}
 
-	void Prepare(USaveSlotData* InSaveData, const USavePreset& InPreset)
+	void Prepare(USaveSlot* Slot)
 	{
-		SlotData = InSaveData;
-		Preset = &InPreset;
-		MaxFrameMs = Preset->GetMaxFrameMs();
+		SlotData = Slot->GetData();
+		MaxFrameMs = Slot->GetMaxFrameMs();
 	}
 
 	USaveSlotDataTask* Start();
@@ -84,7 +80,7 @@ protected:
 
 	void BakeAllFilters();
 
-	const FSELevelFilter& GetGeneralFilter() const;
+	const FSELevelFilter& GetGlobalFilter() const;
 	const FSELevelFilter& GetLevelFilter(const FLevelRecord& Level) const;
 
 	FLevelRecord* FindLevelRecord(const ULevelStreaming* Level) const;
