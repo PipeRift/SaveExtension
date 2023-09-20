@@ -2,7 +2,6 @@
 
 #include "SaveManager.h"
 
-#include "LatentActions/LoadInfosAction.h"
 #include "Multithreading/DeleteSlotsTask.h"
 #include "Multithreading/LoadSlotsTask.h"
 #include "SaveFileHelpers.h"
@@ -13,14 +12,168 @@
 #include "Serialization/SlotDataTask_Saver.h"
 
 #include <Engine/GameViewportClient.h>
+#include <Engine/LatentActionManager.h>
 #include <Engine/LevelStreaming.h>
 #include <EngineUtils.h>
 #include <GameDelegates.h>
 #include <GameFramework/GameModeBase.h>
 #include <HighResScreenshot.h>
 #include <Kismet/GameplayStatics.h>
+#include <LatentActions.h>
 #include <Misc/CoreDelegates.h>
 #include <Misc/Paths.h>
+
+
+// BEGIN Async Actions
+
+class FSELoadSlotDataAction : public FPendingLatentAction
+{
+public:
+	ESEContinueOrFail& Result;
+	FName ExecutionFunction;
+	int32 OutputLink;
+	FWeakObjectPtr CallbackTarget;
+
+	FSELoadSlotDataAction(USaveManager* Manager, FName SlotName, ESEContinueOrFail& OutResult,
+		const FLatentActionInfo& LatentInfo)
+		: Result(OutResult)
+		, ExecutionFunction(LatentInfo.ExecutionFunction)
+		, OutputLink(LatentInfo.Linkage)
+		, CallbackTarget(LatentInfo.CallbackTarget)
+	{
+		const bool bStarted = Manager->LoadSlot(
+			SlotName, FOnGameLoaded::CreateRaw(this, &FSELoadSlotDataAction::OnLoadFinished));
+		Result = bStarted ? ESEContinueOrFail::InProgress : ESEContinueOrFail::Failed;
+	}
+	void UpdateOperation(FLatentResponse& Response) override
+	{
+		Response.FinishAndTriggerIf(
+			Result != ESEContinueOrFail::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
+	}
+	void OnLoadFinished(USaveSlot* SavedSlot)
+	{
+		Result = SavedSlot ? ESEContinueOrFail::Continue : ESEContinueOrFail::Failed;
+	}
+#if WITH_EDITOR
+	// Returns a human readable description of the latent operation's current state
+	FString GetDescription() const override
+	{
+		return TEXT("Loading Game...");
+	}
+#endif
+};
+
+
+class FDeleteSlotsAction : public FPendingLatentAction
+{
+public:
+	ESEContinue& Result;
+	FName ExecutionFunction;
+	int32 OutputLink;
+	FWeakObjectPtr CallbackTarget;
+
+	FDeleteSlotsAction(USaveManager* Manager, ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
+		: Result(OutResult)
+		, ExecutionFunction(LatentInfo.ExecutionFunction)
+		, OutputLink(LatentInfo.Linkage)
+		, CallbackTarget(LatentInfo.CallbackTarget)
+	{
+		Result = ESEContinue::InProgress;
+		Manager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
+			Result = ESEContinue::Continue;
+		}));
+	}
+	void UpdateOperation(FLatentResponse& Response) override
+	{
+		Response.FinishAndTriggerIf(
+			Result != ESEContinue::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
+	}
+#if WITH_EDITOR
+	FString GetDescription() const override
+	{
+		return TEXT("Deleting all slots...");
+	}
+#endif
+};
+
+
+class FSELoadInfosAction : public FPendingLatentAction
+{
+public:
+	TArray<USaveSlot*>& Slots;
+	ESEContinue& Result;
+	FName ExecutionFunction;
+	int32 OutputLink;
+	FWeakObjectPtr CallbackTarget;
+
+	FSELoadInfosAction(USaveManager* Manager, const bool bSortByRecent, TArray<USaveSlot*>& OutSlots,
+		ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
+		: Slots(OutSlots)
+		, Result(OutResult)
+		, ExecutionFunction(LatentInfo.ExecutionFunction)
+		, OutputLink(LatentInfo.Linkage)
+		, CallbackTarget(LatentInfo.CallbackTarget)
+	{
+		Result = ESEContinue::InProgress;
+		Manager->FindAllSlots(
+			bSortByRecent, FOnSlotsLoaded::CreateLambda([this](const TArray<USaveSlot*>& Results) {
+				Slots = Results;
+				Result = ESEContinue::Continue;
+			}));
+	}
+	virtual void UpdateOperation(FLatentResponse& Response) override
+	{
+		Response.FinishAndTriggerIf(
+			Result != ESEContinue::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
+	}
+#if WITH_EDITOR
+	virtual FString GetDescription() const override
+	{
+		return TEXT("Loading all slots...");
+	}
+#endif
+};
+
+
+class FSaveGameAction : public FPendingLatentAction
+{
+public:
+	ESEContinueOrFail& Result;
+	FName ExecutionFunction;
+	int32 OutputLink;
+	FWeakObjectPtr CallbackTarget;
+
+	FSaveGameAction(USaveManager* Manager, FName SlotName, bool bOverrideIfNeeded, bool bScreenshot,
+		const FScreenshotSize Size, ESEContinueOrFail& OutResult, const FLatentActionInfo& LatentInfo)
+		: Result(OutResult)
+		, ExecutionFunction(LatentInfo.ExecutionFunction)
+		, OutputLink(LatentInfo.Linkage)
+		, CallbackTarget(LatentInfo.CallbackTarget)
+	{
+		const bool bStarted = Manager->SaveSlot(SlotName, bOverrideIfNeeded, bScreenshot, Size,
+			FOnGameSaved::CreateRaw(this, &FSaveGameAction::OnSaveFinished));
+		Result = bStarted ? ESEContinueOrFail::InProgress : ESEContinueOrFail::Failed;
+	}
+
+	virtual void UpdateOperation(FLatentResponse& Response) override
+	{
+		Response.FinishAndTriggerIf(
+			Result != ESEContinueOrFail::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
+	}
+	void OnSaveFinished(USaveSlot* SavedSlot)
+	{
+		Result = SavedSlot ? ESEContinueOrFail::Continue : ESEContinueOrFail::Failed;
+	}
+#if WITH_EDITOR
+	// Returns a human readable description of the latent operation's current state
+	virtual FString GetDescription() const override
+	{
+		return TEXT("Saving Game...");
+	}
+#endif
+};
+
+// END Async Actions
 
 
 USaveManager::USaveManager() : Super(), MTTasks{} {}
@@ -147,12 +300,10 @@ void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 }
 
 void USaveManager::BPSaveSlot(FName SlotName, bool bScreenshot, const FScreenshotSize Size,
-	ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
+	ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
 {
 	if (UWorld* World = GetWorld())
 	{
-		Result = ESaveGameResult::Saving;
-
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
 		if (LatentActionManager.FindExistingAction<FSaveGameAction>(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
@@ -163,43 +314,41 @@ void USaveManager::BPSaveSlot(FName SlotName, bool bScreenshot, const FScreensho
 		}
 		return;
 	}
-	Result = ESaveGameResult::Failed;
+	Result = ESEContinueOrFail::Failed;
 }
 
-void USaveManager::BPLoadSlot(FName SlotName, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadSlot(FName SlotName, ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
-		Result = ELoadGameResult::Loading;
-
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadGameAction>(
+		if (LatentActionManager.FindExistingAction<FSELoadSlotDataAction>(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FLoadGameAction(this, SlotName, Result, LatentInfo));
+				new FSELoadSlotDataAction(this, SlotName, Result, LatentInfo));
 		}
 		return;
 	}
-	Result = ELoadGameResult::Failed;
+	Result = ESEContinueOrFail::Failed;
 }
 
 void USaveManager::BPFindAllSlots(const bool bSortByRecent, TArray<USaveSlot*>& SaveInfos,
-	ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
+	ESEContinue& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(
+		if (LatentActionManager.FindExistingAction<FSELoadInfosAction>(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FLoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
+				new FSELoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
 		}
 	}
 }
 
-void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPDeleteAllSlots(ESEContinue& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
