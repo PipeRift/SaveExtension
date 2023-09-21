@@ -10,7 +10,7 @@
 
 FText FAssetTypeAction_SaveSlotData::GetName() const
 {
-	return LOCTEXT("FAssetTypeAction_SaveSlotDataName", "Save Data");
+	return LOCTEXT("FAssetTypeAction_SaveSlotDataName", "Save Slot Data");
 }
 
 FColor FAssetTypeAction_SaveSlotData::GetTypeColor() const

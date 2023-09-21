@@ -72,7 +72,7 @@ public:
 
 	/** If checked, will attempt to Save Game to first Slot found, timed event. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings")
-	bool bPeriodicSave = true;
+	bool bPeriodicSave = false;
 
 	/** Interval in seconds for auto saving */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings",
@@ -85,7 +85,7 @@ public:
 
 	/** If checked, will attempt to Load Game from last Slot found, when game starts */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings")
-	bool bLoadOnStart = true;
+	bool bLoadOnStart = false;
 
 	/** If true save files will be compressed
 	 * Performance: Can add from 10ms to 20ms to loading and saving (estimate) but reduce file sizes making
