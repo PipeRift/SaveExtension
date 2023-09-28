@@ -6,10 +6,10 @@
 #include "Multithreading/LoadSlotsTask.h"
 #include "SaveFileHelpers.h"
 #include "SaveSettings.h"
-#include "Serialization/SlotDataTask_LevelLoader.h"
-#include "Serialization/SlotDataTask_LevelSaver.h"
-#include "Serialization/SlotDataTask_Loader.h"
-#include "Serialization/SlotDataTask_Saver.h"
+#include "Serialization/SEDataTask_LoadLevel.h"
+#include "Serialization/SEDataTask_SaveLevel.h"
+#include "Serialization/SEDataTask_Load.h"
+#include "Serialization/SEDataTask_Save.h"
 
 #include <Engine/GameViewportClient.h>
 #include <Engine/LatentActionManager.h>
@@ -229,12 +229,12 @@ bool USaveManager::SaveSlot(FName SlotName, bool bOverrideIfNeeded, bool bScreen
 	check(World);
 
 	// Launch task, always fail if it didn't finish or wasn't scheduled
-	auto* Task = CreateTask<USaveSlotDataTask_Saver>()
-					 ->Setup(SlotName, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
-					 ->Bind(OnSaved)
-					 ->Start();
+	auto& Task = CreateTask<FSEDataTask_Save>()
+		.Setup(SlotName, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+		.Bind(OnSaved)
+		.Start();
 
-	return Task->IsSucceeded() || Task->IsScheduled();
+	return Task.IsSucceeded() || Task.IsScheduled();
 }
 
 bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
@@ -246,9 +246,8 @@ bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
 
 	AssureActiveSlot();
 
-	auto* Task = CreateTask<USaveSlotDataTask_Loader>()->Setup(SlotName)->Bind(OnLoaded)->Start();
-
-	return Task->IsSucceeded() || Task->IsScheduled();
+	auto& Task = CreateTask<FSEDataTask_Load>().Setup(SlotName).Bind(OnLoaded).Start();
+	return Task.IsSucceeded() || Task.IsScheduled();
 }
 
 bool USaveManager::DeleteSlot(FName SlotName)
@@ -422,13 +421,13 @@ void USaveManager::SerializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
 	if (!LevelStreaming->GetLoadedLevel()->bIsBeingRemoved)
 	{
-		CreateTask<USaveSlotDataTask_LevelSaver>()->Setup(LevelStreaming)->Start();
+		CreateTask<FSEDataTask_SaveLevel>().Setup(LevelStreaming).Start();
 	}
 }
 
 void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
-	CreateTask<USaveSlotDataTask_LevelLoader>()->Setup(LevelStreaming)->Start();
+	CreateTask<FSEDataTask_LoadLevel>().Setup(LevelStreaming).Start();
 }
 
 USaveSlot* USaveManager::LoadInfo(FName SlotName)
@@ -450,17 +449,9 @@ USaveSlot* USaveManager::LoadInfo(FName SlotName)
 	return Infos.Num() > 0 ? Infos[0] : nullptr;
 }
 
-USaveSlotDataTask* USaveManager::CreateTask(TSubclassOf<USaveSlotDataTask> TaskType)
+void USaveManager::FinishTask(FSEDataTask* Task)
 {
-	USaveSlotDataTask* Task = NewObject<USaveSlotDataTask>(this, TaskType.Get());
-	Task->Prepare(ActiveSlot);
-	Tasks.Add(Task);
-	return Task;
-}
-
-void USaveManager::FinishTask(USaveSlotDataTask* Task)
-{
-	Tasks.Remove(Task);
+	Tasks.RemoveAll([Task](auto& TaskPtr) { return TaskPtr.Get() == Task; });
 
 	// Start next task
 	if (Tasks.Num() > 0)
@@ -483,15 +474,14 @@ FName USaveManager::GetFileNameFromId(const int32 SlotId) const
 
 bool USaveManager::IsLoading() const
 {
-	return HasTasks() &&
-		   (Tasks[0]->IsA<USaveSlotDataTask_Loader>() || Tasks[0]->IsA<USaveSlotDataTask_LevelLoader>());
+	return HasTasks() && Tasks[0]->Type == ESETaskType::Load;
 }
 
 void USaveManager::Tick(float DeltaTime)
 {
 	if (Tasks.Num())
 	{
-		USaveSlotDataTask* Task = Tasks[0];
+		FSEDataTask* Task = Tasks[0].Get();
 		check(Task);
 		if (Task->IsRunning())
 		{
@@ -512,11 +502,12 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 	SubscribedInterfaces.Remove(Interface);
 }
 
-void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
+void USaveManager::OnSaveBegan()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveBegan);
 
-	IterateSubscribedInterfaces([&Filter](auto* Object) {
+	// TODO: Needs reworking
+	/*IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -525,14 +516,15 @@ void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 			Interface->OnSaveBegan(Filter);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object, Filter);
-	});
+	});*/
 }
 
-void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bError)
+void USaveManager::OnSaveFinished(const bool bError)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveFinished);
 
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
+	// TODO: Needs reworking
+	/*IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -541,7 +533,7 @@ void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bErro
 			Interface->OnSaveFinished(Filter, bError);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnSaveFinished(Object, Filter, bError);
-	});
+	});*/
 
 	if (!bError)
 	{
@@ -549,11 +541,11 @@ void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bErro
 	}
 }
 
-void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
+void USaveManager::OnLoadBegan()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadBegan);
 
-	IterateSubscribedInterfaces([&Filter](auto* Object) {
+	/*IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -562,14 +554,14 @@ void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 			Interface->OnLoadBegan(Filter);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object, Filter);
-	});
+	});*/
 }
 
-void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bError)
+void USaveManager::OnLoadFinished(const bool bError)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadFinished);
 
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
+	/*IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -578,7 +570,7 @@ void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bErro
 			Interface->OnLoadFinished(Filter, bError);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnLoadFinished(Object, Filter, bError);
-	});
+	});*/
 
 	if (!bError)
 	{
@@ -593,9 +585,9 @@ void USaveManager::OnMapLoadStarted(const FString& MapName)
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)
 {
-	if (auto* ActiveLoader = Cast<USaveSlotDataTask_Loader>(Tasks.Num() ? Tasks[0] : nullptr))
+	if (IsLoading())
 	{
-		ActiveLoader->OnMapLoaded();
+		static_cast<FSEDataTask_Load*>(Tasks[0].Get())->OnMapLoaded();
 	}
 
 	UpdateLevelStreamings();

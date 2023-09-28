@@ -25,7 +25,6 @@ void FSEClassFilterCustomization::CustomizeHeader(TSharedRef<class IPropertyHand
 	FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {
 	StructHandle = StructPropertyHandle;
-	FilterHandle = GetFilterHandle(StructPropertyHandle);
 
 	BuildEditableFilterList();
 
@@ -79,13 +78,13 @@ void FSEClassFilterCustomization::CustomizeChildren(TSharedRef<class IPropertyHa
 void FSEClassFilterCustomization::BuildEditableFilterList()
 {
 	EditableFilters.Empty();
-	if (FilterHandle.IsValid())
+	if (StructHandle.IsValid())
 	{
 		TArray<void*> RawStructData;
-		FilterHandle->AccessRawData(RawStructData);
+		StructHandle->AccessRawData(RawStructData);
 
 		TArray<UObject*> Outers;
-		FilterHandle->GetOuterObjects(Outers);
+		StructHandle->GetOuterObjects(Outers);
 		UObject* FirstOuter = Outers.Num() ? Outers[0] : nullptr;
 
 		for (int32 ContainerIdx = 0; ContainerIdx < RawStructData.Num(); ++ContainerIdx)
@@ -98,19 +97,19 @@ void FSEClassFilterCustomization::BuildEditableFilterList()
 
 TSharedRef<SWidget> FSEClassFilterCustomization::GetListContent()
 {
-	if (!FilterHandle.IsValid() || FilterHandle->GetProperty() == nullptr)
+	if (!StructHandle.IsValid() || StructHandle->GetProperty() == nullptr)
 	{
 		return SNullWidget::NullWidget;
 	}
 
-	bool bReadOnly = FilterHandle->IsEditConst();
+	bool bReadOnly = StructHandle->IsEditConst();
 
 	// clang-format off
 	TSharedRef<SClassFilter> EditPopup =
 		SNew(SClassFilter, EditableFilters)
 		.ReadOnly(bReadOnly)
 		.OnFilterChanged(this, &FSEClassFilterCustomization::RefreshClassList)
-		.PropertyHandle(FilterHandle);
+		.PropertyHandle(StructHandle);
 	LastFilterPopup = EditPopup;
 	return SNew(SVerticalBox)
 	+ SVerticalBox::Slot()
@@ -137,12 +136,12 @@ void FSEClassFilterCustomization::OnPopupStateChanged(bool bIsOpened)
 void FSEClassFilterCustomization::OnClearClicked()
 {
 	FScopedTransaction Transaction(LOCTEXT("ClassFilter_Filter", "Clear Filter"));
-	FilterHandle->NotifyPreChange();
+	StructHandle->NotifyPreChange();
 	for (auto& Filter : EditableFilters)
 	{
 		*Filter.Filter = {};
 	}
-	FilterHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
+	StructHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
 	RefreshClassList();
 }
 

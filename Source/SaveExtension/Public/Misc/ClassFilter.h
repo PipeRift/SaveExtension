@@ -45,13 +45,18 @@ public:
 	/** Bakes a set of allowed classes based on the current settings */
 	void BakeAllowedClasses() const;
 
-	FORCEINLINE bool IsClassAllowed(UClass* const Class) const
+	bool IsAllowed(UClass* Class) const
 	{
 		// Check is a single O(1) pointer hash comparison
 		return BakedAllowedClasses.Contains(Class);
 	}
 
-	FORCEINLINE UClass* GetBaseClass() const
+	bool IsAnyAllowed() const
+	{
+		return BakedAllowedClasses.Num() > 0;
+	}
+
+	UClass* GetBaseClass() const
 	{
 		return BaseClass;
 	}
@@ -64,50 +69,20 @@ public:
 
 
 USTRUCT(BlueprintType)
-struct FSEActorClassFilter
+struct FSEActorClassFilter : public FSEClassFilter
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
-	FSEClassFilter ClassFilter;
-
-
-	FSEActorClassFilter() : ClassFilter(AActor::StaticClass()) {}
-	FSEActorClassFilter(TSubclassOf<AActor> actorClass) : ClassFilter(actorClass) {}
-
-	/** Bakes a set of allowed classes based on the current settings */
-	void BakeAllowedClasses() const
-	{
-		ClassFilter.BakeAllowedClasses();
-	}
-
-	FORCEINLINE bool IsClassAllowed(UClass* const Class) const
-	{
-		return ClassFilter.IsClassAllowed(Class);
-	}
+	FSEActorClassFilter() : Super(AActor::StaticClass()) {}
+	FSEActorClassFilter(TSubclassOf<AActor> ActorClass) : Super(ActorClass) {}
 };
 
 
 USTRUCT(BlueprintType)
-struct FSEComponentClassFilter
+struct FSEComponentClassFilter : public FSEClassFilter
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Filter)
-	FSEClassFilter ClassFilter;
-
-
-	FSEComponentClassFilter() : ClassFilter(UActorComponent::StaticClass()) {}
-	FSEComponentClassFilter(TSubclassOf<UActorComponent> compClass) : ClassFilter(compClass) {}
-
-	/** Bakes a set of allowed classes based on the current settings */
-	void BakeAllowedClasses() const
-	{
-		ClassFilter.BakeAllowedClasses();
-	}
-
-	FORCEINLINE bool IsClassAllowed(UClass* const Class) const
-	{
-		return ClassFilter.IsClassAllowed(Class);
-	}
+	FSEComponentClassFilter() : Super(UActorComponent::StaticClass()) {}
+	FSEComponentClassFilter(TSubclassOf<UActorComponent> CompClass) : Super(CompClass) {}
 };

@@ -15,13 +15,6 @@ bool FLevelRecord::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);
 
-	Ar << bOverrideGlobalFilter;
-	if (bOverrideGlobalFilter)
-	{
-		static UScriptStruct* const LevelFilterType{FSELevelFilter::StaticStruct()};
-		LevelFilterType->SerializeItem(Ar, &Filter, nullptr);
-	}
-
 	Ar << LevelScript;
 	Ar << Actors;
 

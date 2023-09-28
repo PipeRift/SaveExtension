@@ -30,28 +30,16 @@ public:
 	FSEActorClassFilter ActorFilter;
 
 	UPROPERTY(SaveGame)
-	FSEActorClassFilter LoadActorFilter;
-
-	UPROPERTY(SaveGame)
-	bool bStoreComponents = false;
-
-	UPROPERTY(SaveGame)
 	FSEComponentClassFilter ComponentFilter;
-
-	UPROPERTY(SaveGame)
-	FSEComponentClassFilter LoadComponentFilter;
 
 
 	FSELevelFilter() = default;
 
-	void FromSlot(const USaveSlot& Slot);
-
 	void BakeAllowedClasses() const;
 
-	bool ShouldSave(const AActor* Actor) const;
-	bool ShouldSave(const UActorComponent* Component) const;
-	bool ShouldLoad(const AActor* Actor) const;
-	bool ShouldLoad(const UActorComponent* Component) const;
+	bool Stores(const AActor* Actor) const;
+	bool StoresAnyComponents() const;
+	bool Stores(const UActorComponent* Component) const;
 
 	static bool StoresTransform(const UActorComponent* Component);
 	static bool StoresTags(const UActorComponent* Component);

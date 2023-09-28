@@ -3,6 +3,7 @@
 #pragma once
 
 #include "SaveFileHelpers.h"
+#include "SaveManager.h"
 
 #include <Async/AsyncWork.h>
 
@@ -17,7 +18,6 @@ protected:
 	const FString SlotName;
 
 	TWeakObjectPtr<USaveSlot> Slot;
-	TWeakObjectPtr<USaveSlotData> SlotData;
 
 
 public:
@@ -29,9 +29,9 @@ public:
 		{
 			Slot->ClearInternalFlags(EInternalObjectFlags::Async);
 		}
-		if (SlotData.IsValid())
+		if (IsValid(GetData()))
 		{
-			SlotData->ClearInternalFlags(EInternalObjectFlags::Async);
+			GetData()->ClearInternalFlags(EInternalObjectFlags::Async);
 		}
 	}
 
@@ -49,14 +49,14 @@ public:
 		}
 	}
 
-	USaveSlot* GetInfo()
+	USaveSlot* GetInfo() const
 	{
 		return Slot.Get();
 	}
 
-	USaveSlotData* GetData()
+	USaveSlotData* GetData() const
 	{
-		return SlotData.Get();
+		return Slot.IsValid()? Slot->GetData() : nullptr;
 	}
 
 	TStatId GetStatId() const

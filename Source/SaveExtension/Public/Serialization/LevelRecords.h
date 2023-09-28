@@ -19,16 +19,17 @@ struct FLevelRecord : public FBaseRecord
 {
 	GENERATED_BODY()
 
-	bool bOverrideGlobalFilter = false;
-	// Filter is used if bOverrideGlobalFilter is true
-	FSELevelFilter Filter;
-
 	/** Record of the Level Script Actor */
 	FActorRecord LevelScript;
 
 	/** Records of the World Actors */
 	TArray<FActorRecord> Actors;
 
+	/** Not-serialized. Assigned before loading and saving by the SaveSlot */
+	FSELevelFilter Filter;
+
+	/** Not-serialized. During saving or loading points to the live actor */
+	TArray<TPair<FActorRecord*, TWeakObjectPtr<AActor>>> RecordsToActors;
 
 	FLevelRecord() : Super() {}
 

@@ -16,19 +16,14 @@
 // Async task to serialize actors from a level.
 class FMTTask : public FNonAbandonableTask
 {
-protected:
+public:
 	/** Used only if Sync */
-	const UWorld* const World;
-	USaveSlotData* SlotData;
-
-	// Locally cached settings
-	const FSELevelFilter& Filter;
+	UWorld* const World = nullptr;
+	USaveSlotData* SlotData = nullptr;
 
 
-	FMTTask(
-		const bool bIsloading, const UWorld* InWorld, USaveSlotData* InSlotData, const FSELevelFilter& Filter)
-		: World(InWorld)
-		, SlotData(InSlotData)
-		, Filter(Filter)
+	FMTTask(const bool bIsloading, UWorld* World, USaveSlotData* SlotData)
+		: World(World)
+		, SlotData(SlotData)
 	{}
 };

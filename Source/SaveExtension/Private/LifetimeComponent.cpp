@@ -49,7 +49,7 @@ void ULifetimeComponent::EndPlay(EEndPlayReason::Type Reason)
 
 void ULifetimeComponent::OnSaveBegan(const FSELevelFilter& Filter)
 {
-	if (Filter.ShouldSave(GetOwner()))
+	if (Filter.Stores(GetOwner()))
 	{
 		Saved.Broadcast();
 	}
@@ -57,7 +57,7 @@ void ULifetimeComponent::OnSaveBegan(const FSELevelFilter& Filter)
 
 void ULifetimeComponent::OnLoadFinished(const FSELevelFilter& Filter, bool bError)
 {
-	if (Filter.ShouldSave(GetOwner()))
+	if (Filter.Stores(GetOwner()))
 	{
 		Resume.Broadcast();
 	}

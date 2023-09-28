@@ -26,7 +26,6 @@ protected:
 	TArray<TSharedPtr<FSEClassFilterItem>> PreviewClasses;
 
 	TSharedPtr<IPropertyHandle> StructHandle;
-	TSharedPtr<IPropertyHandle> FilterHandle;
 
 	TSharedPtr<class SComboButton> EditButton;
 
@@ -60,11 +59,6 @@ protected:
 	virtual void PostUndo(bool bSuccess) override;
 	virtual void PostRedo(bool bSuccess) override;
 	//~ End FEditorUndoClient Interface
-
-	virtual TSharedPtr<IPropertyHandle> GetFilterHandle(TSharedRef<IPropertyHandle> StructPropertyHandle)
-	{
-		return StructHandle;
-	}
 
 
 	/** Build List of Editable Containers */
