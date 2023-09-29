@@ -17,9 +17,9 @@ struct FSELevelFilter;
  * Specifies the behavior while saving or loading
  */
 UENUM()
-enum class ESaveASyncMode : uint8
+enum class ESEAsyncMode : uint8
 {
-	OnlySync,
+	SaveAndLoadSync,
 	LoadAsync,
 	SaveAsync,
 	SaveAndLoadAsync
@@ -101,30 +101,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
 	FSEActorClassFilter ActorFilter;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization",
-		meta = (PinHiddenByDefault, InlineEditConditionToggle))
-	bool bUseLoadActorFilter = false;
-
-	/** If enabled, this filter will be used while loading instead of "ActorFilter" */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization",
-		meta = (EditCondition = "bUseLoadActorFilter"))
-	FSEActorClassFilter LoadActorFilter;
-
-	/** If true will store ActorComponents depending on the filters */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
-	bool bStoreComponents = true;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
 	FSEComponentClassFilter ComponentFilter;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization",
-		meta = (PinHiddenByDefault, InlineEditConditionToggle))
-	bool bUseLoadComponentFilter = false;
-
-	/** If enabled, this filter will be used while loading instead of "ComponentFilter" */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization",
-		meta = (EditCondition = "bUseLoadComponentFilter"))
-	FSEComponentClassFilter LoadComponentFilter;
 
 	/** If true, will Save and Load levels when they are shown or hidden.
 	 * This includes level streaming and world composition.
@@ -134,13 +112,13 @@ public:
 
 	/** Serialization will be multi-threaded between all available cores. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async")
-	ESaveASyncMode MultithreadedSerialization = ESaveASyncMode::SaveAsync;
+	ESEAsyncMode MultithreadedSerialization = ESEAsyncMode::SaveAndLoadSync;
 
 	/** Split serialization between multiple frames. Ignored if MultithreadedSerialization is used
 	 * Currently only implemented on Loading
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async")
-	ESaveASyncMode FrameSplittedSerialization = ESaveASyncMode::OnlySync;
+	ESEAsyncMode FrameSplittedSerialization = ESEAsyncMode::SaveAndLoadSync;
 
 	/** Max milliseconds to use every frame in an asynchronous operation.
 	 * If running at 60Fps (16.6ms), loading or saving asynchronously will add MaxFrameMS:
@@ -148,13 +126,12 @@ public:
 	 * This means gameplay will not be stopped nor have frame drops while saving or loading. Works best for
 	 * non multi-threaded platforms
 	 */
-	UPROPERTY(
-		EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async", meta = (UIMin = "3", UIMax = "10"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async", meta = (UIMin = "3", UIMax = "10"))
 	float MaxFrameMs = 5.f;
 
 	/** Files will be loaded or saved on a secondary thread while game continues */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async")
-	ESaveASyncMode MultithreadedFiles = ESaveASyncMode::SaveAndLoadAsync;
+	ESEAsyncMode MultithreadedFiles = ESEAsyncMode::SaveAndLoadAsync;
 
 	/**
 	 * If checked, will print messages to Log, and Viewport if DebugInScreen is enabled.
@@ -176,34 +153,33 @@ public:
 
 public:
 	/** Slot where this SaveInfo and its saveData are saved */
-	UPROPERTY(BlueprintReadWrite, Category = Slot)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = Slot)
 	FName FileName = TEXT("Default");
 
-	UPROPERTY(BlueprintReadWrite, Category = Slot)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = Slot)
 	FText DisplayName;
 
 	/** Root Level where this Slot was saved */
-	UPROPERTY(BlueprintReadOnly, Category = Slot)
+	UPROPERTY(SaveGame, BlueprintReadOnly, Category = Slot)
 	FName Map;
 
-	UPROPERTY(BlueprintReadWrite, Category = Slot)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = Slot)
 	FSaveSlotStats Stats;
 
 protected:
-	UPROPERTY()
+	UPROPERTY(SaveGame)
 	FString ThumbnailPath;
 
 	/** Thumbnail gets cached here the first time it is requested */
 	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> CachedThumbnail;
 
-	UPROPERTY(BlueprintReadOnly, Transient, Category = Slot)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = Slot)
 	TObjectPtr<USaveSlotData> Data;
 
 
 public:
-	USaveSlot();
-
+	void PostInitProperties() override;
 
 	/** Returns this slot's thumbnail if any */
 	UFUNCTION(BlueprintCallable, Category = Slot)
@@ -251,16 +227,10 @@ protected:
 	virtual int32 OnGetIndex() const;
 
 public:
-	UFUNCTION(BlueprintPure, Category = SaveSlot)
-	const FSEActorClassFilter& GetActorFilter(bool bIsLoading) const;
-
-	UFUNCTION(BlueprintPure, Category = SaveSlot)
-	const FSEComponentClassFilter& GetComponentFilter(bool bIsLoading) const;
-
 	bool IsMTSerializationLoad() const;
 	bool IsMTSerializationSave() const;
 
-	ESaveASyncMode GetFrameSplitSerialization() const;
+	ESEAsyncMode GetFrameSplitSerialization() const;
 	float GetMaxFrameMs() const;
 
 	bool IsFrameSplitLoad() const;
@@ -269,5 +239,14 @@ public:
 	bool IsMTFilesLoad() const;
 	bool IsMTFilesSave() const;
 
-	FSELevelFilter ToFilter() const;
+	UFUNCTION(BlueprintPure, Category = SaveSlot)
+	bool IsLoadingOrSaving() const;
+
+	// Called for every level before being saved or loaded
+	UFUNCTION(BlueprintNativeEvent, Category = Slot)
+	void GetLevelFilter(bool bIsLoading, FSELevelFilter& OutFilter) const;
+
+private:
+	// Called for every level before being saved or loaded
+	virtual void OnGetLevelFilter(bool bIsLoading, FSELevelFilter& OutFilter) const;
 };

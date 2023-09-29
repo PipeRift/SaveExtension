@@ -3,28 +3,26 @@
 #pragma once
 
 #include "ISaveExtension.h"
-#include "SlotDataTask_Loader.h"
-
-#include "SlotDataTask_LevelLoader.generated.h"
+#include "SEDataTask_Load.h"
 
 
 /**
  * Manages the serializing process of a single level
  */
-UCLASS()
-class USaveSlotDataTask_LevelLoader : public USaveSlotDataTask_Loader
+struct FSEDataTask_LoadLevel : public FSEDataTask_Load
 {
-	GENERATED_BODY()
+	TObjectPtr<ULevelStreaming> StreamingLevel;
 
-
-	UPROPERTY()
-	ULevelStreaming* StreamingLevel;
 
 public:
-	auto Setup(ULevelStreaming* InStreamingLevel)
+	FSEDataTask_LoadLevel(USaveManager* Manager, USaveSlot* Slot)
+		: FSEDataTask_Load(Manager, Slot)
+	{}
+
+	auto& Setup(ULevelStreaming* InStreamingLevel)
 	{
 		StreamingLevel = InStreamingLevel;
-		return this;
+		return *this;
 	}
 
 private:

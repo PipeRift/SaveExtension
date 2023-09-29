@@ -71,7 +71,7 @@ EVisibility FSaveSlotDetails::GetWarningVisibility() const
 {
 	if (Slot.IsValid())
 	{
-		return Slot->GetFrameSplitSerialization() == ESaveASyncMode::OnlySync ? EVisibility::Collapsed
+		return Slot->GetFrameSplitSerialization() == ESEAsyncMode::SaveAndLoadSync ? EVisibility::Collapsed
 																			  : EVisibility::Visible;
 	}
 	return EVisibility::Collapsed;
@@ -81,7 +81,7 @@ bool FSaveSlotDetails::CanEditAsynchronous() const
 {
 	if (Slot.IsValid())
 	{
-		return Slot->GetFrameSplitSerialization() != ESaveASyncMode::OnlySync;
+		return Slot->GetFrameSplitSerialization() != ESEAsyncMode::SaveAndLoadSync;
 	}
 	return true;
 }

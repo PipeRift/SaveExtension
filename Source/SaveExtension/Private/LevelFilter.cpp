@@ -13,42 +13,26 @@ const FName FSELevelFilter::TagNoPhysics{"!SavePhysics"};
 const FName FSELevelFilter::TagNoTags{"!SaveTags"};
 const FName FSELevelFilter::TagTransform{"SaveTransform"};
 
-void FSELevelFilter::FromSlot(const USaveSlot& Slot)
-{
-	ActorFilter = Slot.GetActorFilter(true);
-	LoadActorFilter = Slot.GetActorFilter(false);
-	bStoreComponents = Slot.bStoreComponents;
-	ComponentFilter = Slot.GetComponentFilter(true);
-	LoadComponentFilter = Slot.GetComponentFilter(false);
-}
 
 void FSELevelFilter::BakeAllowedClasses() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSELevelFilter::BakeAllowedClasses);
 	ActorFilter.BakeAllowedClasses();
 	ComponentFilter.BakeAllowedClasses();
-	LoadActorFilter.BakeAllowedClasses();
-	LoadComponentFilter.BakeAllowedClasses();
 }
 
-bool FSELevelFilter::ShouldSave(const AActor* Actor) const
+bool FSELevelFilter::Stores(const AActor* Actor) const
 {
-	return ActorFilter.IsClassAllowed(Actor->GetClass());
+	return ActorFilter.IsAllowed(Actor->GetClass());
 }
 
-bool FSELevelFilter::ShouldSave(const UActorComponent* Component) const
+bool FSELevelFilter::StoresAnyComponents() const
 {
-	return IsValid(Component) && ComponentFilter.IsClassAllowed(Component->GetClass());
+	return ComponentFilter.IsAnyAllowed();
 }
-
-bool FSELevelFilter::ShouldLoad(const AActor* Actor) const
+bool FSELevelFilter::Stores(const UActorComponent* Component) const
 {
-	return LoadActorFilter.IsClassAllowed(Actor->GetClass());
-}
-
-bool FSELevelFilter::ShouldLoad(const UActorComponent* Component) const
-{
-	return IsValid(Component) && LoadComponentFilter.IsClassAllowed(Component->GetClass());
+	return ComponentFilter.IsAllowed(Component->GetClass());
 }
 
 bool FSELevelFilter::StoresTransform(const UActorComponent* Component)

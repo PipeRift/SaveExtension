@@ -3,6 +3,7 @@
 #pragma once
 
 #include "SaveFileHelpers.h"
+#include "SaveManager.h"
 
 #include <Async/AsyncWork.h>
 
@@ -16,47 +17,27 @@ protected:
 	TWeakObjectPtr<USaveManager> Manager;
 	const FString SlotName;
 
+	TWeakObjectPtr<USaveSlot> LastSlot;
+	TWeakObjectPtr<USaveSlotData> LastSlotData;
+
 	TWeakObjectPtr<USaveSlot> Slot;
-	TWeakObjectPtr<USaveSlotData> SlotData;
 
 
 public:
-	explicit FLoadFileTask(USaveManager* Manager, FStringView SlotName) : Manager(Manager), SlotName(SlotName)
-	{}
-	~FLoadFileTask()
-	{
-		if (Slot.IsValid())
-		{
-			Slot->ClearInternalFlags(EInternalObjectFlags::Async);
-		}
-		if (SlotData.IsValid())
-		{
-			SlotData->ClearInternalFlags(EInternalObjectFlags::Async);
-		}
-	}
+	explicit FLoadFileTask(USaveManager* Manager, USaveSlot* LastSlot, FStringView SlotName);
+	~FLoadFileTask();
 
-	void DoWork()
-	{
-		FScopedFileReader FileReader(FSaveFileHelpers::GetSlotPath(SlotName));
-		if (FileReader.IsValid())
-		{
-			FSaveFile File;
-			File.Read(FileReader, false);
-			USaveSlot* NewSlot = Slot.Get();
-			File.CreateAndDeserializeSlot(NewSlot, Manager.Get());
-			File.CreateAndDeserializeData(NewSlot);
-			Slot = NewSlot;
-		}
-	}
+	void DoWork();
 
-	USaveSlot* GetInfo()
+	/** Game thread */
+	USaveSlot* GetInfo() const
 	{
 		return Slot.Get();
 	}
 
-	USaveSlotData* GetData()
+	USaveSlotData* GetData() const
 	{
-		return SlotData.Get();
+		return Slot.IsValid()? Slot->GetData() : nullptr;
 	}
 
 	TStatId GetStatId() const

@@ -27,26 +27,16 @@ class SAVEEXTENSION_API USaveSlotData : public USaveGame
 	GENERATED_BODY()
 
 public:
-	USaveSlotData() : Super() {}
-
-
-	/** Full Name of the Map where this SlotData was saved */
-	UPROPERTY(Category = SaveData, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	FName Map;
-
 	/** Game world time since game started in seconds */
-	UPROPERTY(Category = SaveData, BlueprintReadOnly)
+	UPROPERTY(SaveGame, Category = SaveData, BlueprintReadOnly)
 	float TimeSeconds;
 
 	/** Records
 	 * All serialized information to be saved or loaded
 	 * Serialized manually for performance
 	 */
-	bool bStoreGameInstance = false;
 	FObjectRecord GameInstance;
-
-	FSELevelFilter GlobalLevelFilter;
-	FPersistentLevelRecord MainLevel;
+	FPersistentLevelRecord RootLevel;
 	TArray<FStreamingLevelRecord> SubLevels;
 
 

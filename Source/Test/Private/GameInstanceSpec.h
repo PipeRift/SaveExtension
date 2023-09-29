@@ -17,7 +17,7 @@ class UTestSaveSlot : public USaveSlot
 	{
 		bStoreGameInstance = true;
 
-		MultithreadedFiles = ESaveASyncMode::OnlySync;
-		MultithreadedSerialization = ESaveASyncMode::OnlySync;
+		MultithreadedFiles = ESEAsyncMode::SaveAndLoadSync;
+		MultithreadedSerialization = ESEAsyncMode::SaveAndLoadSync;
 	}
 };

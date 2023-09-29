@@ -9,7 +9,7 @@
 #include "SaveExtensionInterface.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
-#include "Serialization/SlotDataTask.h"
+#include "Serialization/SEDataTask.h"
 
 #include <Async/AsyncWork.h>
 #include <CoreMinimal.h>
@@ -69,7 +69,7 @@ class SAVEEXTENSION_API USaveManager : public UGameInstanceSubsystem, public FTi
 {
 	GENERATED_BODY()
 
-	friend USaveSlotDataTask;
+	friend FSEDataTask;
 
 
 	/************************************************************************/
@@ -96,8 +96,7 @@ private:
 	UPROPERTY(Transient)
 	TArray<TScriptInterface<ISaveExtensionInterface>> SubscribedInterfaces;
 
-	UPROPERTY(Transient)
-	TArray<USaveSlotDataTask*> Tasks;
+	TArray<TUniquePtr<FSEDataTask>> Tasks;
 
 
 	/************************************************************************/
@@ -360,15 +359,15 @@ private:
 
 	void OnLevelLoaded(ULevelStreaming* StreamingLevel) {}
 
-	USaveSlotDataTask* CreateTask(TSubclassOf<USaveSlotDataTask> TaskType);
-
-	template <class TaskType>
-	TaskType* CreateTask()
+	template <typename TaskType>
+	TaskType& CreateTask()
 	{
-		return Cast<TaskType>(CreateTask(TaskType::StaticClass()));
+		return static_cast<TaskType&>(
+			*Tasks.Add_GetRef(MakeUnique<TaskType>(this, ActiveSlot))
+		);
 	}
 
-	void FinishTask(USaveSlotDataTask* Task);
+	void FinishTask(FSEDataTask* Task);
 
 public:
 	bool HasTasks() const
@@ -417,10 +416,10 @@ public:
 	UFUNCTION(Category = SaveExtension, BlueprintCallable)
 	void UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface);
 
-	void OnSaveBegan(const FSELevelFilter& Filter);
-	void OnSaveFinished(const FSELevelFilter& Filter, const bool bError);
-	void OnLoadBegan(const FSELevelFilter& Filter);
-	void OnLoadFinished(const FSELevelFilter& Filter, const bool bError);
+	void OnSaveBegan();
+	void OnSaveFinished(const bool bError);
+	void OnLoadBegan();
+	void OnLoadFinished(const bool bError);
 
 private:
 	void OnMapLoadStarted(const FString& MapName);

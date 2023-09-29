@@ -41,7 +41,7 @@ struct TStructOpsTypeTraits<FBaseRecord> : public TStructOpsTypeTraitsBase2<FBas
 	};
 };
 
-FORCEINLINE bool operator==(const FBaseRecord& A, const FBaseRecord& B)
+inline bool operator==(const FBaseRecord& A, const FBaseRecord& B)
 {
 	return A.Name == B.Name;
 }
@@ -67,10 +67,10 @@ struct FObjectRecord : public FBaseRecord
 
 	bool IsValid() const
 	{
-		return !Name.IsNone() && Class && Data.Num() > 0;
+		return !Name.IsNone() && Class;
 	}
 
-	FORCEINLINE bool operator==(const UObject* Other) const
+	bool operator==(const UObject* Other) const
 	{
 		return Other && Name == Other->GetFName() && Class == Other->GetClass();
 	}

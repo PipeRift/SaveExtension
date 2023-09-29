@@ -1,12 +1,12 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "Serialization/SlotDataTask_LevelSaver.h"
+#include "Serialization/SEDataTask_SaveLevel.h"
 
 
 /////////////////////////////////////////////////////
 // FSaveDataTask_LevelSaver
 
-void USaveSlotDataTask_LevelSaver::OnStart()
+void FSEDataTask_SaveLevel::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
@@ -17,7 +17,7 @@ void USaveSlotDataTask_LevelSaver::OnStart()
 			return;
 		}
 
-		GetLevelFilter(*LevelRecord).BakeAllowedClasses();
+		PrepareLevel(StreamingLevel->GetLoadedLevel(), *LevelRecord);
 
 		const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn());
 		SerializeLevelSync(StreamingLevel->GetLoadedLevel(), NumberOfThreads, StreamingLevel);

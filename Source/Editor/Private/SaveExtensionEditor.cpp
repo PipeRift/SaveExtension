@@ -4,10 +4,8 @@
 
 #include "Asset/AssetTypeAction_SaveSlot.h"
 #include "Asset/AssetTypeAction_SaveSlotData.h"
-#include "Customizations/SEActorClassFilterCustomization.h"
 #include "Customizations/SEClassFilterCustomization.h"
 #include "Customizations/SEClassFilterGraphPanelPinFactory.h"
-#include "Customizations/SEComponentClassFilterCustomization.h"
 #include "Customizations/SaveSlotDetails.h"
 #include "Kismet2/KismetEditorUtilities.h"
 
@@ -48,12 +46,10 @@ void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 
 	RegisterCustomPropertyTypeLayout("SEClassFilter",
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEClassFilterCustomization::MakeInstance));
-	RegisterCustomPropertyTypeLayout(
-		"SEActorClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
-								  &FSEActorClassFilterCustomization::MakeInstance));
-	RegisterCustomPropertyTypeLayout(
-		"SEComponentClassFilter", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
-									  &FSEComponentClassFilterCustomization::MakeInstance));
+	RegisterCustomPropertyTypeLayout("SEActorClassFilter",
+		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEClassFilterCustomization::MakeInstance));
+	RegisterCustomPropertyTypeLayout("SEComponentClassFilter",
+		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEClassFilterCustomization::MakeInstance));
 
 	RegisterCustomPinFactory<FSEClassFilterGraphPanelPinFactory>();
 }

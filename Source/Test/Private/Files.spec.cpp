@@ -34,11 +34,11 @@ void FSaveSpec_Files::Define()
 
 		SaveManager->bTickWithGameWorld = true;
 
-		SaveManager->GetActiveSlot()->MultithreadedSerialization = ESaveASyncMode::OnlySync;
+		SaveManager->GetActiveSlot()->MultithreadedSerialization = ESEAsyncMode::SaveAndLoadSync;
 	});
 
 	It("Can save files synchronously", [this]() {
-		SaveManager->GetActiveSlot()->MultithreadedFiles = ESaveASyncMode::OnlySync;
+		SaveManager->GetActiveSlot()->MultithreadedFiles = ESEAsyncMode::SaveAndLoadSync;
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
 
@@ -46,7 +46,7 @@ void FSaveSpec_Files::Define()
 	});
 
 	It("Can save files asynchronously", [this]() {
-		SaveManager->GetActiveSlot()->MultithreadedFiles = ESaveASyncMode::SaveAsync;
+		SaveManager->GetActiveSlot()->MultithreadedFiles = ESEAsyncMode::SaveAsync;
 		bFinishTick = false;
 
 		bool bSaving =
@@ -66,7 +66,7 @@ void FSaveSpec_Files::Define()
 	});
 
 	It("Can load files synchronously", [this]() {
-		SaveManager->GetActiveSlot()->MultithreadedFiles = ESaveASyncMode::OnlySync;
+		SaveManager->GetActiveSlot()->MultithreadedFiles = ESEAsyncMode::SaveAndLoadSync;
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
 

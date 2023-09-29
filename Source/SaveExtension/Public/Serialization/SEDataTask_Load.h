@@ -7,15 +7,13 @@
 #include "Multithreading/LoadFileTask.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
-#include "SlotDataTask.h"
+#include "SEDataTask.h"
 
 #include <Engine/Level.h>
 #include <Engine/LevelScriptActor.h>
 #include <Engine/LevelStreaming.h>
 #include <GameFramework/Actor.h>
 #include <GameFramework/Controller.h>
-
-#include "SlotDataTask_Loader.generated.h"
 
 
 enum class ELoadDataTaskState : uint8
@@ -33,16 +31,12 @@ enum class ELoadDataTaskState : uint8
 /**
  * Manages the loading process of a SaveData file
  */
-UCLASS()
-class USaveSlotDataTask_Loader : public USaveSlotDataTask
+struct FSEDataTask_Load : public FSEDataTask
 {
-	GENERATED_BODY()
-
 protected:
 	FName SlotName;
 
-	UPROPERTY()
-	USaveSlot* Slot;
+	TObjectPtr<USaveSlot> Slot;
 
 	FOnGameLoaded Delegate;
 
@@ -62,18 +56,21 @@ protected:
 
 
 public:
-	USaveSlotDataTask_Loader() : Super() {}
+	FSEDataTask_Load(USaveManager* Manager, USaveSlot* Slot)
+		: FSEDataTask(Manager, Slot, ESETaskType::Load)
+	{}
+	~FSEDataTask_Load();
 
-	auto Setup(FName InSlotName)
+	auto& Setup(FName InSlotName)
 	{
 		SlotName = InSlotName;
-		return this;
+		return *this;
 	}
 
-	auto Bind(const FOnGameLoaded& OnLoaded)
+	auto& Bind(const FOnGameLoaded& OnLoaded)
 	{
 		Delegate = OnLoaded;
-		return this;
+		return *this;
 	}
 
 	void OnMapLoaded();
@@ -83,19 +80,18 @@ private:
 
 	virtual void Tick(float DeltaTime) override;
 	virtual void OnFinish(bool bSuccess) override;
-	virtual void BeginDestroy() override;
 
 	void StartDeserialization();
 
 	/** Spawns Actors hat were saved but which actors are not in the world. */
-	void RespawnActors(const TArray<FActorRecord*>& Records, const ULevel* Level);
+	void RespawnActors(const TArray<FActorRecord*>& Records, const ULevel* Level, FLevelRecord& LevelRecord);
 
 protected:
 	//~ Begin Files
 	void StartLoadingData();
 
 	USaveSlotData* GetLoadedData() const;
-	FORCEINLINE const bool IsDataLoaded() const
+	const bool IsDataLoaded() const
 	{
 		return LoadDataTask && LoadDataTask->IsDone();
 	};
@@ -117,22 +113,17 @@ protected:
 	void PrepareAllLevels();
 	void PrepareLevel(const ULevel* Level, FLevelRecord& LevelRecord);
 
-	/** Deserializes all Level actors. */
-	inline void DeserializeLevel_Actor(
-		AActor* const Actor, const FLevelRecord& LevelRecord, const FSELevelFilter& Filter);
-
 	void FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const;
 
-private:
 	/** Deserializes Game Instance Object and its Properties.
-	Requires 'SaveGameMode' flag to be used. */
+	 * Requires 'SaveGameInstance' flag to be used.
+	 */
 	void DeserializeGameInstance();
 
 	/** Serializes an actor into this Actor Record */
-	bool DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSELevelFilter& Filter);
+	bool DeserializeActor(AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord);
 
 	/** Deserializes the components of an actor from a provided Record */
-	void DeserializeActorComponents(
-		AActor* Actor, const FActorRecord& ActorRecord, const FSELevelFilter& Filter, int8 indent = 0);
+	void DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord, int8 indent = 0);
 	/** END Deserialization */
 };

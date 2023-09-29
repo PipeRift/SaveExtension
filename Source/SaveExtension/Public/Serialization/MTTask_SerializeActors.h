@@ -27,30 +27,30 @@ DECLARE_DELEGATE_OneParam(FOnGameSaved, USaveSlot*);
 // Async task to serialize actors from a level.
 class FMTTask_SerializeActors : public FMTTask
 {
-	const TArray<AActor*>* const LevelActors;
-	const int32 StartIndex;
-	const int32 Num;
+	const TArray<AActor*>* LevelActors;
+	const int32 StartIndex = 0;
+	const int32 Num = 0;
 	const bool bStoreGameInstance = false;
 
-	/** USE ONLY FOR DUMPING DATA */
 	FLevelRecord* LevelRecord = nullptr;
+	const FSELevelFilter* Filter = nullptr;
+
 
 	FActorRecord LevelScriptRecord;
 	TArray<FActorRecord> ActorRecords;
 
 
 public:
-	FMTTask_SerializeActors(const UWorld* World, USaveSlotData* SlotData,
-		const TArray<AActor*>* const InLevelActors, const int32 InStartIndex, const int32 InNum,
-		bool bStoreGameInstance, FLevelRecord* InLevelRecord, const FSELevelFilter& Filter)
-		: FMTTask(false, World, SlotData, Filter)
-		, LevelActors(InLevelActors)
-		, StartIndex(InStartIndex)
-		, Num(InNum)
+	FMTTask_SerializeActors(UWorld* World, USaveSlotData* SlotData,
+		const TArray<AActor*>* LevelActors, const int32 StartIndex, const int32 Num,
+		bool bStoreGameInstance, FLevelRecord* LevelRecord, const FSELevelFilter* Filter)
+		: FMTTask(false, World, SlotData)
+		, LevelActors(LevelActors)
+		, StartIndex(StartIndex)
+		, Num(Num)
 		, bStoreGameInstance(bStoreGameInstance)
-		, LevelRecord(InLevelRecord)
-		, LevelScriptRecord{}
-		, ActorRecords{}
+		, LevelRecord(LevelRecord)
+		, Filter(Filter)
 	{
 		// No apparent performance benefit
 		// ActorRecords.Reserve(Num);

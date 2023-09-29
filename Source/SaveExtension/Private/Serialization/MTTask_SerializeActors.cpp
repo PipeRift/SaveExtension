@@ -21,14 +21,20 @@ void FMTTask_SerializeActors::DoWork()
 		SerializeGameInstance();
 	}
 
+	TArray<const AActor*> ActorsToSerialize;
 	for (int32 I = 0; I < Num; ++I)
 	{
 		const AActor* const Actor = (*LevelActors)[StartIndex + I];
-		if (Actor && Filter.ShouldSave(Actor))
+		if (Actor && Filter->Stores(Actor))
 		{
-			FActorRecord& Record = ActorRecords.AddDefaulted_GetRef();
-			SerializeActor(Actor, Record);
+			ActorsToSerialize.Add(Actor);
 		}
+	}
+
+	for (const AActor* Actor : ActorsToSerialize)
+	{
+		FActorRecord& Record = ActorRecords.AddDefaulted_GetRef();
+		SerializeActor(Actor, Record);
 	}
 }
 
@@ -56,9 +62,9 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 	Record = {Actor};
 
 	Record.bHiddenInGame = Actor->IsHidden();
-	Record.bIsProcedural = Filter.IsProcedural(Actor);
+	Record.bIsProcedural = Filter->IsProcedural(Actor);
 
-	if (Filter.StoresTags(Actor))
+	if (Filter->StoresTags(Actor))
 	{
 		Record.Tags = Actor->Tags;
 	}
@@ -67,18 +73,18 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 		// Only save save-tags
 		for (const auto& Tag : Actor->Tags)
 		{
-			if (Filter.IsSaveTag(Tag))
+			if (Filter->IsSaveTag(Tag))
 			{
 				Record.Tags.Add(Tag);
 			}
 		}
 	}
 
-	if (Filter.StoresTransform(Actor))
+	if (Filter->StoresTransform(Actor))
 	{
 		Record.Transform = Actor->GetTransform();
 
-		if (Filter.StoresPhysics(Actor))
+		if (Filter->StoresPhysics(Actor))
 		{
 			USceneComponent* const Root = Actor->GetRootComponent();
 			if (Root && Root->Mobility == EComponentMobility::Movable)
@@ -96,10 +102,7 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 		}
 	}
 
-	if (Filter.bStoreComponents)
-	{
-		SerializeActorComponents(Actor, Record, 1);
-	}
+	SerializeActorComponents(Actor, Record, 1);
 
 	TRACE_CPUPROFILER_EVENT_SCOPE(Serialize);
 	FMemoryWriter MemoryWriter(Record.Data, true);
@@ -114,17 +117,22 @@ void FMTTask_SerializeActors::SerializeActorComponents(
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::SerializeActorComponents);
 
+	if (!Filter->StoresAnyComponents())
+	{
+		return;
+	}
+
 	const TSet<UActorComponent*>& Components = Actor->GetComponents();
 	for (auto* Component : Components)
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(FMTTask_SerializeActors::SerializeActorComponents | Component);
-		if (Filter.ShouldSave(Component))
+		if (IsValid(Component) && Filter->Stores(Component))
 		{
 			FComponentRecord ComponentRecord;
 			ComponentRecord.Name = Component->GetFName();
 			ComponentRecord.Class = Component->GetClass();
 
-			if (Filter.StoresTransform(Component))
+			if (Filter->StoresTransform(Component))
 			{
 				const USceneComponent* Scene = CastChecked<USceneComponent>(Component);
 				if (Scene->Mobility == EComponentMobility::Movable)
@@ -133,7 +141,7 @@ void FMTTask_SerializeActors::SerializeActorComponents(
 				}
 			}
 
-			if (Filter.StoresTags(Component))
+			if (Filter->StoresTags(Component))
 			{
 				ComponentRecord.Tags = Component->ComponentTags;
 			}

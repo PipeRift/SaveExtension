@@ -3,6 +3,7 @@
 #include "SaveFileHelpers.h"
 
 #include "Multithreading/SaveFileTask.h"
+#include "Serialization/SEArchive.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
 
@@ -209,22 +210,6 @@ void FSaveFile::SerializeData(USaveSlotData* SlotData)
 	SlotData->Serialize(Ar);
 }
 
-void FSaveFile::CreateAndDeserializeSlot(USaveSlot*& Slot, const UObject* Outer) const
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeSlot);
-	UObject* Object = nullptr;
-	FSaveFileHelpers::DeserializeObject(Object, InfoClassName, Outer, InfoBytes);
-	Slot = Cast<USaveSlot>(Object);
-}
-
-void FSaveFile::CreateAndDeserializeData(USaveSlot* Slot) const
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::CreateAndDeserializeData);
-	UObject* Object = nullptr;
-	FSaveFileHelpers::DeserializeObject(Object, DataClassName, Slot, DataBytes);
-	Slot->AssignData(Cast<USaveSlotData>(Object));
-}
-
 bool FSaveFileHelpers::SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bUseCompression)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFileHelpers::SaveFile);
@@ -261,10 +246,17 @@ bool FSaveFileHelpers::LoadFile(FStringView SlotName, USaveSlot*& Slot, bool bLo
 	{
 		FSaveFile File{};
 		File.Read(Reader, !bLoadData);
-		File.CreateAndDeserializeSlot(Slot, Outer);
+
+		{
+			TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeInfo)
+			Slot = Cast<USaveSlot>(DeserializeObject(Slot, File.InfoClassName, Outer, File.InfoBytes));
+		}
 		if (bLoadData)
 		{
-			File.CreateAndDeserializeData(Slot);
+			TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeData)
+			Slot->AssignData(Cast<USaveSlotData>(
+				DeserializeObject(Slot->GetData(), File.DataClassName, Slot, File.DataBytes))
+			);
 		}
 		return true;
 	}
@@ -297,12 +289,13 @@ FString FSaveFileHelpers::GetThumbnailPath(FStringView SlotName)
 	return GetSaveFolder() / FString::Printf(TEXT("%s.png"), SlotName.GetData());
 }
 
-void FSaveFileHelpers::DeserializeObject(
-	UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
+UObject* FSaveFileHelpers::DeserializeObject(UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
 {
+	UObject* Object = Hint;
+
 	if (ClassName.IsEmpty() || Bytes.Num() <= 0)
 	{
-		return;
+		return Object;
 	}
 
 	UClass* ObjectClass = FindObject<UClass>(nullptr, ClassName.GetData());
@@ -312,10 +305,11 @@ void FSaveFileHelpers::DeserializeObject(
 	}
 	if (!ObjectClass)
 	{
-		return;
+		return Object;
 	}
 
-	if (!Object)
+	// Can only reuse object if class matches
+	if (!Object || Object->GetClass() != ObjectClass)
 	{
 		if (!Outer)
 		{
@@ -324,16 +318,10 @@ void FSaveFileHelpers::DeserializeObject(
 
 		Object = NewObject<UObject>(const_cast<UObject*>(Outer), ObjectClass);
 	}
-	// Can only reuse object if class matches
-	else if (Object->GetClass() != ObjectClass)
-	{
-		return;
-	}
 
-	if (Object)
-	{
-		FMemoryReader Reader{Bytes};
-		FObjectAndNameAsStringProxyArchive Ar(Reader, true);
-		Object->Serialize(Ar);
-	}
+	check(Object);
+	FMemoryReader Reader{Bytes};
+	FSEArchive Ar(Reader, true);
+	Object->Serialize(Ar);
+	return Object;
 }

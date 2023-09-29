@@ -10,42 +10,44 @@
 #include <Engine/LevelStreaming.h>
 #include <GameFramework/Actor.h>
 
-#include "SlotDataTask.generated.h"
-
 
 class USaveManager;
 
+enum class ESETaskType : uint8
+{
+	None,
+	Load,
+	Save
+};
 
 /**
- * Base class for managing a SaveData file
+ * Base class for managing the data of SaveSlot file
  */
-UCLASS()
-class USaveSlotDataTask : public UObject
+struct FSEDataTask
 {
-	GENERATED_BODY()
-
+	ESETaskType Type = ESETaskType::None;
 private:
-	uint8 bRunning : 1;
-	uint8 bFinished : 1;
-	uint8 bSucceeded : 1;
+	bool bRunning = false;
+	bool bFinished = false;
+	bool bSucceeded = false;
 
 protected:
-	UPROPERTY()
-	USaveSlotData* SlotData;
 
-	UPROPERTY()
+	TObjectPtr<USaveManager> Manager;
+	TObjectPtr<USaveSlotData> SlotData;
 	float MaxFrameMs = 0.f;
 
+
 public:
-	USaveSlotDataTask() : Super(), bRunning(false), bFinished(false) {}
+	FSEDataTask(USaveManager* Manager, USaveSlot* Slot, ESETaskType Type)
+		: Type(Type)
+		, Manager(Manager)
+		, SlotData(Slot->GetData())
+		, MaxFrameMs(Slot->GetMaxFrameMs())
+	{}
+	virtual ~FSEDataTask() = default;
 
-	void Prepare(USaveSlot* Slot)
-	{
-		SlotData = Slot->GetData();
-		MaxFrameMs = Slot->GetMaxFrameMs();
-	}
-
-	USaveSlotDataTask* Start();
+	FSEDataTask& Start();
 
 	virtual void Tick(float DeltaTime) {}
 
@@ -76,23 +78,16 @@ protected:
 
 	virtual void OnFinish(bool bSuccess) {}
 
-	USaveManager* GetManager() const;
-
 	void BakeAllFilters();
-
-	const FSELevelFilter& GetGlobalFilter() const;
-	const FSELevelFilter& GetLevelFilter(const FLevelRecord& Level) const;
 
 	FLevelRecord* FindLevelRecord(const ULevelStreaming* Level) const;
 
-	//~ Begin UObject Interface
-	virtual UWorld* GetWorld() const override;
-	//~ End UObject Interface
-
-	FORCEINLINE float GetTimeMilliseconds() const
+	float GetTimeMilliseconds() const
 	{
 		return FPlatformTime::ToMilliseconds(FPlatformTime::Cycles());
 	}
+
+	UWorld* GetWorld() const;
 };
 
 

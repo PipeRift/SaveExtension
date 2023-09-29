@@ -2,6 +2,8 @@
 
 #include "SaveSlot.h"
 
+#include "SaveFileHelpers.h"
+
 #include <Engine/Engine.h>
 #include <Engine/GameViewportClient.h>
 #include <EngineUtils.h>
@@ -11,8 +13,9 @@
 #include <Misc/FileHelper.h>
 
 
-USaveSlot::USaveSlot()
+void USaveSlot::PostInitProperties()
 {
+	Super::PostInitProperties();
 	Data = NewObject<USaveSlotData>(this, DataClass, TEXT("SlotData"));
 }
 
@@ -126,29 +129,18 @@ int32 USaveSlot::GetIndex_Implementation() const
 	return OnGetIndex();
 }
 
-
-const FSEActorClassFilter& USaveSlot::GetActorFilter(bool bIsLoading) const
-{
-	return (bIsLoading && bUseLoadActorFilter) ? LoadActorFilter : ActorFilter;
-}
-
-const FSEComponentClassFilter& USaveSlot::GetComponentFilter(bool bIsLoading) const
-{
-	return (bIsLoading && bUseLoadActorFilter) ? LoadComponentFilter : ComponentFilter;
-}
-
 bool USaveSlot::IsMTSerializationLoad() const
 {
-	return MultithreadedSerialization == ESaveASyncMode::LoadAsync ||
-		   MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
+	return MultithreadedSerialization == ESEAsyncMode::LoadAsync ||
+		   MultithreadedSerialization == ESEAsyncMode::SaveAndLoadAsync;
 }
 bool USaveSlot::IsMTSerializationSave() const
 {
-	return MultithreadedSerialization == ESaveASyncMode::SaveAsync ||
-		   MultithreadedSerialization == ESaveASyncMode::SaveAndLoadAsync;
+	return MultithreadedSerialization == ESEAsyncMode::SaveAsync ||
+		   MultithreadedSerialization == ESEAsyncMode::SaveAndLoadAsync;
 }
 
-ESaveASyncMode USaveSlot::GetFrameSplitSerialization() const
+ESEAsyncMode USaveSlot::GetFrameSplitSerialization() const
 {
 	return FrameSplittedSerialization;
 }
@@ -159,29 +151,38 @@ float USaveSlot::GetMaxFrameMs() const
 
 bool USaveSlot::IsFrameSplitLoad() const
 {
-	return !IsMTSerializationLoad() && (FrameSplittedSerialization == ESaveASyncMode::LoadAsync ||
-										   FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
+	return !IsMTSerializationLoad() && (FrameSplittedSerialization == ESEAsyncMode::LoadAsync ||
+										   FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
 }
 bool USaveSlot::IsFrameSplitSave() const
 {
-	return !IsMTSerializationSave() && (FrameSplittedSerialization == ESaveASyncMode::SaveAsync ||
-										   FrameSplittedSerialization == ESaveASyncMode::SaveAndLoadAsync);
+	return !IsMTSerializationSave() && (FrameSplittedSerialization == ESEAsyncMode::SaveAsync ||
+										   FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
 }
 
 bool USaveSlot::IsMTFilesLoad() const
 {
-	return MultithreadedFiles == ESaveASyncMode::LoadAsync ||
-		   MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
+	return MultithreadedFiles == ESEAsyncMode::LoadAsync ||
+		   MultithreadedFiles == ESEAsyncMode::SaveAndLoadAsync;
 }
 bool USaveSlot::IsMTFilesSave() const
 {
-	return MultithreadedFiles == ESaveASyncMode::SaveAsync ||
-		   MultithreadedFiles == ESaveASyncMode::SaveAndLoadAsync;
+	return MultithreadedFiles == ESEAsyncMode::SaveAsync ||
+		   MultithreadedFiles == ESEAsyncMode::SaveAndLoadAsync;
 }
 
-FSELevelFilter USaveSlot::ToFilter() const
+bool USaveSlot::IsLoadingOrSaving() const
 {
-	FSELevelFilter Filter{};
-	Filter.FromSlot(*this);
-	return Filter;
+	return HasAnyInternalFlags(EInternalObjectFlags::Async);
+}
+
+void USaveSlot::GetLevelFilter_Implementation(bool bIsLoading, FSELevelFilter& OutFilter) const
+{
+	OnGetLevelFilter(bIsLoading, OutFilter);
+}
+
+void USaveSlot::OnGetLevelFilter(bool bIsLoading, FSELevelFilter& OutFilter) const
+{
+	OutFilter.ActorFilter = ActorFilter;
+	OutFilter.ComponentFilter = ComponentFilter;
 }

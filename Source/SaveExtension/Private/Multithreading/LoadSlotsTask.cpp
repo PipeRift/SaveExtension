@@ -44,9 +44,9 @@ void FLoadSlotsTask::DoWork()
 	LoadedSlots.Reserve(LoadedFiles.Num());
 	for (const auto& File : LoadedFiles)
 	{
-		USaveSlot* Slot = nullptr;
-		File.CreateAndDeserializeSlot(Slot, Manager);
-		LoadedSlots.Add(Slot);
+		LoadedSlots.Add(Cast<USaveSlot>(
+			FSaveFileHelpers::DeserializeObject(nullptr, File.InfoClassName, Manager, File.InfoBytes)
+		));
 	}
 
 	if (!bLoadingSingleInfo && bSortByRecent)

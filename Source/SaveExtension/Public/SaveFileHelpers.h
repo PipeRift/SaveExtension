@@ -99,8 +99,6 @@ struct FSaveFile
 
 	void SerializeInfo(USaveSlot* Slot);
 	void SerializeData(USaveSlotData* SlotData);
-	void CreateAndDeserializeSlot(USaveSlot*& Slot, const UObject* Outer) const;
-	void CreateAndDeserializeData(USaveSlot* Slot) const;
 };
 
 
@@ -120,6 +118,6 @@ public:
 	static FString GetSlotPath(FStringView SlotName);
 	static FString GetThumbnailPath(FStringView SlotName);
 
-	static void DeserializeObject(
-		UObject*& Object, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes);
+	static UObject* DeserializeObject(
+		UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes);
 };
