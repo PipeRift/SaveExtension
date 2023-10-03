@@ -2,7 +2,6 @@
 
 #include "SaveManager.h"
 
-#include "Multithreading/DeleteSlotsTask.h"
 #include "SaveFileHelpers.h"
 #include "SaveSettings.h"
 #include "Serialization/SEDataTask_LoadLevel.h"
@@ -24,7 +23,7 @@
 #include <Tasks/Pipe.h>
 
 
-UE::Tasks::FPipe Pipe{ TEXT("SaveExtensionPipe") };
+UE::Tasks::FPipe BackendPipe{ TEXT("SaveExtensionPipe") };
 
 // From SaveGameSystem.cpp
 void OnAsyncComplete(TFunction<void()> Callback)
@@ -79,7 +78,7 @@ public:
 };
 
 
-class FDeleteSlotsAction : public FPendingLatentAction
+class FDeleteAllSlotsAction : public FPendingLatentAction
 {
 public:
 	ESEContinue& Result;
@@ -87,16 +86,16 @@ public:
 	int32 OutputLink;
 	FWeakObjectPtr CallbackTarget;
 
-	FDeleteSlotsAction(USaveManager* Manager, ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
+	FDeleteAllSlotsAction(USaveManager* Manager, ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
 		: Result(OutResult)
 		, ExecutionFunction(LatentInfo.ExecutionFunction)
 		, OutputLink(LatentInfo.Linkage)
 		, CallbackTarget(LatentInfo.CallbackTarget)
 	{
 		Result = ESEContinue::InProgress;
-		Manager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
+		Manager->DeleteAllSlots([this](int32 Count) {
 			Result = ESEContinue::Continue;
-		}));
+		});
 	}
 	void UpdateOperation(FLatentResponse& Response) override
 	{
@@ -189,7 +188,7 @@ public:
 // END Async Actions
 
 
-USaveManager::USaveManager() : Super(), MTTasks{} {}
+USaveManager::USaveManager() : Super() {}
 
 void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -203,7 +202,7 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	AssureActiveSlot();
 	if (ActiveSlot && ActiveSlot->bLoadOnStart)
 	{
-		ReloadCurrentSlot();
+		ReloadActiveSlot();
 	}
 
 	UpdateLevelStreamings();
@@ -213,10 +212,10 @@ void USaveManager::Deinitialize()
 {
 	Super::Deinitialize();
 
-	MTTasks.CancelAll();
+	BackendPipe.WaitUntilEmpty();
 
 	if (GetActiveSlot()->bSaveOnClose)
-		SaveCurrentSlot();
+		SaveActiveSlot();
 
 	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
@@ -263,27 +262,9 @@ bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
 	return Task.IsSucceeded() || Task.IsScheduled();
 }
 
-bool USaveManager::DeleteSlot(FName SlotName)
+void USaveManager::PreloadAllSlots(FSEOnAllSlotsPreloaded Callback, bool bSortByRecent)
 {
-	if (SlotName.IsNone())
-	{
-		return false;
-	}
-
-	bool bSuccess = false;
-	MTTasks.CreateTask<FDeleteSlotsTask>(this, SlotName)
-		.OnFinished([&bSuccess](auto& Task) mutable {
-			bSuccess = Task->bSuccess;
-		})
-		.StartSynchronousTask();
-	MTTasks.Tick();
-	return bSuccess;
-}
-
-void USaveManager::PreloadAllSlots(FSEOnSlotsPreloaded Callback, bool bSortByRecent)
-{
-	// Load slots form a background thread
-	Pipe.Launch(UE_SOURCE_LOCATION, [this, Callback, bSortByRecent]()
+	BackendPipe.Launch(UE_SOURCE_LOCATION, [this, Callback, bSortByRecent]()
 	{
 		TArray<USaveSlot*> Slots;
 		PreloadAllSlotsSync(Slots, bSortByRecent);
@@ -340,13 +321,52 @@ void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRe
 	}
 }
 
-void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
+bool USaveManager::DeleteSlotByNameSync(FName SlotName)
 {
-	MTTasks.CreateTask<FDeleteSlotsTask>(this)
-		.OnFinished([Delegate](auto& Task) {
-			Delegate.ExecuteIfBound();
-		})
-		.StartBackgroundTask();
+	const FString NameStr = SlotName.ToString();
+	const FString ScreenshotPath = FSaveFileHelpers::GetThumbnailPath(NameStr);
+	bool bIsDeleteSlotSuccess = FSaveFileHelpers::DeleteFile(NameStr);
+	bool bIsDeleteScreenshotSuccess = IFileManager::Get().Delete(*ScreenshotPath, true);
+	return bIsDeleteSlotSuccess || bIsDeleteScreenshotSuccess;
+}
+
+void USaveManager::DeleteSlotByName(FName SlotName)
+{
+	BackendPipe.Launch(UE_SOURCE_LOCATION, [this, SlotName]()
+	{
+		DeleteSlotByNameSync(SlotName);
+	});
+}
+
+int32 USaveManager::DeleteAllSlotsSync()
+{
+	TArray<FString> FoundSlots;
+	FSlotHelpers::FindSlotFileNames(FoundSlots);
+
+	int32 Count = 0;
+	for (const FString& SlotName : FoundSlots)
+	{
+		const FString ScreenshotPath = FSaveFileHelpers::GetThumbnailPath(SlotName);
+		bool bIsDeleteSlotSuccess = FSaveFileHelpers::DeleteFile(SlotName);
+		bool bIsDeleteScreenshotSuccess = IFileManager::Get().Delete(*ScreenshotPath, true);
+		Count += bIsDeleteSlotSuccess || bIsDeleteScreenshotSuccess;
+	}
+	return Count;
+}
+
+void USaveManager::DeleteAllSlots(FSEOnAllSlotsDeleted Callback)
+{
+	BackendPipe.Launch(UE_SOURCE_LOCATION, [this, Callback]()
+	{
+		const int32 Count = DeleteAllSlotsSync();
+		if (Callback)
+		{
+			OnAsyncComplete([Count, Callback]()
+			{
+				Callback(Count);
+			});
+		}
+	});
 }
 
 void USaveManager::BPSaveSlotByName(FName SlotName, bool bScreenshot, const FScreenshotSize Size,
@@ -403,11 +423,11 @@ void USaveManager::BPDeleteAllSlots(ESEContinue& Result, struct FLatentActionInf
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FDeleteSlotsAction>(
+		if (LatentActionManager.FindExistingAction<FDeleteAllSlotsAction>(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(
-				LatentInfo.CallbackTarget, LatentInfo.UUID, new FDeleteSlotsAction(this, Result, LatentInfo));
+				LatentInfo.CallbackTarget, LatentInfo.UUID, new FDeleteAllSlotsAction(this, Result, LatentInfo));
 		}
 	}
 }
@@ -438,7 +458,7 @@ bool USaveManager::CanLoadOrSave()
 
 void USaveManager::SetActiveSlot(USaveSlot* NewSlot)
 {
-	ActiveSlot = NewInfo;
+	ActiveSlot = NewSlot;
 	// TODO: Ensure data is not null here
 }
 
@@ -522,8 +542,6 @@ void USaveManager::Tick(float DeltaTime)
 			Task->Tick(DeltaTime);
 		}
 	}
-
-	MTTasks.Tick();
 }
 
 void USaveManager::SubscribeForEvents(const TScriptInterface<ISaveExtensionInterface>& Interface)

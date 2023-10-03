@@ -4,8 +4,6 @@
 
 #include "Delegates.h"
 #include "LevelStreamingNotifier.h"
-#include "Multithreading/Delegates.h"
-#include "Multithreading/ScopedTaskManager.h"
 #include "SaveExtensionInterface.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
@@ -24,10 +22,11 @@
 
 struct FLatentActionInfo;
 
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC, USaveSlot*, Slot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USaveSlot*, Slot);
-using FSEOnSlotsPreloaded = TFunction<void(const TArray<class USaveSlot*>& Slots)>;
+using FSEOnAllSlotsPreloaded = TFunction<void(const TArray<class USaveSlot*>& Slots)>;
+using FSEOnAllSlotsDeleted = TFunction<void(int32 Count)>;
+
 
 UENUM()
 enum class ESEContinue : uint8
@@ -88,8 +87,6 @@ private:
 	/** The game instance to which this save manager is owned. */
 	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
-	FScopedTaskList MTTasks;
-
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;
 
@@ -149,8 +146,7 @@ public:
 	 * @param Slots preloaded from on disk
 	 * @param bSortByRecent Should slots be ordered by save date?
 	 */
-	void PreloadAllSlots(FSEOnSlotsPreloaded Callback, bool bSortByRecent = false);
-
+	void PreloadAllSlots(FSEOnAllSlotsPreloaded Callback, bool bSortByRecent = false);
 	/**
 	 * Find all saved slots and preload them asynchronously, without loading their data
 	 * Performance: Interacts with disk, can be slow
@@ -162,10 +158,13 @@ public:
 	/** Delete a saved game on an specified slot name
 	 * Performance: Interacts with disk, can be slow
 	 */
-	bool DeleteSlot(FName SlotName);
-
-	/** Delete all saved slots from disk, loaded or not */
-	void DeleteAllSlots(FOnSlotsDeleted Delegate);
+	bool DeleteSlotByNameSync(FName SlotName);
+	/** Deletes all saved slots in disk. Does not affect slots in memory.
+	 * Performance: Interacts with disk, can be slow
+	 */
+	int32 DeleteAllSlotsSync();
+	/** Deletes all saved slots in disk. Does not affect slots in memory. */
+	void DeleteAllSlots(FSEOnAllSlotsDeleted Delegate);
 
 
 	/** BLUEPRINT ONLY API */
@@ -241,13 +240,18 @@ public:
 
 	/** BLUEPRINTS & C++ API */
 public:
-	/** Delete a saved game on an specified slot
-	 * Performance: Interacts with disk, can be slow
-	 */
+	/** Delete a saved game on an specified slot name */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
-	bool DeleteSlot(USaveSlot* Slot)
+	void DeleteSlotByName(FName SlotName);
+
+	/** Delete a saved game on an specified slot */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension")
+	void DeleteSlot(USaveSlot* Slot)
 	{
-		return Slot ? DeleteSlot(Slot->FileName) : false;
+		if (Slot)
+		{
+			DeleteSlotByName(Slot->FileName);
+		}
 	}
 
 	/** Get the currently loaded Slot. If game was never loaded returns a new Slot */
