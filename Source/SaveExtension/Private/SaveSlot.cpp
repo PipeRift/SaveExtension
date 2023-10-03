@@ -129,12 +129,12 @@ int32 USaveSlot::GetIndex_Implementation() const
 	return OnGetIndex();
 }
 
-bool USaveSlot::IsMTSerializationLoad() const
+bool USaveSlot::ShouldDeserializeAsync() const
 {
 	return MultithreadedSerialization == ESEAsyncMode::LoadAsync ||
 		   MultithreadedSerialization == ESEAsyncMode::SaveAndLoadAsync;
 }
-bool USaveSlot::IsMTSerializationSave() const
+bool USaveSlot::ShouldSerializeAsync() const
 {
 	return MultithreadedSerialization == ESEAsyncMode::SaveAsync ||
 		   MultithreadedSerialization == ESEAsyncMode::SaveAndLoadAsync;
@@ -151,12 +151,12 @@ float USaveSlot::GetMaxFrameMs() const
 
 bool USaveSlot::IsFrameSplitLoad() const
 {
-	return !IsMTSerializationLoad() && (FrameSplittedSerialization == ESEAsyncMode::LoadAsync ||
+	return !ShouldDeserializeAsync() && (FrameSplittedSerialization == ESEAsyncMode::LoadAsync ||
 										   FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
 }
 bool USaveSlot::IsFrameSplitSave() const
 {
-	return !IsMTSerializationSave() && (FrameSplittedSerialization == ESEAsyncMode::SaveAsync ||
+	return !ShouldSerializeAsync() && (FrameSplittedSerialization == ESEAsyncMode::SaveAsync ||
 										   FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
 }
 

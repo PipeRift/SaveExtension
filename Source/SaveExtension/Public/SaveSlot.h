@@ -227,8 +227,8 @@ protected:
 	virtual int32 OnGetIndex() const;
 
 public:
-	bool IsMTSerializationLoad() const;
-	bool IsMTSerializationSave() const;
+	bool ShouldDeserializeAsync() const;
+	bool ShouldSerializeAsync() const;
 
 	ESEAsyncMode GetFrameSplitSerialization() const;
 	float GetMaxFrameMs() const;

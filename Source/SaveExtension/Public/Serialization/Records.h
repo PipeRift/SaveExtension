@@ -86,6 +86,8 @@ struct FComponentRecord : public FObjectRecord
 	FTransform Transform;
 
 
+	FComponentRecord() : Super() {}
+	FComponentRecord(const UActorComponent* Component) : Super(Component) {}
 	virtual bool Serialize(FArchive& Ar) override;
 };
 
@@ -107,6 +109,5 @@ struct FActorRecord : public FObjectRecord
 
 	FActorRecord() : Super() {}
 	FActorRecord(const AActor* Actor) : Super(Actor) {}
-
 	virtual bool Serialize(FArchive& Ar) override;
 };

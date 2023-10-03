@@ -4,7 +4,6 @@
 
 #include "Delegates.h"
 #include "ISaveExtension.h"
-#include "Multithreading/MTTask_SerializeActors.h"
 #include "Multithreading/SaveFileTask.h"
 #include "SaveSlotData.h"
 #include "SEDataTask.h"
@@ -41,7 +40,6 @@ protected:
 	/** End Async variables */
 
 	/** Begin AsyncTasks */
-	TArray<FAsyncTask<FMTTask_SerializeActors>> Tasks;
 	FAsyncTask<FSaveFileTask>* SaveTask = nullptr;
 	/** End AsyncTasks */
 
@@ -76,22 +74,11 @@ public:
 	virtual void OnFinish(bool bSuccess) override;
 
 protected:
-	/** BEGIN Serialization */
 	/** Serializes all world actors. */
 	void SerializeWorld();
-
 	void PrepareAllLevels(const TArray<ULevelStreaming*>& Levels);
 	void PrepareLevel(const ULevel* Level, FLevelRecord& LevelRecord);
+	void SerializeLevel(const ULevel* Level, const ULevelStreaming* StreamingLevel = nullptr);
 
-	void SerializeLevelSync(
-		const ULevel* Level, int32 AssignedThreads, const ULevelStreaming* StreamingLevel = nullptr);
-
-	/** END Serialization */
-
-	void RunScheduledTasks();
-
-private:
-	/** BEGIN FileSaving */
 	void SaveFile();
-	/** End FileSaving */
 };
