@@ -298,7 +298,7 @@ void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 		.StartBackgroundTask();
 }
 
-void USaveManager::BPSaveSlot(FName SlotName, bool bScreenshot, const FScreenshotSize Size,
+void USaveManager::BPSaveSlotByName(FName SlotName, bool bScreenshot, const FScreenshotSize Size,
 	ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
 {
 	if (UWorld* World = GetWorld())
@@ -316,7 +316,7 @@ void USaveManager::BPSaveSlot(FName SlotName, bool bScreenshot, const FScreensho
 	Result = ESEContinueOrFail::Failed;
 }
 
-void USaveManager::BPLoadSlot(FName SlotName, ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadSlotByName(FName SlotName, ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -458,18 +458,6 @@ void USaveManager::FinishTask(FSEDataTask* Task)
 	{
 		Tasks[0]->Start();
 	}
-}
-
-FName USaveManager::GetFileNameFromId(const int32 SlotId) const
-{
-	// TODO: Expose custom names
-	// if (const auto* Preset = GetActivePreset())
-	//{
-	//	FName Name;
-	//	Preset->BPGetSlotNameFromId(SlotId, Name);
-	//	return Name;
-	//}
-	return FName{FString::FromInt(SlotId)};
 }
 
 bool USaveManager::IsLoading() const
