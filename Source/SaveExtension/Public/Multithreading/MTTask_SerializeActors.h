@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "MTTask.h"
-#include "MTTask_SerializeActors.h"
+#include "Multithreading/MTTask.h"
+#include "Multithreading/MTTask_SerializeActors.h"
 #include "Serialization/LevelRecords.h"
 #include "Serialization/Records.h"
 
