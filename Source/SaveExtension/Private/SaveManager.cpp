@@ -3,7 +3,6 @@
 #include "SaveManager.h"
 
 #include "Multithreading/DeleteSlotsTask.h"
-#include "Multithreading/LoadSlotsTask.h"
 #include "SaveFileHelpers.h"
 #include "SaveSettings.h"
 #include "Serialization/SEDataTask_LoadLevel.h"
@@ -22,7 +21,23 @@
 #include <LatentActions.h>
 #include <Misc/CoreDelegates.h>
 #include <Misc/Paths.h>
+#include <Tasks/Pipe.h>
 
+
+UE::Tasks::FPipe Pipe{ TEXT("SaveExtensionPipe") };
+
+// From SaveGameSystem.cpp
+void OnAsyncComplete(TFunction<void()> Callback)
+{
+	// NB. Using Ticker because AsyncTask may run during async package loading which may not be suitable for save data
+	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda(
+		[Callback = MoveTemp(Callback)](float) -> bool
+		{
+			Callback();
+			return false;
+		}
+	));
+}
 
 // BEGIN Async Actions
 
@@ -96,8 +111,7 @@ public:
 #endif
 };
 
-
-class FSELoadInfosAction : public FPendingLatentAction
+class FSEPreloadSlotsAction : public FPendingLatentAction
 {
 public:
 	TArray<USaveSlot*>& Slots;
@@ -106,7 +120,7 @@ public:
 	int32 OutputLink;
 	FWeakObjectPtr CallbackTarget;
 
-	FSELoadInfosAction(USaveManager* Manager, const bool bSortByRecent, TArray<USaveSlot*>& OutSlots,
+	FSEPreloadSlotsAction(USaveManager* Manager, const bool bSortByRecent, TArray<USaveSlot*>& OutSlots,
 		ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
 		: Slots(OutSlots)
 		, Result(OutResult)
@@ -115,11 +129,10 @@ public:
 		, CallbackTarget(LatentInfo.CallbackTarget)
 	{
 		Result = ESEContinue::InProgress;
-		Manager->FindAllSlots(
-			bSortByRecent, FOnSlotsLoaded::CreateLambda([this](const TArray<USaveSlot*>& Results) {
-				Slots = Results;
-				Result = ESEContinue::Continue;
-			}));
+		Manager->PreloadAllSlots([this](const TArray<USaveSlot*>& InSlots) {
+			Slots = InSlots;
+			Result = ESEContinue::Continue;
+		}, bSortByRecent);
 	}
 	virtual void UpdateOperation(FLatentResponse& Response) override
 	{
@@ -267,26 +280,64 @@ bool USaveManager::DeleteSlot(FName SlotName)
 	return bSuccess;
 }
 
-void USaveManager::FindAllSlots(bool bSortByRecent, FOnSlotsLoaded Delegate)
+void USaveManager::PreloadAllSlots(FSEOnSlotsPreloaded Callback, bool bSortByRecent)
 {
-	MTTasks.CreateTask<FLoadSlotsTask>(this, bSortByRecent, MoveTemp(Delegate))
-		.OnFinished([](auto& Task) {
-			Task->AfterFinish();
-		})
-		.StartBackgroundTask();
+	// Load slots form a background thread
+	Pipe.Launch(UE_SOURCE_LOCATION, [this, Callback, bSortByRecent]()
+	{
+		TArray<USaveSlot*> Slots;
+		PreloadAllSlotsSync(Slots, bSortByRecent);
+
+		for (auto& Slot : Slots)
+		{
+			Slot->ClearInternalFlags(EInternalObjectFlags::Async);
+		}
+
+		if (Callback)
+		{
+			OnAsyncComplete([Slots = MoveTemp(Slots), Callback]()
+			{
+				Callback(Slots);
+			});
+		}
+	});
 }
 
-void USaveManager::FindAllSlotsSync(bool bSortByRecent, TArray<USaveSlot*>& Slots)
+void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRecent)
 {
-	auto Delegate = FOnSlotsLoaded::CreateLambda([&Slots](const TArray<USaveSlot*>& FoundSlots) {
-		Slots = FoundSlots;
-	});
-	MTTasks.CreateTask<FLoadSlotsTask>(this, bSortByRecent, Delegate)
-		.OnFinished([](auto& Task) {
-			Task->AfterFinish();
-		})
-		.StartSynchronousTask();
-	MTTasks.Tick();
+	TArray<FString> FileNames;
+	FSlotHelpers::FindSlotFileNames(FileNames);
+
+	TArray<FSaveFile> LoadedFiles;
+	LoadedFiles.Reserve(FileNames.Num());
+	for (const FString& FileName : FileNames)
+	{
+		// Load all files
+		FScopedFileReader Reader(FSaveFileHelpers::GetSlotPath(FileName));
+		if (Reader.IsValid())
+		{
+			LoadedFiles.AddDefaulted_GetRef()
+				.Read(Reader, true);
+		}
+	}
+
+	Slots.Reserve(Slots.Num() + LoadedFiles.Num());
+	for (const auto& File : LoadedFiles)
+	{
+		auto* Slot = Cast<USaveSlot>(
+			FSaveFileHelpers::DeserializeObject(nullptr, File.ClassName, this, File.Bytes));
+		if (Slot)
+		{
+			Slots.Add(Slot);
+		}
+	}
+
+	if (bSortByRecent)
+	{
+		Slots.Sort([](const USaveSlot& A, const USaveSlot& B) {
+			return A.Stats.SaveDate > B.Stats.SaveDate;
+		});
+	}
 }
 
 void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
@@ -332,17 +383,17 @@ void USaveManager::BPLoadSlotByName(FName SlotName, ESEContinueOrFail& Result, s
 	Result = ESEContinueOrFail::Failed;
 }
 
-void USaveManager::BPFindAllSlots(const bool bSortByRecent, TArray<USaveSlot*>& SaveInfos,
+void USaveManager::BPPreloadAllSlots(const bool bSortByRecent, TArray<USaveSlot*>& SaveInfos,
 	ESEContinue& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FSELoadInfosAction>(
+		if (LatentActionManager.FindExistingAction<FSEPreloadSlotsAction>(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FSELoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
+				new FSEPreloadSlotsAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
 		}
 	}
 }
@@ -361,6 +412,14 @@ void USaveManager::BPDeleteAllSlots(ESEContinue& Result, struct FLatentActionInf
 	}
 }
 
+USaveSlot* USaveManager::PreloadSlot(FName SlotName)
+{
+	USaveSlot* Slot = nullptr;
+	const FString NameStr = SlotName.ToString();
+    FSaveFileHelpers::LoadFile(NameStr, Slot, true, this);
+	return Slot;
+}
+
 bool USaveManager::IsSlotSaved(FName SlotName) const
 {
 	return FSaveFileHelpers::FileExists(SlotName.ToString());
@@ -377,9 +436,15 @@ bool USaveManager::CanLoadOrSave()
 	return IsValid(GetWorld());
 }
 
+void USaveManager::SetActiveSlot(USaveSlot* NewSlot)
+{
+	ActiveSlot = NewInfo;
+	// TODO: Ensure data is not null here
+}
+
 void USaveManager::AssureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass, bool bForced)
 {
-	if (IsInSlot() && !bForced)
+	if (HasActiveSlot() && !bForced)
 		return;
 
 	if (!ActiveSlotClass)
@@ -390,7 +455,7 @@ void USaveManager::AssureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass, bool
 			ActiveSlotClass = USaveSlot::StaticClass();
 		}
 	}
-	ActiveSlot = NewObject<USaveSlot>(this, ActiveSlotClass);
+	SetActiveSlot(NewObject<USaveSlot>(this, ActiveSlotClass));
 }
 
 void USaveManager::UpdateLevelStreamings()
@@ -428,25 +493,6 @@ void USaveManager::SerializeStreamingLevel(ULevelStreaming* LevelStreaming)
 void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
 	CreateTask<FSEDataTask_LoadLevel>().Setup(LevelStreaming).Start();
-}
-
-USaveSlot* USaveManager::LoadInfo(FName SlotName)
-{
-	if (SlotName.IsNone())
-	{
-		SELog(ActiveSlot, "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
-		return nullptr;
-	}
-
-	auto& Task = MTTasks.CreateTask<FLoadSlotsTask>(this, SlotName).OnFinished([](auto& Task) {
-		Task->AfterFinish();
-	});
-	Task.StartSynchronousTask();
-
-	check(Task.IsDone());
-
-	const auto& Infos = Task->GetLoadedSlots();
-	return Infos.Num() > 0 ? Infos[0] : nullptr;
 }
 
 void USaveManager::FinishTask(FSEDataTask* Task)

@@ -29,7 +29,7 @@ void FSEDataTask_Load::OnStart()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::OnStart);
 
-	Slot = Manager->LoadInfo(SlotName);
+	Slot = Manager->PreloadSlot(SlotName);
 	SELog(Slot, "Loading from Slot " + SlotName.ToString());
 	if (!Slot)
 	{
@@ -156,7 +156,7 @@ void FSEDataTask_Load::StartDeserialization()
 	Slot->Stats.LoadDate = FDateTime::Now();
 
 	// Apply current Info if succeeded
-	Manager->AssignActiveSlot(Slot);
+	Manager->SetActiveSlot(Slot);
 
 	Manager->OnLoadBegan();
 

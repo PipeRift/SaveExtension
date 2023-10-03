@@ -81,8 +81,8 @@ struct FSaveFile
 	int32 CustomVersionFormat = int32(ECustomVersionSerializationFormat::Unknown);
 	FCustomVersionContainer CustomVersions;
 
-	FString InfoClassName;
-	TArray<uint8> InfoBytes;
+	FString ClassName;
+	TArray<uint8> Bytes;
 
 	FString DataClassName;
 	bool bIsDataCompressed = false;

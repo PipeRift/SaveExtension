@@ -110,8 +110,8 @@ void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 		}
 	}
 
-	Ar << InfoClassName;
-	Ar << InfoBytes;
+	Ar << ClassName;
+	Ar << Bytes;
 
 	Ar << DataClassName;
 	if (bSkipData || DataClassName.IsEmpty())
@@ -160,8 +160,8 @@ void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 			Ar, static_cast<ECustomVersionSerializationFormat::Type>(CustomVersionFormat));
 	}
 
-	Ar << InfoClassName;
-	Ar << InfoBytes;
+	Ar << ClassName;
+	Ar << Bytes;
 
 	Ar << DataClassName;
 	if (!DataClassName.IsEmpty())
@@ -191,10 +191,10 @@ void FSaveFile::SerializeInfo(USaveSlot* Slot)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFile::SerializeInfo);
 	check(Slot);
-	InfoBytes.Reset();
-	InfoClassName = Slot->GetClass()->GetPathName();
+	Bytes.Reset();
+	ClassName = Slot->GetClass()->GetPathName();
 
-	FMemoryWriter BytesWriter(InfoBytes);
+	FMemoryWriter BytesWriter(Bytes);
 	FObjectAndNameAsStringProxyArchive Ar(BytesWriter, false);
 	Slot->Serialize(Ar);
 }
@@ -249,7 +249,7 @@ bool FSaveFileHelpers::LoadFile(FStringView SlotName, USaveSlot*& Slot, bool bLo
 
 		{
 			TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeInfo)
-			Slot = Cast<USaveSlot>(DeserializeObject(Slot, File.InfoClassName, Outer, File.InfoBytes));
+			Slot = Cast<USaveSlot>(DeserializeObject(Slot, File.ClassName, Outer, File.Bytes));
 		}
 		if (bLoadData)
 		{

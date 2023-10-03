@@ -27,7 +27,7 @@ struct FLatentActionInfo;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC, USaveSlot*, Slot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USaveSlot*, Slot);
-
+using FSEOnSlotsPreloaded = TFunction<void(const TArray<class USaveSlot*>& Slots)>;
 
 UENUM()
 enum class ESEContinue : uint8
@@ -128,7 +128,7 @@ public:
 		const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
 
 	/** Save the currently loaded Slot */
-	bool SaveCurrentSlot(
+	bool SaveActiveSlot(
 		bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
 
 
@@ -139,18 +139,25 @@ public:
 	bool LoadSlot(const USaveSlot* Slot, FOnGameLoaded OnLoaded = {});
 
 	/** Reload the currently loaded slot if any */
-	bool ReloadCurrentSlot(FOnGameLoaded OnLoaded = {})
+	bool ReloadActiveSlot(FOnGameLoaded OnLoaded = {})
 	{
 		return LoadSlot(ActiveSlot, MoveTemp(OnLoaded));
 	}
 
 	/**
-	 * Find all saved games and return their Slots
+	 * Find all saved slots and preload them, without loading their data
+	 * @param Slots preloaded from on disk
 	 * @param bSortByRecent Should slots be ordered by save date?
-	 * @param SaveInfos All saved games found on disk
 	 */
-	void FindAllSlots(bool bSortByRecent, FOnSlotsLoaded Delegate);
-	void FindAllSlotsSync(bool bSortByRecent, TArray<USaveSlot*>& Slots);
+	void PreloadAllSlots(FSEOnSlotsPreloaded Callback, bool bSortByRecent = false);
+
+	/**
+	 * Find all saved slots and preload them asynchronously, without loading their data
+	 * Performance: Interacts with disk, can be slow
+	 * @param Slots preloaded from on disk
+	 * @param bSortByRecent Should slots be ordered by save date?
+	 */
+	void PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRecent = false);
 
 	/** Delete a saved game on an specified slot name
 	 * Performance: Interacts with disk, can be slow
@@ -184,9 +191,9 @@ public:
 
 	/** Save the currently loaded Slot */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Saving",
-		meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Current Slot", Latent,
+		meta = (AdvancedDisplay = "bScreenshot, Size", DisplayName = "Save Active Slot", Latent,
 			LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPSaveCurrentSlot(bool bScreenshot,
+	void BPSaveActiveSlot(bool bScreenshot,
 		UPARAM(meta = (EditCondition = bScreenshot)) const FScreenshotSize Size, ESEContinueOrFail& Result,
 		FLatentActionInfo LatentInfo)
 	{
@@ -207,22 +214,22 @@ public:
 
 	/** Reload the currently loaded slot if any */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
-		meta = (DisplayName = "Reload Current Slot", Latent, LatentInfo = "LatentInfo",
+		meta = (DisplayName = "Reload Active Slot", Latent, LatentInfo = "LatentInfo",
 			ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
-	void BPReloadCurrentSlot(ESEContinueOrFail& Result, FLatentActionInfo LatentInfo)
+	void BPReloadActiveSlot(ESEContinueOrFail& Result, FLatentActionInfo LatentInfo)
 	{
 		BPLoadSlot(ActiveSlot, Result, MoveTemp(LatentInfo));
 	}
 
 	/**
-	 * Find all saved games and return their Slots
+	 * Find all saved slots and preload them, without loading their data
+	 * @param Slots preloaded from on disk
 	 * @param bSortByRecent Should slots be ordered by save date?
-	 * @param SaveInfos All saved games found on disk
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension",
 		meta = (Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result",
-			DisplayName = "Find All Slots"))
-	void BPFindAllSlots(const bool bSortByRecent, TArray<USaveSlot*>& Slots, ESEContinue& Result,
+			DisplayName = "Preload All Slots"))
+	void BPPreloadAllSlots(const bool bSortByRecent, TArray<USaveSlot*>& Slots, ESEContinue& Result,
 		struct FLatentActionInfo LatentInfo);
 
 	/** Delete all saved slots from disk, loaded or not */
@@ -252,10 +259,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
-	FORCEINLINE USaveSlot* GetSlot(FName SlotName)
-	{
-		return LoadInfo(SlotName);
-	}
+	USaveSlot* PreloadSlot(FName SlotName);
 
 	/** Check if an slot exists on disk
 	 * @return true if the slot exists
@@ -268,19 +272,16 @@ public:
 	 * @return true if currently playing in a saved slot
 	 */
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
-	FORCEINLINE bool IsInSlot() const
+	FORCEINLINE bool HasActiveSlot() const
 	{
 		return ActiveSlot != nullptr;
 	}
 
+	// Assigns a new active slot. If this slot is preloaded, empty data is assigned to it.
+	// This does not load the game!
+	void SetActiveSlot(USaveSlot* NewSlot);
+
 	void AssureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass = {}, bool bForced = false);
-
-	void AssignActiveSlot(USaveSlot* NewInfo)
-	{
-		ActiveSlot = NewInfo;
-	}
-
-	USaveSlot* LoadInfo(FName FileName);
 
 protected:
 	bool CanLoadOrSave();
@@ -397,8 +398,7 @@ inline void USaveManager::BPSaveSlot(const USaveSlot* Slot, bool bScreenshot,
 	BPSaveSlotByName(Slot->FileName, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
 }
 
-/** Save the currently loaded Slot */
-inline bool USaveManager::SaveCurrentSlot(bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
+inline bool USaveManager::SaveActiveSlot(bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	return SaveSlot(ActiveSlot, true, bScreenshot, Size, OnSaved);
 }

@@ -4,8 +4,5 @@
 
 #include <CoreMinimal.h>
 
-
-DECLARE_DELEGATE_OneParam(FOnSlotsLoaded, const TArray<class USaveSlot*>&);
-
 // @param Amount of slots removed
 DECLARE_DELEGATE(FOnSlotsDeleted);
