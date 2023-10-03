@@ -110,3 +110,14 @@ struct FActorRecord : public FObjectRecord
 
 	virtual bool Serialize(FArchive& Ar) override;
 };
+
+
+/** Represents a serialized Subsystem */
+USTRUCT()
+struct FSubsystemRecord : public FObjectRecord
+{
+	GENERATED_BODY()
+
+	FSubsystemRecord() : Super() {}
+	FSubsystemRecord(const USubsystem* Subsystem) : Super(Subsystem) {}
+};

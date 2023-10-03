@@ -39,6 +39,8 @@ public:
 	FPersistentLevelRecord RootLevel;
 	TArray<FStreamingLevelRecord> SubLevels;
 
+	TArray<FSubsystemRecord> GameInstanceSubsystems;
+	TArray<FSubsystemRecord> WorldSubsystems;
 
 	void CleanRecords(bool bKeepSublevels);
 
