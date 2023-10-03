@@ -1,26 +1,179 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "SaveManager.h"
 
-#include "FileAdapter.h"
-#include "LatentActions/LoadInfosAction.h"
 #include "Multithreading/DeleteSlotsTask.h"
-#include "Multithreading/LoadSlotInfosTask.h"
+#include "Multithreading/LoadSlotsTask.h"
+#include "SaveFileHelpers.h"
 #include "SaveSettings.h"
-#include "Serialization/SlotDataTask_LevelLoader.h"
-#include "Serialization/SlotDataTask_LevelSaver.h"
-#include "Serialization/SlotDataTask_Loader.h"
-#include "Serialization/SlotDataTask_Saver.h"
+#include "Serialization/SEDataTask_LoadLevel.h"
+#include "Serialization/SEDataTask_SaveLevel.h"
+#include "Serialization/SEDataTask_Load.h"
+#include "Serialization/SEDataTask_Save.h"
 
 #include <Engine/GameViewportClient.h>
+#include <Engine/LatentActionManager.h>
 #include <Engine/LevelStreaming.h>
 #include <EngineUtils.h>
 #include <GameDelegates.h>
 #include <GameFramework/GameModeBase.h>
 #include <HighResScreenshot.h>
 #include <Kismet/GameplayStatics.h>
+#include <LatentActions.h>
 #include <Misc/CoreDelegates.h>
 #include <Misc/Paths.h>
+
+
+// BEGIN Async Actions
+
+class FSELoadSlotDataAction : public FPendingLatentAction
+{
+public:
+	ESEContinueOrFail& Result;
+	FName ExecutionFunction;
+	int32 OutputLink;
+	FWeakObjectPtr CallbackTarget;
+
+	FSELoadSlotDataAction(USaveManager* Manager, FName SlotName, ESEContinueOrFail& OutResult,
+		const FLatentActionInfo& LatentInfo)
+		: Result(OutResult)
+		, ExecutionFunction(LatentInfo.ExecutionFunction)
+		, OutputLink(LatentInfo.Linkage)
+		, CallbackTarget(LatentInfo.CallbackTarget)
+	{
+		const bool bStarted = Manager->LoadSlot(
+			SlotName, FOnGameLoaded::CreateRaw(this, &FSELoadSlotDataAction::OnLoadFinished));
+		Result = bStarted ? ESEContinueOrFail::InProgress : ESEContinueOrFail::Failed;
+	}
+	void UpdateOperation(FLatentResponse& Response) override
+	{
+		Response.FinishAndTriggerIf(
+			Result != ESEContinueOrFail::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
+	}
+	void OnLoadFinished(USaveSlot* SavedSlot)
+	{
+		Result = SavedSlot ? ESEContinueOrFail::Continue : ESEContinueOrFail::Failed;
+	}
+#if WITH_EDITOR
+	// Returns a human readable description of the latent operation's current state
+	FString GetDescription() const override
+	{
+		return TEXT("Loading Game...");
+	}
+#endif
+};
+
+
+class FDeleteSlotsAction : public FPendingLatentAction
+{
+public:
+	ESEContinue& Result;
+	FName ExecutionFunction;
+	int32 OutputLink;
+	FWeakObjectPtr CallbackTarget;
+
+	FDeleteSlotsAction(USaveManager* Manager, ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
+		: Result(OutResult)
+		, ExecutionFunction(LatentInfo.ExecutionFunction)
+		, OutputLink(LatentInfo.Linkage)
+		, CallbackTarget(LatentInfo.CallbackTarget)
+	{
+		Result = ESEContinue::InProgress;
+		Manager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
+			Result = ESEContinue::Continue;
+		}));
+	}
+	void UpdateOperation(FLatentResponse& Response) override
+	{
+		Response.FinishAndTriggerIf(
+			Result != ESEContinue::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
+	}
+#if WITH_EDITOR
+	FString GetDescription() const override
+	{
+		return TEXT("Deleting all slots...");
+	}
+#endif
+};
+
+
+class FSELoadInfosAction : public FPendingLatentAction
+{
+public:
+	TArray<USaveSlot*>& Slots;
+	ESEContinue& Result;
+	FName ExecutionFunction;
+	int32 OutputLink;
+	FWeakObjectPtr CallbackTarget;
+
+	FSELoadInfosAction(USaveManager* Manager, const bool bSortByRecent, TArray<USaveSlot*>& OutSlots,
+		ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
+		: Slots(OutSlots)
+		, Result(OutResult)
+		, ExecutionFunction(LatentInfo.ExecutionFunction)
+		, OutputLink(LatentInfo.Linkage)
+		, CallbackTarget(LatentInfo.CallbackTarget)
+	{
+		Result = ESEContinue::InProgress;
+		Manager->FindAllSlots(
+			bSortByRecent, FOnSlotsLoaded::CreateLambda([this](const TArray<USaveSlot*>& Results) {
+				Slots = Results;
+				Result = ESEContinue::Continue;
+			}));
+	}
+	virtual void UpdateOperation(FLatentResponse& Response) override
+	{
+		Response.FinishAndTriggerIf(
+			Result != ESEContinue::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
+	}
+#if WITH_EDITOR
+	virtual FString GetDescription() const override
+	{
+		return TEXT("Loading all slots...");
+	}
+#endif
+};
+
+
+class FSaveGameAction : public FPendingLatentAction
+{
+public:
+	ESEContinueOrFail& Result;
+	FName ExecutionFunction;
+	int32 OutputLink;
+	FWeakObjectPtr CallbackTarget;
+
+	FSaveGameAction(USaveManager* Manager, FName SlotName, bool bOverrideIfNeeded, bool bScreenshot,
+		const FScreenshotSize Size, ESEContinueOrFail& OutResult, const FLatentActionInfo& LatentInfo)
+		: Result(OutResult)
+		, ExecutionFunction(LatentInfo.ExecutionFunction)
+		, OutputLink(LatentInfo.Linkage)
+		, CallbackTarget(LatentInfo.CallbackTarget)
+	{
+		const bool bStarted = Manager->SaveSlot(SlotName, bOverrideIfNeeded, bScreenshot, Size,
+			FOnGameSaved::CreateRaw(this, &FSaveGameAction::OnSaveFinished));
+		Result = bStarted ? ESEContinueOrFail::InProgress : ESEContinueOrFail::Failed;
+	}
+
+	virtual void UpdateOperation(FLatentResponse& Response) override
+	{
+		Response.FinishAndTriggerIf(
+			Result != ESEContinueOrFail::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
+	}
+	void OnSaveFinished(USaveSlot* SavedSlot)
+	{
+		Result = SavedSlot ? ESEContinueOrFail::Continue : ESEContinueOrFail::Failed;
+	}
+#if WITH_EDITOR
+	// Returns a human readable description of the latent operation's current state
+	virtual FString GetDescription() const override
+	{
+		return TEXT("Saving Game...");
+	}
+#endif
+};
+
+// END Async Actions
 
 
 USaveManager::USaveManager() : Super(), MTTasks{} {}
@@ -34,15 +187,12 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
-	ActivePreset = GetDefault<USaveSettings>()->CreatePreset(this);
-
-	// AutoLoad
-	if (GetPreset() && GetPreset()->bAutoLoad)
+	AssureActiveSlot();
+	if (ActiveSlot && ActiveSlot->bLoadOnStart)
 	{
 		ReloadCurrentSlot();
 	}
 
-	TryInstantiateInfo();
 	UpdateLevelStreamings();
 }
 
@@ -52,7 +202,7 @@ void USaveManager::Deinitialize()
 
 	MTTasks.CancelAll();
 
-	if (GetPreset()->bSaveOnExit)
+	if (GetActiveSlot()->bSaveOnClose)
 		SaveCurrentSlot();
 
 	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
@@ -60,32 +210,31 @@ void USaveManager::Deinitialize()
 	FGameDelegates::Get().GetEndPlayMapDelegate().RemoveAll(this);
 }
 
-bool USaveManager::SaveSlot(
-	FName SlotName, bool bOverrideIfNeeded, bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
+bool USaveManager::SaveSlot(FName SlotName, bool bOverrideIfNeeded, bool bScreenshot,
+	const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	if (!CanLoadOrSave())
 		return false;
 
-	const USavePreset* Preset = GetPreset();
 	if (SlotName.IsNone())
 	{
-		SELog(Preset, "Can't use an empty slot name to save.", true);
+		SELog(ActiveSlot, "Can't use an empty slot name to save.", true);
 		return false;
 	}
 
 	// Saving
-	SELog(Preset, "Saving to Slot " + SlotName.ToString());
+	SELog(ActiveSlot, "Saving to Slot " + SlotName.ToString());
 
 	UWorld* World = GetWorld();
 	check(World);
 
 	// Launch task, always fail if it didn't finish or wasn't scheduled
-	auto* Task = CreateTask<USlotDataTask_Saver>()
-		->Setup(SlotName, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
-		->Bind(OnSaved)
-		->Start();
+	auto& Task = CreateTask<FSEDataTask_Save>()
+		.Setup(SlotName, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+		.Bind(OnSaved)
+		.Start();
 
-	return Task->IsSucceeded() || Task->IsScheduled();
+	return Task.IsSucceeded() || Task.IsScheduled();
 }
 
 bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
@@ -95,14 +244,10 @@ bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
 		return false;
 	}
 
-	TryInstantiateInfo();
+	AssureActiveSlot();
 
-	auto* Task = CreateTask<USlotDataTask_Loader>()
-		->Setup(SlotName)
-		->Bind(OnLoaded)
-		->Start();
-
-	return Task->IsSucceeded() || Task->IsScheduled();
+	auto& Task = CreateTask<FSEDataTask_Load>().Setup(SlotName).Bind(OnLoaded).Start();
+	return Task.IsSucceeded() || Task.IsScheduled();
 }
 
 bool USaveManager::DeleteSlot(FName SlotName)
@@ -122,18 +267,21 @@ bool USaveManager::DeleteSlot(FName SlotName)
 	return bSuccess;
 }
 
-void USaveManager::LoadAllSlotInfos(bool bSortByRecent, FOnSlotInfosLoaded Delegate)
+void USaveManager::FindAllSlots(bool bSortByRecent, FOnSlotsLoaded Delegate)
 {
-	MTTasks.CreateTask<FLoadSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	MTTasks.CreateTask<FLoadSlotsTask>(this, bSortByRecent, MoveTemp(Delegate))
 		.OnFinished([](auto& Task) {
 			Task->AfterFinish();
 		})
 		.StartBackgroundTask();
 }
 
-void USaveManager::LoadAllSlotInfosSync(bool bSortByRecent, FOnSlotInfosLoaded Delegate)
+void USaveManager::FindAllSlotsSync(bool bSortByRecent, TArray<USaveSlot*>& Slots)
 {
-	MTTasks.CreateTask<FLoadSlotInfosTask>(this, bSortByRecent, MoveTemp(Delegate))
+	auto Delegate = FOnSlotsLoaded::CreateLambda([&Slots](const TArray<USaveSlot*>& FoundSlots) {
+		Slots = FoundSlots;
+	});
+	MTTasks.CreateTask<FLoadSlotsTask>(this, bSortByRecent, Delegate)
 		.OnFinished([](auto& Task) {
 			Task->AfterFinish();
 		})
@@ -150,60 +298,56 @@ void USaveManager::DeleteAllSlots(FOnSlotsDeleted Delegate)
 		.StartBackgroundTask();
 }
 
-void USaveManager::BPSaveSlot(FName SlotName, bool bScreenshot, const FScreenshotSize Size,
-	ESaveGameResult& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
+void USaveManager::BPSaveSlotByName(FName SlotName, bool bScreenshot, const FScreenshotSize Size,
+	ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded /*= true*/)
 {
 	if (UWorld* World = GetWorld())
 	{
-		Result = ESaveGameResult::Saving;
-
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
 		if (LatentActionManager.FindExistingAction<FSaveGameAction>(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FSaveGameAction(this, SlotName, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
+				new FSaveGameAction(
+					this, SlotName, bOverrideIfNeeded, bScreenshot, Size, Result, LatentInfo));
 		}
 		return;
 	}
-	Result = ESaveGameResult::Failed;
+	Result = ESEContinueOrFail::Failed;
 }
 
-void USaveManager::BPLoadSlot(
-	FName SlotName, ELoadGameResult& Result, struct FLatentActionInfo LatentInfo)
-{
-	if (UWorld* World = GetWorld())
-	{
-		Result = ELoadGameResult::Loading;
-
-		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadGameAction>(
-				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
-		{
-			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FLoadGameAction(this, SlotName, Result, LatentInfo));
-		}
-		return;
-	}
-	Result = ELoadGameResult::Failed;
-}
-
-void USaveManager::BPLoadAllSlotInfos(const bool bSortByRecent, TArray<USlotInfo*>& SaveInfos,
-	ELoadInfoResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadSlotByName(FName SlotName, ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
 		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
-		if (LatentActionManager.FindExistingAction<FLoadInfosAction>(
+		if (LatentActionManager.FindExistingAction<FSELoadSlotDataAction>(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FLoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
+				new FSELoadSlotDataAction(this, SlotName, Result, LatentInfo));
+		}
+		return;
+	}
+	Result = ESEContinueOrFail::Failed;
+}
+
+void USaveManager::BPFindAllSlots(const bool bSortByRecent, TArray<USaveSlot*>& SaveInfos,
+	ESEContinue& Result, struct FLatentActionInfo LatentInfo)
+{
+	if (UWorld* World = GetWorld())
+	{
+		FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
+		if (LatentActionManager.FindExistingAction<FSELoadInfosAction>(
+				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
+		{
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
+				new FSELoadInfosAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
 		}
 	}
 }
 
-void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPDeleteAllSlots(ESEContinue& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -219,40 +363,12 @@ void USaveManager::BPDeleteAllSlots(EDeleteSlotsResult& Result, struct FLatentAc
 
 bool USaveManager::IsSlotSaved(FName SlotName) const
 {
-	return FFileAdapter::DoesFileExist(SlotName.ToString());
-}
-
-USavePreset* USaveManager::SetActivePreset(TSubclassOf<USavePreset> PresetClass)
-{
-	// We can only change a preset if we have no tasks running
-	if (HasTasks() || !PresetClass.Get())
-	{
-		return nullptr;
-	}
-
-	// If We have a preset and its already of the same class, dont do anything
-	if (ActivePreset && ActivePreset->GetClass() == PresetClass)
-	{
-		return nullptr;
-	}
-
-	ActivePreset = NewObject<USavePreset>(this, PresetClass);
-	return ActivePreset;
-}
-
-const USavePreset* USaveManager::GetPreset() const
-{
-	if (IsValid(ActivePreset))
-	{
-		return ActivePreset;
-	}
-	return GetDefault<USavePreset>();
+	return FSaveFileHelpers::FileExists(SlotName.ToString());
 }
 
 bool USaveManager::CanLoadOrSave()
 {
 	const AGameModeBase* GameMode = UGameplayStatics::GetGameMode(this);
-
 	if (GameMode && !GameMode->HasAuthority())
 	{
 		return false;
@@ -261,29 +377,26 @@ bool USaveManager::CanLoadOrSave()
 	return IsValid(GetWorld());
 }
 
-void USaveManager::TryInstantiateInfo(bool bForced)
+void USaveManager::AssureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass, bool bForced)
 {
 	if (IsInSlot() && !bForced)
 		return;
 
-	const USavePreset* Preset = GetPreset();
-
-	UClass* InfoClass = Preset->SlotInfoClass.Get();
-	if (!InfoClass)
-		InfoClass = USlotInfo::StaticClass();
-
-	UClass* DataClass = Preset->SlotDataClass.Get();
-	if (!DataClass)
-		DataClass = USlotData::StaticClass();
-
-	CurrentInfo = NewObject<USlotInfo>(GetTransientPackage(), InfoClass);
-	CurrentData = NewObject<USlotData>(GetTransientPackage(), DataClass);
+	if (!ActiveSlotClass)
+	{
+		ActiveSlotClass = GetDefault<USaveSettings>()->ActiveSlot.Get();
+		if (!ActiveSlotClass)
+		{
+			ActiveSlotClass = USaveSlot::StaticClass();
+		}
+	}
+	ActiveSlot = NewObject<USaveSlot>(this, ActiveSlotClass);
 }
 
 void USaveManager::UpdateLevelStreamings()
 {
 	UWorld* World = GetWorld();
-	if(!World)
+	if (!World)
 	{
 		return;
 	}
@@ -308,47 +421,37 @@ void USaveManager::SerializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
 	if (!LevelStreaming->GetLoadedLevel()->bIsBeingRemoved)
 	{
-		CreateTask<USlotDataTask_LevelSaver>()->Setup(LevelStreaming)->Start();
+		CreateTask<FSEDataTask_SaveLevel>().Setup(LevelStreaming).Start();
 	}
 }
 
 void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
 {
-	CreateTask<USlotDataTask_LevelLoader>()->Setup(LevelStreaming)->Start();
+	CreateTask<FSEDataTask_LoadLevel>().Setup(LevelStreaming).Start();
 }
 
-USlotInfo* USaveManager::LoadInfo(FName SlotName)
+USaveSlot* USaveManager::LoadInfo(FName SlotName)
 {
 	if (SlotName.IsNone())
 	{
-		SELog(GetPreset(), "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
+		SELog(ActiveSlot, "Invalid Slot. Cant go under 0 or exceed MaxSlots", true);
 		return nullptr;
 	}
 
-	auto& Task = MTTasks.CreateTask<FLoadSlotInfosTask>(this, SlotName)
-		.OnFinished([](auto& Task)
-		{
-			Task->AfterFinish();
-		});
+	auto& Task = MTTasks.CreateTask<FLoadSlotsTask>(this, SlotName).OnFinished([](auto& Task) {
+		Task->AfterFinish();
+	});
 	Task.StartSynchronousTask();
 
 	check(Task.IsDone());
 
 	const auto& Infos = Task->GetLoadedSlots();
-	return Infos.Num() > 0? Infos[0] : nullptr;
+	return Infos.Num() > 0 ? Infos[0] : nullptr;
 }
 
-USlotDataTask* USaveManager::CreateTask(TSubclassOf<USlotDataTask> TaskType)
+void USaveManager::FinishTask(FSEDataTask* Task)
 {
-	USlotDataTask* Task = NewObject<USlotDataTask>(this, TaskType.Get());
-	Task->Prepare(CurrentData, *GetPreset());
-	Tasks.Add(Task);
-	return Task;
-}
-
-void USaveManager::FinishTask(USlotDataTask* Task)
-{
-	Tasks.Remove(Task);
+	Tasks.RemoveAll([Task](auto& TaskPtr) { return TaskPtr.Get() == Task; });
 
 	// Start next task
 	if (Tasks.Num() > 0)
@@ -357,28 +460,16 @@ void USaveManager::FinishTask(USlotDataTask* Task)
 	}
 }
 
-FName USaveManager::GetSlotNameFromId(const int32 SlotId) const
-{
-	if (const auto* Preset = GetPreset())
-	{
-		FName Name;
-		Preset->BPGetSlotNameFromId(SlotId, Name);
-		return Name;
-	}
-	return FName{ FString::FromInt(SlotId) };
-}
-
 bool USaveManager::IsLoading() const
 {
-	return HasTasks() &&
-		   (Tasks[0]->IsA<USlotDataTask_Loader>() || Tasks[0]->IsA<USlotDataTask_LevelLoader>());
+	return HasTasks() && Tasks[0]->Type == ESETaskType::Load;
 }
 
 void USaveManager::Tick(float DeltaTime)
 {
 	if (Tasks.Num())
 	{
-		USlotDataTask* Task = Tasks[0];
+		FSEDataTask* Task = Tasks[0].Get();
 		check(Task);
 		if (Task->IsRunning())
 		{
@@ -399,12 +490,12 @@ void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionIn
 	SubscribedInterfaces.Remove(Interface);
 }
 
-void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
+void USaveManager::OnSaveBegan()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveBegan);
 
-	IterateSubscribedInterfaces([&Filter](auto* Object)
-	{
+	// TODO: Needs reworking
+	/*IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -413,15 +504,15 @@ void USaveManager::OnSaveBegan(const FSELevelFilter& Filter)
 			Interface->OnSaveBegan(Filter);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object, Filter);
-	});
+	});*/
 }
 
-void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bError)
+void USaveManager::OnSaveFinished(const bool bError)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveFinished);
 
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
-	{
+	// TODO: Needs reworking
+	/*IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -430,20 +521,19 @@ void USaveManager::OnSaveFinished(const FSELevelFilter& Filter, const bool bErro
 			Interface->OnSaveFinished(Filter, bError);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnSaveFinished(Object, Filter, bError);
-	});
+	});*/
 
 	if (!bError)
 	{
-		OnGameSaved.Broadcast(CurrentInfo);
+		OnGameSaved.Broadcast(ActiveSlot);
 	}
 }
 
-void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
+void USaveManager::OnLoadBegan()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadBegan);
 
-	IterateSubscribedInterfaces([&Filter](auto* Object)
-	{
+	/*IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -452,15 +542,14 @@ void USaveManager::OnLoadBegan(const FSELevelFilter& Filter)
 			Interface->OnLoadBegan(Filter);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object, Filter);
-	});
+	});*/
 }
 
-void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bError)
+void USaveManager::OnLoadFinished(const bool bError)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadFinished);
 
-	IterateSubscribedInterfaces([&Filter, bError](auto* Object)
-	{
+	/*IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -469,24 +558,24 @@ void USaveManager::OnLoadFinished(const FSELevelFilter& Filter, const bool bErro
 			Interface->OnLoadFinished(Filter, bError);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnLoadFinished(Object, Filter, bError);
-	});
+	});*/
 
 	if (!bError)
 	{
-		OnGameLoaded.Broadcast(CurrentInfo);
+		OnGameLoaded.Broadcast(ActiveSlot);
 	}
 }
 
 void USaveManager::OnMapLoadStarted(const FString& MapName)
 {
-	SELog(GetPreset(), "Loading Map '" + MapName + "'", FColor::Purple);
+	SELog(ActiveSlot, "Loading Map '" + MapName + "'", FColor::Purple);
 }
 
 void USaveManager::OnMapLoadFinished(UWorld* LoadedWorld)
 {
-	if(auto* ActiveLoader = Cast<USlotDataTask_Loader>(Tasks.Num() ? Tasks[0] : nullptr))
+	if (IsLoading())
 	{
-		ActiveLoader->OnMapLoaded();
+		static_cast<FSEDataTask_Load*>(Tasks[0].Get())->OnMapLoaded();
 	}
 
 	UpdateLevelStreamings();

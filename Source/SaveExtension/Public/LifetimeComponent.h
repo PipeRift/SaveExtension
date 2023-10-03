@@ -1,14 +1,15 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
-
-#include <CoreMinimal.h>
-#include <Components/ActorComponent.h>
 
 #include "SaveExtensionInterface.h"
 #include "SaveManager.h"
 
+#include <Components/ActorComponent.h>
+#include <CoreMinimal.h>
+
 #include "LifetimeComponent.generated.h"
+
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeStartSignature);
@@ -18,7 +19,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeSavedSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeResumeSignature);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeFinishSignature);
-
 
 
 /**
@@ -33,7 +33,6 @@ class SAVEEXTENSION_API ULifetimeComponent : public UActorComponent, public ISav
 	/* METHODS											     			    */
 	/************************************************************************/
 public:
-
 	ULifetimeComponent();
 
 	virtual void BeginPlay() override;
@@ -57,7 +56,6 @@ public:
 	/* EVENTS															   */
 	/***********************************************************************/
 protected:
-
 	// Called once when this actor gets created for the first time. Similar to BeginPlay
 	UPROPERTY(BlueprintAssignable, Category = SaveExtension)
 	FLifetimeStartSignature Start;
@@ -76,9 +74,20 @@ protected:
 
 
 public:
-
-	FLifetimeStartSignature& OnStart() { return Start; }
-	FLifetimeSavedSignature& OnSaved() { return Saved; }
-	FLifetimeResumeSignature& OnResume() { return Resume; }
-	FLifetimeFinishSignature& OnFinish() { return Finish; }
+	FLifetimeStartSignature& OnStart()
+	{
+		return Start;
+	}
+	FLifetimeSavedSignature& OnSaved()
+	{
+		return Saved;
+	}
+	FLifetimeResumeSignature& OnResume()
+	{
+		return Resume;
+	}
+	FLifetimeFinishSignature& OnFinish()
+	{
+		return Finish;
+	}
 };

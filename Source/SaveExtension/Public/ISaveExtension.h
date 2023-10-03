@@ -1,38 +1,42 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
-#include "Modules/ModuleManager.h"
 #include "Engine/Engine.h"
-
-#include "SavePreset.h"
+#include "Modules/ModuleManager.h"
+#include "SaveSlot.h"
 
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSaveExtension, All, All);
 
-class ISaveExtension : public IModuleInterface {
+class ISaveExtension : public IModuleInterface
+{
 public:
-	static inline ISaveExtension& Get() {
+	static inline ISaveExtension& Get()
+	{
 		return FModuleManager::LoadModuleChecked<ISaveExtension>("SaveExtension");
 	}
-	static inline bool IsAvailable() {
+	static inline bool IsAvailable()
+	{
 		return FModuleManager::Get().IsModuleLoaded("SaveExtension");
 	}
 
-	static void Log(const USavePreset* Preset, const FString Message, bool bError)
+	static void Log(const USaveSlot* Slot, const FString& Message, bool bError)
 	{
-		Log(Preset, Message, FColor::White, bError, 2.f);
+		Log(Slot, Message, FColor::White, bError, 2.f);
 	}
 
-	static void Log(const USavePreset* Preset, const FString Message, FColor Color = FColor::White, bool bError = false, const float Duration = 2.f)
+	static void Log(const USaveSlot* Slot, const FString& Message, FColor Color = FColor::White,
+		bool bError = false, const float Duration = 2.f)
 	{
-		if (Preset->bDebug)
+		if (Slot->bDebug)
 		{
-			if (bError) {
+			if (bError)
+			{
 				Color = FColor::Red;
 			}
 
-			const FString ComposedMessage { FString::Printf(TEXT("SE: %s"), *Message) };
+			const FString ComposedMessage{FString::Printf(TEXT("SE: %s"), *Message)};
 
 			if (bError)
 			{
@@ -43,7 +47,7 @@ public:
 				UE_LOG(LogSaveExtension, Log, TEXT("%s"), *ComposedMessage);
 			}
 
-			if (Preset->bDebugInScreen && GEngine)
+			if (Slot->bDebugInScreen && GEngine)
 			{
 				GEngine->AddOnScreenDebugMessage(-1, Duration, Color, ComposedMessage);
 			}
@@ -51,11 +55,15 @@ public:
 	}
 };
 
-//Only log in Editor
+// Only log in Editor
 #if WITH_EDITORONLY_DATA
-template <typename ...Args>
-void SELog(Args&& ...args) { ISaveExtension::Log(Forward<Args>(args)...); }
+template <typename... Args>
+void SELog(Args&&... args)
+{
+	ISaveExtension::Log(Forward<Args>(args)...);
+}
 #else
-template <typename ...Args>
-void SELog(Args&& ...args) {} // Optimized away by compiler
+template <typename... Args>
+void SELog(Args&&... args)
+{}	  // Optimized away by compiler
 #endif

@@ -1,17 +1,18 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Widgets/DeclarativeSyntaxSupport.h"
+#include "EdGraphSchema_K2.h"
 #include "EdGraphUtilities.h"
 #include "GameplayTagContainer.h"
-#include "EdGraphSchema_K2.h"
-#include "SGraphPin.h"
-#include "SClassFilterGraphPin.h"
 #include "Misc/ClassFilter.h"
+#include "SClassFilterGraphPin.h"
+#include "SGraphPin.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
 
 
-class FSEClassFilterGraphPanelPinFactory: public FGraphPanelPinFactory
+
+class FSEClassFilterGraphPanelPinFactory : public FGraphPanelPinFactory
 {
 	virtual TSharedPtr<class SGraphPin> CreatePin(class UEdGraphPin* InPin) const override
 	{

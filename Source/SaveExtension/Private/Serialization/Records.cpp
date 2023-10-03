@@ -1,7 +1,8 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Serialization/Records.h"
-#include "SlotData.h"
+
+#include "SaveSlotData.h"
 
 
 /////////////////////////////////////////////////////
@@ -66,7 +67,7 @@ bool FActorRecord::Serialize(FArchive& Ar)
 	// Reduce memory footprint to 1 bool if not moving
 	bool bIsMoving = Ar.IsSaving() && (!LinearVelocity.IsNearlyZero() || !AngularVelocity.IsNearlyZero());
 	Ar << bIsMoving;
-	if(bIsMoving)
+	if (bIsMoving)
 	{
 		Ar << LinearVelocity;
 		Ar << AngularVelocity;

@@ -1,9 +1,11 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
+#include "SaveFileHelpers.h"
+#include "SaveManager.h"
+
 #include <Async/AsyncWork.h>
-#include "FileAdapter.h"
 
 
 /////////////////////////////////////////////////////
@@ -12,55 +14,33 @@
 class FLoadFileTask : public FNonAbandonableTask
 {
 protected:
-
 	TWeakObjectPtr<USaveManager> Manager;
 	const FString SlotName;
 
-	TWeakObjectPtr<USlotInfo> SlotInfo;
-	TWeakObjectPtr<USlotData> SlotData;
+	TWeakObjectPtr<USaveSlot> LastSlot;
+	TWeakObjectPtr<USaveSlotData> LastSlotData;
+
+	TWeakObjectPtr<USaveSlot> Slot;
 
 
 public:
+	explicit FLoadFileTask(USaveManager* Manager, USaveSlot* LastSlot, FStringView SlotName);
+	~FLoadFileTask();
 
-	explicit FLoadFileTask(USaveManager* Manager, FStringView SlotName)
-		: Manager(Manager)
-		, SlotName(SlotName)
-	{}
-	~FLoadFileTask()
+	void DoWork();
+
+	/** Game thread */
+	USaveSlot* GetInfo() const
 	{
-		if(SlotInfo.IsValid())
-		{
-			SlotInfo->ClearInternalFlags(EInternalObjectFlags::Async);
-		}
-		if(SlotData.IsValid())
-		{
-			SlotData->ClearInternalFlags(EInternalObjectFlags::Async);
-		}
+		return Slot.Get();
 	}
 
-	void DoWork()
+	USaveSlotData* GetData() const
 	{
-		FScopedFileReader FileReader(FFileAdapter::GetSlotPath(SlotName));
-		if(FileReader.IsValid())
-		{
-			FSaveFile File;
-			File.Read(FileReader, false);
-			SlotInfo = File.CreateAndDeserializeInfo(Manager.Get());
-			SlotData = File.CreateAndDeserializeData(Manager.Get());
-		}
+		return Slot.IsValid()? Slot->GetData() : nullptr;
 	}
 
-	USlotInfo* GetInfo()
-	{
-		return SlotInfo.Get();
-	}
-
-	USlotData* GetData()
-	{
-		return SlotData.Get();
-	}
-
-	FORCEINLINE TStatId GetStatId() const
+	TStatId GetStatId() const
 	{
 		RETURN_QUICK_DECLARE_CYCLE_STAT(FLoadFileTask, STATGROUP_ThreadPoolAsyncTasks);
 	}

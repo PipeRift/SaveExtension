@@ -1,40 +1,43 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "SClassFilter.h"
+
+#include "AssetRegistry/AssetData.h"
+#include "ClassFilterHelpers.h"
+#include "Dialogs/Dialogs.h"
+#include "Editor.h"
+#include "EditorStyleSet.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Framework/Commands/UIAction.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "GameplayTagsModule.h"
+#include "GameplayTagsSettings.h"
+#include "Layout/WidgetPath.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Input/SComboButton.h"
-#include "Widgets/Images/SImage.h"
-#include "EditorStyleSet.h"
 #include "Widgets/SWindow.h"
-#include "Dialogs/Dialogs.h"
-#include "GameplayTagsModule.h"
+
+#include <AssetToolsModule.h>
+#include <ClassViewerProjectSettings.h>
+#include <PropertyHandle.h>
 #include <ScopedTransaction.h>
 #include <Textures/SlateIcon.h>
-#include <PropertyHandle.h>
-#include <AssetToolsModule.h>
 #include <Widgets/Input/SHyperlink.h>
 #include <Widgets/Input/SSearchBox.h>
-#include <Widgets/Layout/SScaleBox.h>
 #include <Widgets/Layout/SBorder.h>
+#include <Widgets/Layout/SScaleBox.h>
 #include <Widgets/Notifications/SNotificationList.h>
-#include "Framework/Notifications/NotificationManager.h"
-#include "GameplayTagsSettings.h"
-#include "Layout/WidgetPath.h"
-#include "Framework/Application/SlateApplication.h"
-#include "AssetRegistry/AssetData.h"
-#include "Editor.h"
-#include "Framework/Commands/UIAction.h"
-#include "Framework/MultiBox/MultiBoxBuilder.h"
 
-#include "ClassFilterHelpers.h"
-#include <ClassViewerProjectSettings.h>
 
 #define LOCTEXT_NAMESPACE "GameplayTagWidget"
 
 
-void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableClassFilterDatum>& EditableFilters)
+void SClassFilter::Construct(
+	const FArguments& InArgs, const TArray<FEditableClassFilterDatum>& EditableFilters)
 {
 	bNeedsRefresh = true;
 
@@ -74,76 +77,53 @@ void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableCla
 	}
 
 	ChildSlot
-	[
-		SNew(SBorder)
-		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
-		[
-			SNew(SVerticalBox)
+		[SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+				[SNew(SVerticalBox)
 
-			// Gameplay Tag Tree controls
-			+SVerticalBox::Slot()
-			.AutoHeight()
-			.VAlign(VAlign_Top)
-			[
-				SNew(SHorizontalBox)
+					// Gameplay Tag Tree controls
+					+
+					SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Top)
+						[SNew(SHorizontalBox)
 
-				// Search
-				+ SHorizontalBox::Slot()
-				.VAlign(VAlign_Center)
-				.FillWidth(1.f)
-				.Padding(5, 1, 5, 1)
-				[
-					SAssignNew(SearchBox, SSearchBox)
-					.HintText(LOCTEXT("ClassFilter_SearchBoxHint", "Search Classes"))
-					.OnTextChanged(this, &SClassFilter::OnSearchTextChanged)
-				]
+							// Search
+							+ SHorizontalBox::Slot()
+								  .VAlign(VAlign_Center)
+								  .FillWidth(1.f)
+								  .Padding(5, 1, 5,
+									  1)[SAssignNew(SearchBox, SSearchBox)
+											 .HintText(LOCTEXT("ClassFilter_SearchBoxHint", "Search Classes"))
+											 .OnTextChanged(this, &SClassFilter::OnSearchTextChanged)]
 
-				// Expand All nodes
-				+SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SNew(SButton)
-					.OnClicked(this, &SClassFilter::OnClickedExpandAll)
-					.Text(LOCTEXT("ClassFilter_ExpandAll", "Expand All"))
-				]
+							// Expand All nodes
+							+ SHorizontalBox::Slot()
+								  .AutoWidth()[SNew(SButton)
+												   .OnClicked(this, &SClassFilter::OnClickedExpandAll)
+												   .Text(LOCTEXT("ClassFilter_ExpandAll", "Expand All"))]
 
-				// Collapse All nodes
-				+SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SNew(SButton)
-					.OnClicked(this, &SClassFilter::OnClickedCollapseAll)
-					.Text(LOCTEXT("ClassFilter_CollapseAll", "Collapse All"))
-				]
+							// Collapse All nodes
+							+ SHorizontalBox::Slot()
+								  .AutoWidth()[SNew(SButton)
+												   .OnClicked(this, &SClassFilter::OnClickedCollapseAll)
+												   .Text(LOCTEXT("ClassFilter_CollapseAll", "Collapse All"))]
 
-				// Clear selections
-				+SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SNew(SButton)
-					.OnClicked(this, &SClassFilter::OnClickedClearAll)
-					.Text(LOCTEXT("ClassFilter_ClearAll", "Clear All"))
-					.Visibility(this, &SClassFilter::DetermineClearSelectionVisibility)
-				]
-			]
+							// Clear selections
+							+ SHorizontalBox::Slot()
+								  .AutoWidth()[SNew(SButton)
+												   .OnClicked(this, &SClassFilter::OnClickedClearAll)
+												   .Text(LOCTEXT("ClassFilter_ClearAll", "Clear All"))
+												   .Visibility(this,
+													   &SClassFilter::DetermineClearSelectionVisibility)]]
 
-			// Classes tree
-			+SVerticalBox::Slot()
-			.MaxHeight(MaxHeight)
-			[
-				SAssignNew(TreeContainerWidget, SBorder)
-				.Padding(FMargin(4.f))
-				[
-					SAssignNew(TreeWidget, STreeView<FSEClassFilterNodePtr>)
-					.TreeItemsSource(&RootClasses)
-					.OnGenerateRow(this, &SClassFilter::OnGenerateRow)
-					.OnGetChildren(this, &SClassFilter::OnGetChildren)
-					.OnExpansionChanged( this, &SClassFilter::OnExpansionChanged)
-					.SelectionMode(ESelectionMode::Multi)
-				]
-			]
-		]
-	];
+					// Classes tree
+					+ SVerticalBox::Slot().MaxHeight(MaxHeight)
+						  [SAssignNew(TreeContainerWidget, SBorder)
+								  .Padding(FMargin(
+									  4.f))[SAssignNew(TreeWidget, STreeView<FSEClassFilterNodePtr>)
+												.TreeItemsSource(&RootClasses)
+												.OnGenerateRow(this, &SClassFilter::OnGenerateRow)
+												.OnGetChildren(this, &SClassFilter::OnGetChildren)
+												.OnExpansionChanged(this, &SClassFilter::OnExpansionChanged)
+												.SelectionMode(ESelectionMode::Multi)]]]];
 
 	// Construct the class hierarchy.
 	ClassFilter::Helpers::ConstructClassHierarchy();
@@ -155,7 +135,7 @@ void SClassFilter::Construct(const FArguments& InArgs, const TArray<FEditableCla
 }
 
 FVector2D SClassFilter::ComputeDesiredSize(float LayoutScaleMultiplier) const
-	{
+{
 	FVector2D WidgetSize = SCompoundWidget::ComputeDesiredSize(LayoutScaleMultiplier);
 
 	FVector2D TagTreeContainerSize = TreeContainerWidget->GetDesiredSize();
@@ -168,7 +148,7 @@ FVector2D SClassFilter::ComputeDesiredSize(float LayoutScaleMultiplier) const
 	return WidgetSize;
 }
 
-void SClassFilter::OnSearchTextChanged( const FText& SearchText )
+void SClassFilter::OnSearchTextChanged(const FText& SearchText)
 {
 	SearchString = SearchText.ToString();
 
@@ -230,53 +210,39 @@ bool SClassFilter::FilterChildrenCheck(const FSEClassFilterNodePtr& Class)
 	return false;
 }
 
-TSharedRef<ITableRow> SClassFilter::OnGenerateRow(FSEClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable)
+TSharedRef<ITableRow> SClassFilter::OnGenerateRow(
+	FSEClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	return SNew(STableRow<FSEClassFilterNodePtr>, OwnerTable)
-	.Style(FAppStyle::Get(), "GameplayTagTreeView")
-	[
-		SNew(SBorder)
-		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
-		.BorderBackgroundColor(this, &SClassFilter::GetClassBackgroundColor, Class)
-		.Padding(0)
-		.Content()
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.HAlign(HAlign_Left)
-			[
-				SNew(SButton)
-				.ButtonStyle(FAppStyle::Get(), "FlatButton")
-				.OnClicked(this, &SClassFilter::OnClassClicked, Class)
-				.ForegroundColor(this, &SClassFilter::GetClassIconColor, Class)
-				.ContentPadding(0)
-				.IsEnabled(this, &SClassFilter::CanSelectClasses)
-				[
-					SNew(STextBlock)
-					.Font(FAppStyle::Get().GetFontStyle("FontAwesome.8"))
-					.Text(this, &SClassFilter::GetClassIconText, Class)
-				]
-			]
-			// Tag Selection (selection mode only)
-			+SHorizontalBox::Slot()
-			.FillWidth(1.0f)
-			.HAlign(HAlign_Left)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(Class->GetClassName(true)))
-				.ToolTipText(Class->GetClassTooltip())
-				.IsEnabled(this, &SClassFilter::CanSelectClasses)
-			]
-		]
-	];
+		.Style(FAppStyle::Get(), "GameplayTagTreeView")
+			[SNew(SBorder)
+					.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+					.BorderBackgroundColor(this, &SClassFilter::GetClassBackgroundColor, Class)
+					.Padding(0)
+					.Content()[SNew(SHorizontalBox) +
+							   SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
+								   [SNew(SButton)
+										   .ButtonStyle(FAppStyle::Get(), "FlatButton")
+										   .OnClicked(this, &SClassFilter::OnClassClicked, Class)
+										   .ForegroundColor(this, &SClassFilter::GetClassIconColor, Class)
+										   .ContentPadding(0)
+										   .IsEnabled(this, &SClassFilter::CanSelectClasses)
+											   [SNew(STextBlock)
+													   .Font(FAppStyle::Get().GetFontStyle("FontAwesome.8"))
+													   .Text(this, &SClassFilter::GetClassIconText, Class)]]
+							   // Tag Selection (selection mode only)
+							   + SHorizontalBox::Slot().FillWidth(1.0f).HAlign(
+									 HAlign_Left)[SNew(STextBlock)
+													  .Text(FText::FromString(Class->GetClassName(true)))
+													  .ToolTipText(Class->GetClassTooltip())
+													  .IsEnabled(this, &SClassFilter::CanSelectClasses)]]];
 }
 
 void SClassFilter::OnGetChildren(FSEClassFilterNodePtr Class, TArray<FSEClassFilterNodePtr>& OutChildren)
 {
-	for(auto& ChildClass : Class->GetChildrenList())
+	for (auto& ChildClass : Class->GetChildrenList())
 	{
-		if(FilterChildrenCheck(ChildClass))
+		if (FilterChildrenCheck(ChildClass))
 		{
 			OutChildren.Add(ChildClass);
 		}
@@ -309,11 +275,11 @@ FText SClassFilter::GetClassIconText(FSEClassFilterNodePtr Class) const
 {
 	switch (Class->GetOwnFilterState())
 	{
-	case EClassFilterState::Allowed:
-		return FText::FromString(FString(TEXT("\xf00c"))) /*fa-check*/;
+		case EClassFilterState::Allowed:
+			return FText::FromString(FString(TEXT("\xf00c"))) /*fa-check*/;
 
-	case EClassFilterState::Denied:
-		return FText::FromString(FString(TEXT("\xf00d"))) /*fa-times*/;
+		case EClassFilterState::Denied:
+			return FText::FromString(FString(TEXT("\xf00d"))) /*fa-times*/;
 	}
 
 	return FText::FromString(FString(TEXT("\xf096"))) /*fa-square-o*/;
@@ -323,11 +289,11 @@ FSlateColor SClassFilter::GetClassIconColor(FSEClassFilterNodePtr Class) const
 {
 	switch (Class->GetOwnFilterState())
 	{
-	case EClassFilterState::Allowed:
-		return { FLinearColor::Green };
+		case EClassFilterState::Allowed:
+			return {FLinearColor::Green};
 
-	case EClassFilterState::Denied:
-		return { FLinearColor::Red };
+		case EClassFilterState::Denied:
+			return {FLinearColor::Red};
 	}
 
 	return FSlateColor::UseForeground();
@@ -335,69 +301,71 @@ FSlateColor SClassFilter::GetClassIconColor(FSEClassFilterNodePtr Class) const
 
 void SClassFilter::MarkClass(FSEClassFilterNodePtr Class, EClassFilterState State)
 {
-	const TSoftClassPtr<> ClassAsset{ Class->ClassPath.ToString() };
+	const TSoftClassPtr<> ClassAsset{Class->ClassPath.ToString()};
 
 	switch (State)
 	{
-	case EClassFilterState::Allowed:
-	{
-		FScopedTransaction Transaction(LOCTEXT("ClassFilter_AllowClass", "Allow Class"));
-		if (Class)
-		{
-			Class->SetOwnFilterState(State);
-
-			if(PropertyHandle) PropertyHandle->NotifyPreChange();
-			for (const auto& Filter : Filters)
+		case EClassFilterState::Allowed: {
+			FScopedTransaction Transaction(LOCTEXT("ClassFilter_AllowClass", "Allow Class"));
+			if (Class)
 			{
-				Filter.Filter->AllowedClasses.Add(ClassAsset);
-				Filter.Filter->IgnoredClasses.Remove(ClassAsset);
+				Class->SetOwnFilterState(State);
+
+				if (PropertyHandle)
+					PropertyHandle->NotifyPreChange();
+				for (const auto& Filter : Filters)
+				{
+					Filter.Filter->AllowedClasses.Add(ClassAsset);
+					Filter.Filter->IgnoredClasses.Remove(ClassAsset);
+				}
+				if (PropertyHandle)
+					PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
 			}
-			if (PropertyHandle) PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
+			break;
 		}
-		break;
+		case EClassFilterState::Denied: {
+			FScopedTransaction Transaction(LOCTEXT("ClassFilter_DeniedClass", "Deny Class"));
+			if (Class)
+			{
+				Class->SetOwnFilterState(State);
+
+				if (PropertyHandle)
+					PropertyHandle->NotifyPreChange();
+				for (const auto& Filter : Filters)
+				{
+					Filter.Filter->IgnoredClasses.Add(ClassAsset);
+					Filter.Filter->AllowedClasses.Remove(ClassAsset);
+				}
+				if (PropertyHandle)
+					PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
+			}
+			break;
+		}
+		case EClassFilterState::None: {
+			FScopedTransaction Transaction(LOCTEXT("ClassFilter_UnmarkClass", "Unmark Class"));
+			if (Class)
+			{
+				Class->SetOwnFilterState(State);
+
+				if (PropertyHandle)
+					PropertyHandle->NotifyPreChange();
+				for (const auto& Filter : Filters)
+				{
+					Filter.Filter->IgnoredClasses.Remove(ClassAsset);
+					Filter.Filter->AllowedClasses.Remove(ClassAsset);
+				}
+				if (PropertyHandle)
+					PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
+			}
+			break;
+		}
 	}
-	case EClassFilterState::Denied:
-	{
-		FScopedTransaction Transaction(LOCTEXT("ClassFilter_DeniedClass", "Deny Class"));
-		if (Class)
-		{
-			Class->SetOwnFilterState(State);
-
-			if (PropertyHandle) PropertyHandle->NotifyPreChange();
-			for (const auto& Filter : Filters)
-			{
-				Filter.Filter->IgnoredClasses.Add(ClassAsset);
-				Filter.Filter->AllowedClasses.Remove(ClassAsset);
-			}
-			if (PropertyHandle)
-				PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
-		}
-		break;
-	}
-	case EClassFilterState::None:
-	{
-		FScopedTransaction Transaction(LOCTEXT("ClassFilter_UnmarkClass", "Unmark Class"));
-		if (Class)
-		{
-			Class->SetOwnFilterState(State);
-
-			if (PropertyHandle) PropertyHandle->NotifyPreChange();
-			for (const auto& Filter : Filters)
-			{
-				Filter.Filter->IgnoredClasses.Remove(ClassAsset);
-				Filter.Filter->AllowedClasses.Remove(ClassAsset);
-			}
-			if (PropertyHandle)
-				PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
-		}
-		break;
-	}}
 	OnFilterChanged.ExecuteIfBound();
 }
 
 FReply SClassFilter::OnClickedClearAll()
 {
-	FScopedTransaction Transaction( LOCTEXT("GameplayTagWidget_RemoveAllTags", "Remove All Gameplay Tags") );
+	FScopedTransaction Transaction(LOCTEXT("GameplayTagWidget_RemoveAllTags", "Remove All Gameplay Tags"));
 
 	for (int32 ContainerIdx = 0; ContainerIdx < Filters.Num(); ++ContainerIdx)
 	{
@@ -426,7 +394,7 @@ FSlateColor SClassFilter::GetClassBackgroundColor(FSEClassFilterNodePtr Class) c
 	{
 		Color = FLinearColor::Red;
 	}
-	else if(ParentState == EClassFilterState::Allowed)
+	else if (ParentState == EClassFilterState::Allowed)
 	{
 		Color = FLinearColor::Green;
 	}
@@ -436,10 +404,10 @@ FSlateColor SClassFilter::GetClassBackgroundColor(FSEClassFilterNodePtr Class) c
 	}
 	else
 	{
-		return { FLinearColor::Transparent };
+		return {FLinearColor::Transparent};
 	}
 	Color.A = 0.3f;
-	return { Color };
+	return {Color};
 }
 
 FReply SClassFilter::OnClickedExpandAll()
@@ -499,19 +467,20 @@ void SClassFilter::SetFilter(FSEClassFilter* OriginalFilter, FSEClassFilter* Edi
 	if (PropertyHandle.IsValid() && bMultiSelect)
 	{
 		// Case for a tag container
-		//PropertyHandle->SetValueFromFormattedString(EditedFilter->ToString());
+		// PropertyHandle->SetValueFromFormattedString(EditedFilter->ToString());
 	}
 	else if (PropertyHandle.IsValid() && !bMultiSelect)
 	{
 		// Case for a single Tag
-		//FString FormattedString = TEXT("(TagName=\"");
-		//FormattedString += EditedFilter.First().GetTagName().ToString();
-		//FormattedString += TEXT("\")");
-		//PropertyHandle->SetValueFromFormattedString(FormattedString);
+		// FString FormattedString = TEXT("(TagName=\"");
+		// FormattedString += EditedFilter.First().GetTagName().ToString();
+		// FormattedString += TEXT("\")");
+		// PropertyHandle->SetValueFromFormattedString(FormattedString);
 	}
 	else
 	{
-		// Not sure if we should get here, means the property handle hasn't been setup which could be right or wrong.
+		// Not sure if we should get here, means the property handle hasn't been setup which could be right or
+		// wrong.
 		if (OwnerObj)
 		{
 			OwnerObj->PreEditChange(PropertyHandle.IsValid() ? PropertyHandle->GetProperty() : nullptr);
@@ -536,7 +505,8 @@ void SClassFilter::Refresh()
 	bNeedsRefresh = true;
 }
 
-void SClassFilter::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+void SClassFilter::Tick(
+	const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
 	// Will populate the class hierarchy if needed
 	ClassFilter::Helpers::PopulateClassHierarchy();
@@ -570,7 +540,8 @@ void SClassFilter::Populate()
 	TArray<UClass*> InternalClasses;
 	TArray<FDirectoryPath> InternalPaths;
 
-	// We aren't showing the internal classes, then we need to know what classes to consider Internal Only, so let's gather them up from the settings object.
+	// We aren't showing the internal classes, then we need to know what classes to consider Internal Only, so
+	// let's gather them up from the settings object.
 	GetInternalOnlyPaths(InternalPaths);
 	GetInternalOnlyClasses(InternalClassNames);
 
@@ -579,8 +550,7 @@ void SClassFilter::Populate()
 	{
 		FString PackageClassName = InternalClassNames[i].ToString();
 		const FSEClassFilterNodePtr ClassNode = ClassFilter::Helpers::ClassHierarchy->FindNodeByClassName(
-			ClassFilter::Helpers::ClassHierarchy->GetObjectRootNode(), PackageClassName
-		);
+			ClassFilter::Helpers::ClassHierarchy->GetObjectRootNode(), PackageClassName);
 
 		if (ClassNode.IsValid())
 		{
@@ -593,7 +563,8 @@ void SClassFilter::Populate()
 	FSEClassFilterNodePtr RootNode;
 
 	// Get the class tree, passing in certain filter options.
-	ClassFilter::Helpers::GetClassTree(*Filters[0].Filter, RootNode, false, true, false, InternalClasses, InternalPaths);
+	ClassFilter::Helpers::GetClassTree(
+		*Filters[0].Filter, RootNode, false, true, false, InternalClasses, InternalPaths);
 
 	// Add all the children of the "Object" root.
 	for (const auto& Child : RootNode->GetChildrenList())
@@ -620,10 +591,7 @@ EVisibility SClassFilter::DetermineClearSelectionVisibility() const
 	return CanSelectClasses() ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
-void SClassFilter::OnExpansionChanged(FSEClassFilterNodePtr Class, bool bIsExpanded)
-{
-
-}
+void SClassFilter::OnExpansionChanged(FSEClassFilterNodePtr Class, bool bIsExpanded) {}
 
 bool SClassFilter::CanSelectClasses() const
 {

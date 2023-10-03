@@ -1,7 +1,7 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "SaveExtensionInterface.h"
 
-USaveExtensionInterface::USaveExtensionInterface(const FObjectInitializer &ObjectInitializer)
+USaveExtensionInterface::USaveExtensionInterface(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {}

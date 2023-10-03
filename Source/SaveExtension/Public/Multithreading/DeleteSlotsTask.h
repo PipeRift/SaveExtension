@@ -1,13 +1,14 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
-#include "FileAdapter.h"
 #include "Multithreading/Delegates.h"
-#include "SlotInfo.h"
+#include "SaveFileHelpers.h"
+#include "SaveSlot.h"
 
-#include <CoreMinimal.h>
 #include <Async/AsyncWork.h>
+#include <CoreMinimal.h>
+
 
 
 class USaveManager;
@@ -16,14 +17,13 @@ class USaveManager;
  * FDeleteSlotsTask
  * Async task to remove an specific or all slots
  */
-class FDeleteSlotsTask : public FNonAbandonableTask {
+class FDeleteSlotsTask : public FNonAbandonableTask
+{
 protected:
-
 	const USaveManager* const Manager = nullptr;
 	FString SpecificSlotName;
 
 public:
-
 	bool bSuccess = false;
 
 	/** All infos Constructor */
@@ -37,6 +37,5 @@ public:
 	}
 
 private:
-
-	USlotInfo* LoadInfoFromFile(const FString Name) const;
+	USaveSlot* LoadInfoFromFile(const FString Name) const;
 };

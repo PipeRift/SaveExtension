@@ -1,16 +1,16 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
-#include "SlotInfo.h"
+#include "SaveSlot.h"
 
 
 /** Called when game has been saved
- * @param SlotInfo the saved slot. Null if save failed
+ * @param SaveSlot the saved slot. Null if save failed
  */
-DECLARE_DELEGATE_OneParam(FOnGameSaved, USlotInfo*);
+DECLARE_DELEGATE_OneParam(FOnGameSaved, USaveSlot*);
 
 /** Called when game has been loaded
- * @param SlotInfo the loaded slot. Null if load failed
+ * @param SaveSlot the loaded slot. Null if load failed
  */
-DECLARE_DELEGATE_OneParam(FOnGameLoaded, USlotInfo*);
+DECLARE_DELEGATE_OneParam(FOnGameLoaded, USaveSlot*);
