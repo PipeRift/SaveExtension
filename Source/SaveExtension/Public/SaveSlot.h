@@ -102,6 +102,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
 	FSEComponentClassFilter ComponentFilter;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
+	FSEClassFilter SubsystemFilter{ USubsystem::StaticClass() };
+
 	/** If true, will Save and Load levels when they are shown or hidden.
 	 * This includes level streaming and world composition.
 	 */

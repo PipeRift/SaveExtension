@@ -36,11 +36,13 @@ public:
 	 * Serialized manually for performance
 	 */
 	FObjectRecord GameInstance;
+	TArray<FSubsystemRecord> GameInstanceSubsystems;
+
+	TArray<FSubsystemRecord> WorldSubsystems;
+
 	FPersistentLevelRecord RootLevel;
 	TArray<FStreamingLevelRecord> SubLevels;
 
-	TArray<FSubsystemRecord> GameInstanceSubsystems;
-	TArray<FSubsystemRecord> WorldSubsystems;
 
 	void CleanRecords(bool bKeepSublevels);
 
