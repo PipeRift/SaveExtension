@@ -3,7 +3,7 @@
 #include "Automatron.h"
 #include "Helpers/TestActor.h"
 
-#include <SaveFileHelpers.h>
+#include <SEFileHelpers.h>
 #include <SaveManager.h>
 
 
@@ -42,7 +42,7 @@ void FSaveSpec_Files::Define()
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
 
-		TestTrue("Info File exists in disk", FSaveFileHelpers::FileExists(TEXT("0")));
+		TestTrue("Info File exists in disk", FSEFileHelpers::FileExists(TEXT("0")));
 	});
 
 	It("Can save files asynchronously", [this]() {
@@ -52,13 +52,13 @@ void FSaveSpec_Files::Define()
 		bool bSaving =
 			SaveManager->SaveSlot(0, true, false, {}, FOnGameSaved::CreateLambda([this](auto* Info) {
 				// Notified that files have been saved asynchronously
-				TestTrue("Info File exists in disk", FSaveFileHelpers::FileExists(TEXT("0")));
+				TestTrue("Info File exists in disk", FSEFileHelpers::FileExists(TEXT("0")));
 				bFinishTick = true;
 			}));
 		TestTrue("Started Saving", bSaving);
 
 		// Files shouldn't exist yet
-		TestFalse("Info File exists in disk", FSaveFileHelpers::FileExists(TEXT("0")));
+		TestFalse("Info File exists in disk", FSEFileHelpers::FileExists(TEXT("0")));
 
 		TickWorldUntil(GetMainWorld(), true, [this](float) {
 			return !bFinishTick;
@@ -70,9 +70,8 @@ void FSaveSpec_Files::Define()
 
 		TestTrue("Saved", SaveManager->SaveSlot(0));
 
-		USaveSlot* Slot = nullptr;
-		TestTrue("File was loaded", FSaveFileHelpers::LoadFile(TEXT("0"), Slot, true, SaveManager));
-		TestNotNull("Info is valid", Slot);
+		USaveSlot* Slot = FSEFileHelpers::LoadFileSync(TEXT("0"), nullptr, true, SaveManager);
+		TestNotNull("Slot is valid", Slot);
 		TestNotNull("Data is valid", Slot->GetData());
 	});
 
@@ -80,9 +79,9 @@ void FSaveSpec_Files::Define()
 		if (SaveManager)
 		{
 			bFinishTick = false;
-			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
+			SaveManager->DeleteAllSlots([this](int32 Count) {
 				bFinishTick = true;
-			}));
+			});
 			TickWorldUntil(GetMainWorld(), true, [this](float) {
 				return !bFinishTick;
 			});

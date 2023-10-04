@@ -178,9 +178,9 @@ void FSaveSpec_Preset::Define()
 		if (SaveManager)
 		{
 			bFinishTick = false;
-			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]() {
+			SaveManager->DeleteAllSlots([this](int32 Count) {
 				bFinishTick = true;
-			}));
+			});
 
 			TickWorldUntil(GetMainWorld(), true, [this](float) {
 				return !bFinishTick;
