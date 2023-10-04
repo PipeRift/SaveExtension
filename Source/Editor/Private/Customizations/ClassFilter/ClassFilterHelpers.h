@@ -2,7 +2,7 @@
 #pragma once
 
 #include "ClassFilterNode.h"
-#include "Misc/ClassFilter.h"
+#include "ClassFilter.h"
 
 #include <AssetRegistry/AssetData.h>
 #include <AssetRegistry/AssetRegistryModule.h>

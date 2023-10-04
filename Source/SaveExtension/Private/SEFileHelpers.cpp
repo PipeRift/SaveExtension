@@ -14,11 +14,41 @@
 #include <UObject/Package.h>
 #include <UObject/UObjectGlobals.h>
 #include <Tasks/Pipe.h>
+#include <HAL/PlatformFile.h>
 
 
 static const int SE_SAVEGAME_FILE_TYPE_TAG = 0x0001;	// "sAvG"
 
 UE::Tasks::FPipe BackendPipe{ TEXT("SaveExtensionPipe") };
+
+
+/** Used to find next available slot id */
+class FSEFindSlotVisitor : public IPlatformFile::FDirectoryVisitor
+{
+public:
+	TArray<FString>& FoundSlots;
+
+	FSEFindSlotVisitor(TArray<FString>& FoundSlots) : FoundSlots(FoundSlots) {}
+	virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override
+	{
+		if (bIsDirectory)
+		{
+			return true;
+		}
+
+		const FString FullFilePath(FilenameOrDirectory);
+
+		FString Folder;
+		FString Filename;
+		FString Extension;
+		FPaths::Split(FullFilePath, Folder, Filename, Extension);
+		if (Extension == TEXT("sav"))
+		{
+			FoundSlots.Add(Filename);
+		}
+		return true;
+	}
+};
 
 
 struct FSaveGameFileVersion
@@ -311,6 +341,13 @@ const FString& FSEFileHelpers::GetSaveFolder()
 FString FSEFileHelpers::GetSlotPath(FStringView SlotName)
 {
 	return GetSaveFolder() / FString::Printf(TEXT("%s.sav"), SlotName.GetData());
+}
+
+void FSEFileHelpers::FindAllFilesSync(TArray<FString>& FoundSlots)
+{
+	FSEFindSlotVisitor Visitor{FoundSlots};
+	FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(
+		*FSEFileHelpers::GetSaveFolder(), Visitor);
 }
 
 UObject* FSEFileHelpers::DeserializeObject(UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)

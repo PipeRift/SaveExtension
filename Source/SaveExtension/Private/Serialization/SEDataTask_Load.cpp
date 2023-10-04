@@ -2,7 +2,6 @@
 
 #include "Serialization/SEDataTask_Load.h"
 
-#include "Misc/SlotHelpers.h"
 #include "SaveManager.h"
 #include "Serialization/SEArchive.h"
 
@@ -44,7 +43,7 @@ void FSEDataTask_Load::OnStart()
 
 	// Cross-Level loading
 	// TODO: Handle empty Map as empty world
-	FName CurrentMapName{FSlotHelpers::GetWorldName(World)};
+	FName CurrentMapName{GetWorldName(World)};
 	if (CurrentMapName != Slot->Map)
 	{
 		LoadState = ELoadDataTaskState::LoadingMap;
@@ -123,7 +122,7 @@ void FSEDataTask_Load::OnMapLoaded()
 		UE_LOG(LogSaveExtension, Warning, TEXT("Failed loading map from saved slot."));
 		Finish(false);
 	}
-	const FName NewMapName{FSlotHelpers::GetWorldName(World)};
+	const FName NewMapName{GetWorldName(World)};
 	if (NewMapName == Slot->Map)
 	{
 		if (CheckFileLoaded())

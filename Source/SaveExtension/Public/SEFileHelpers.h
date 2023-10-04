@@ -122,6 +122,9 @@ public:
 	static UObject* DeserializeObject(
 		UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes);
 
+
+	static void FindAllFilesSync(TArray<FString>& FoundSlots);
+
 	// @return the pipe used for save file operations
 	static class UE::Tasks::FPipe& GetPipe();
 };

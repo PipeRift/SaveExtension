@@ -88,6 +88,10 @@ protected:
 	}
 
 	UWorld* GetWorld() const;
+
+
+public:
+	static FString GetWorldName(const UWorld* World);
 };
 
 

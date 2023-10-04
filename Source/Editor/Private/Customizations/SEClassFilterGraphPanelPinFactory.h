@@ -5,7 +5,7 @@
 #include "EdGraphSchema_K2.h"
 #include "EdGraphUtilities.h"
 #include "GameplayTagContainer.h"
-#include "Misc/ClassFilter.h"
+#include "ClassFilter.h"
 #include "SClassFilterGraphPin.h"
 #include "SGraphPin.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"

@@ -2,7 +2,6 @@
 
 #include "Serialization/SEDataTask_Save.h"
 
-#include "Misc/SlotHelpers.h"
 #include "SEFileHelpers.h"
 #include "SaveManager.h"
 #include "SaveSlot.h"
@@ -202,7 +201,7 @@ void FSEDataTask_Save::OnStart()
 	}
 
 	// Save Level info
-	Slot->Map = FName{FSlotHelpers::GetWorldName(World)};
+	Slot->Map = FName{GetWorldName(World)};
 
 	SerializeWorld();
 

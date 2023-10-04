@@ -2,7 +2,7 @@
 
 #include "ClassFilterNode.h"
 
-#include "Misc/ClassFilter.h"
+#include "ClassFilter.h"
 
 #include <Engine/Blueprint.h>
 #include <PropertyHandle.h>

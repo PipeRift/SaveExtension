@@ -1,6 +1,6 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "Misc/ClassFilter.h"
+#include "ClassFilter.h"
 
 #include <Misc/Parse.h>
 #include <UObject/UObjectIterator.h>

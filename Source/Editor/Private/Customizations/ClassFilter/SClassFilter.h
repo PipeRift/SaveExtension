@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Input/Reply.h"
 #include "Layout/Visibility.h"
-#include "Misc/ClassFilter.h"
+#include "ClassFilter.h"
 #include "SlateFwd.h"
 #include "UObject/Object.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"

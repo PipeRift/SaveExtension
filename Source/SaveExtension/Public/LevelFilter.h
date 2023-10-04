@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Misc/ClassFilter.h"
+#include "ClassFilter.h"
 
 #include "LevelFilter.generated.h"
 

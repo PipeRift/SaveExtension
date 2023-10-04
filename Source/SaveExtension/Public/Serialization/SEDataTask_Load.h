@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "Delegates.h"
 #include "ISaveExtension.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
+#include "SaveManager.h"
 #include "SEDataTask.h"
 
 #include <Engine/Level.h>

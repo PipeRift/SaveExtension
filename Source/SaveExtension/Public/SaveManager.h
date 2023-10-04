@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Delegates.h"
 #include "LevelStreamingNotifier.h"
 #include "SaveExtensionInterface.h"
 #include "SaveSlot.h"
@@ -26,6 +25,16 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC, USaveSlot*, Slot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USaveSlot*, Slot);
 using FSEOnAllSlotsPreloaded = TFunction<void(const TArray<class USaveSlot*>& Slots)>;
 using FSEOnAllSlotsDeleted = TFunction<void(int32 Count)>;
+
+/** Called when game has been saved
+ * @param SaveSlot the saved slot. Null if save failed
+ */
+DECLARE_DELEGATE_OneParam(FOnGameSaved, USaveSlot*);
+
+/** Called when game has been loaded
+ * @param SaveSlot the loaded slot. Null if load failed
+ */
+DECLARE_DELEGATE_OneParam(FOnGameLoaded, USaveSlot*);
 
 
 UENUM()

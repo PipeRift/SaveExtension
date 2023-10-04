@@ -284,7 +284,7 @@ void USaveManager::PreloadAllSlots(FSEOnAllSlotsPreloaded Callback, bool bSortBy
 void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRecent)
 {
 	TArray<FString> FileNames;
-	FSlotHelpers::FindSlotFileNames(FileNames);
+	FSEFileHelpers::FindAllFilesSync(FileNames);
 
 	TArray<FSaveFile> LoadedFiles;
 	LoadedFiles.Reserve(FileNames.Num());
@@ -335,7 +335,7 @@ void USaveManager::DeleteSlotByName(FName SlotName)
 int32 USaveManager::DeleteAllSlotsSync()
 {
 	TArray<FString> FoundSlots;
-	FSlotHelpers::FindSlotFileNames(FoundSlots);
+	FSEFileHelpers::FindAllFilesSync(FoundSlots);
 
 	int32 Count = 0;
 	for (const FString& SlotName : FoundSlots)

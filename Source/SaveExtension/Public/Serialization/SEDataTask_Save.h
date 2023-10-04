@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "Delegates.h"
 #include "ISaveExtension.h"
 #include "SaveSlotData.h"
+#include "SaveManager.h"
 #include "SEDataTask.h"
 
 #include <AIController.h>
@@ -64,7 +64,7 @@ public:
 
 	// Where all magic happens
 	virtual void OnStart() override;
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DelLoadtaTime) override;
 	virtual void OnFinish(bool bSuccess) override;
 
 protected:

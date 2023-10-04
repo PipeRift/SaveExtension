@@ -50,3 +50,14 @@ UWorld* FSEDataTask::GetWorld() const
 {
 	return Manager->GetWorld();
 }
+
+FString FSEDataTask::GetWorldName(const UWorld* World)
+{
+	check(World);
+	const FString MapName = World->GetOutermost()->GetName();
+	if (World->IsPlayInEditor())
+	{
+		return UWorld::RemovePIEPrefix(MapName);
+	}
+	return MapName;
+}
