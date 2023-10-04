@@ -190,14 +190,51 @@ bool FSEDataTask_Load::CheckFileLoaded()
 void FSEDataTask_Load::BeforeDeserialize()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::BeforeDeserialize);
+
+	SubsystemFilter = Slot->SubsystemFilter;
+	SubsystemFilter.BakeAllowedClasses();
+
 	UWorld* World = GetWorld();
 
 	// Set current game time to the saved value
 	World->TimeSeconds = SlotData->TimeSeconds;
 
-	if (Slot->bStoreGameInstance)
+	auto* GameInstance = GetWorld()->GetGameInstance();
+	if (IsValid(GameInstance) && Slot->bStoreGameInstance)
 	{
-		DeserializeGameInstance();
+		if (GameInstance->GetClass() == SlotData->GameInstance.Class)
+		{
+			// Serialize from Record Data
+			FMemoryReader MemoryReader(SlotData->GameInstance.Data, true);
+			FSEArchive Archive(MemoryReader, false);
+			GameInstance->Serialize(Archive);
+		}
+
+		for(const FSubsystemRecord& SubsystemRecord : SlotData->GameInstanceSubsystems)
+		{
+			if (SubsystemRecord.IsValid() && SubsystemFilter.IsAllowed(SubsystemRecord.Class))
+			{
+				if (USubsystem* Subsystem = GameInstance->GetSubsystemBase(SubsystemRecord.Class))
+				{
+					FMemoryReader SubsystemMemoryReader(SubsystemRecord.Data, true);
+					FSEArchive Ar(SubsystemMemoryReader, false);
+					Subsystem->Serialize(Ar);
+				}
+			}
+		}
+	}
+
+	for(const FSubsystemRecord& SubsystemRecord : SlotData->WorldSubsystems)
+	{
+		if (SubsystemRecord.IsValid() && SubsystemFilter.IsAllowed(SubsystemRecord.Class))
+		{
+			if (USubsystem* Subsystem = World->GetSubsystemBase(SubsystemRecord.Class))
+			{
+				FMemoryReader SubsystemMemoryReader(SubsystemRecord.Data, true);
+				FSEArchive Ar(SubsystemMemoryReader, false);
+				Subsystem->Serialize(Ar);
+			}
+		}
 	}
 }
 
@@ -448,26 +485,6 @@ void FSEDataTask_Load::RespawnActors(const TArray<FActorRecord*>& Records, const
 		Record->Name = NewActor->GetFName();
 		LevelRecord.RecordsToActors.Add({Record, NewActor});
 	}
-}
-
-void FSEDataTask_Load::DeserializeGameInstance()
-{
-	bool bSuccess = true;
-	auto* GameInstance = GetWorld()->GetGameInstance();
-	const FObjectRecord& Record = SlotData->GameInstance;
-
-	if (!IsValid(GameInstance) || GameInstance->GetClass() != Record.Class)
-		bSuccess = false;
-
-	if (bSuccess)
-	{
-		// Serialize from Record Data
-		FMemoryReader MemoryReader(Record.Data, true);
-		FSEArchive Archive(MemoryReader, false);
-		GameInstance->Serialize(Archive);
-	}
-
-	SELog(Slot, "Game Instance '" + Record.Name.ToString() + "'", FColor::Green, !bSuccess, 1);
 }
 
 bool FSEDataTask_Load::DeserializeActor(AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord)

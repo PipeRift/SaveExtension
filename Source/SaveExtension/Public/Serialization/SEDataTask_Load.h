@@ -36,6 +36,7 @@ protected:
 	FName SlotName;
 
 	TObjectPtr<USaveSlot> Slot;
+	FSEClassFilter SubsystemFilter;
 
 	FOnGameLoaded Delegate;
 
@@ -103,11 +104,6 @@ protected:
 	void PrepareLevel(const ULevel* Level, FLevelRecord& LevelRecord);
 
 	void FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const;
-
-	/** Deserializes Game Instance Object and its Properties.
-	 * Requires 'SaveGameInstance' flag to be used.
-	 */
-	void DeserializeGameInstance();
 
 	/** Serializes an actor into this Actor Record */
 	bool DeserializeActor(AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord);
