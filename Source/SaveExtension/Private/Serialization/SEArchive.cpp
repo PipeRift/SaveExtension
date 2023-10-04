@@ -44,7 +44,7 @@ FArchive& FSEArchive::operator<<(UObject*& Obj)
 	}
 	else
 	{
-		if (Obj)
+		if (Obj && !Obj->IsTemplate() && !Obj->HasAnyFlags(RF_Transient))
 		{
 			// Serialize the fully qualified object name
 			FString SavedString{Obj->GetPathName()};

@@ -13,16 +13,18 @@
 struct FSELevelFilter;
 
 
+DECLARE_DELEGATE_OneParam(FSEOnThumbnailCaptured, bool);
+
 /**
  * Specifies the behavior while saving or loading
  */
 UENUM()
 enum class ESEAsyncMode : uint8
 {
-	SaveAndLoadSync,
-	LoadAsync,
-	SaveAsync,
-	SaveAndLoadAsync
+	SaveAndLoadSync = 0,
+	LoadAsync = 1,
+	SaveAsync = 2,
+	SaveAndLoadAsync = LoadAsync | SaveAsync
 };
 
 
@@ -32,19 +34,19 @@ struct FSaveSlotStats
 	GENERATED_BODY()
 
 	/** Played time since this saved game was started. Not related to slots, slots can change */
-	UPROPERTY(BlueprintReadOnly, Category = Slot)
+	UPROPERTY(BlueprintReadOnly, Category = SaveSlot)
 	FTimespan PlayedTime = FTimespan::Zero();
 
 	/** Played time since this saved game was created */
-	UPROPERTY(BlueprintReadOnly, Category = Slot)
+	UPROPERTY(BlueprintReadOnly, Category = SaveSlot)
 	FTimespan SlotPlayedTime = FTimespan::Zero();
 
 	/** Last date at which this slot was saved. */
-	UPROPERTY(BlueprintReadOnly, Category = Slot)
+	UPROPERTY(BlueprintReadOnly, Category = SaveSlot)
 	FDateTime SaveDate = FDateTime::Now();
 
 	/** Date at which this slot was loaded. */
-	UPROPERTY(BlueprintReadOnly, Transient, Category = Slot)
+	UPROPERTY(BlueprintReadOnly, Transient, Category = SaveSlot)
 	FDateTime LoadDate;
 };
 
@@ -65,10 +67,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
 	TSubclassOf<USaveSlotData> DataClass = USaveSlotData::StaticClass();
-
-	/** Maximum amount of saved slots that use this class. 0 is infinite (~16000) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings", meta = (ClampMin = "0"))
-	int32 MaxSlots = 0;
 
 	/** If checked, will attempt to Save Game to first Slot found, timed event. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings")
@@ -153,41 +151,47 @@ public:
 
 public:
 	/** Slot where this SaveInfo and its saveData are saved */
-	UPROPERTY(SaveGame, BlueprintReadWrite, Category = Slot)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)
 	FName FileName = TEXT("Default");
 
-	UPROPERTY(SaveGame, BlueprintReadWrite, Category = Slot)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)
 	FText DisplayName;
 
 	/** Root Level where this Slot was saved */
-	UPROPERTY(SaveGame, BlueprintReadOnly, Category = Slot)
+	UPROPERTY(SaveGame, BlueprintReadOnly, Category = SaveSlot)
 	FName Map;
 
-	UPROPERTY(SaveGame, BlueprintReadWrite, Category = Slot)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)
 	FSaveSlotStats Stats;
 
+	UPROPERTY(BlueprintReadWrite, Transient) // Saved
+	TObjectPtr<UTexture2D> Thumbnail;
+
 protected:
-	UPROPERTY(SaveGame)
-	FString ThumbnailPath;
 
-	/** Thumbnail gets cached here the first time it is requested */
 	UPROPERTY(Transient)
-	TObjectPtr<UTexture2D> CachedThumbnail;
+	bool bCapturingThumbnail = false;
+	FSEOnThumbnailCaptured CapturedThumbnailDelegate;
 
-	UPROPERTY(Transient, BlueprintReadOnly, Category = Slot)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = SaveSlot)
 	TObjectPtr<USaveSlotData> Data;
 
 
 public:
 	void PostInitProperties() override;
+	void Serialize(FArchive& Ar) override;
 
-	/** Returns this slot's thumbnail if any */
-	UFUNCTION(BlueprintCallable, Category = Slot)
-	UTexture2D* GetThumbnail() const;
+	/** Captures a thumbnail for the current slot
+	 * @return true if thumbnail was requested. Only one can be requested at the same time.
+	 */
+	void CaptureThumbnail(FSEOnThumbnailCaptured Callback, const int32 Width = 640, const int32 Height = 360);
 
 	/** Captures a thumbnail for the current slot */
-	bool CaptureThumbnail(const int32 Width = 640, const int32 Height = 360);
-
+	UFUNCTION(BlueprintCallable, Category = SaveSlot, meta = (DisplayName = "Capture Thumbnail"))
+	void BPCaptureThumbnail(const int32 Width = 640, const int32 Height = 360)
+	{
+		CaptureThumbnail({}, Width, Height);
+	}
 
 	USaveSlotData* GetData() const
 	{
@@ -200,33 +204,6 @@ public:
 		Data = NewData;
 	}
 
-	UFUNCTION(BlueprintPure, Category = Slot)
-	int32 GetMaxIndexes() const;
-
-	UFUNCTION(BlueprintPure, Category = Slot)
-	bool IsValidIndex(int32 Index) const;
-
-	/** Internal Usage. Will be called when an screenshot is captured */
-	void _SetThumbnailPath(const FString& Path);
-
-	/** Internal Usage. Will be called to remove previous thumbnail */
-	FString _GetThumbnailPath()
-	{
-		return ThumbnailPath;
-	}
-
-public:
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = Slot)
-	bool SetIndex(int32 Index);
-
-	UFUNCTION(BlueprintPure, BlueprintNativeEvent, Category = Slot)
-	int32 GetIndex() const;
-
-protected:
-	virtual bool OnSetIndex(int32 Index);
-	virtual int32 OnGetIndex() const;
-
-public:
 	bool ShouldDeserializeAsync() const;
 	bool ShouldSerializeAsync() const;
 
@@ -243,10 +220,12 @@ public:
 	bool IsLoadingOrSaving() const;
 
 	// Called for every level before being saved or loaded
-	UFUNCTION(BlueprintNativeEvent, Category = Slot)
+	UFUNCTION(BlueprintNativeEvent, Category = SaveSlot)
 	void GetLevelFilter(bool bIsLoading, FSELevelFilter& OutFilter) const;
 
 private:
 	// Called for every level before being saved or loaded
 	virtual void OnGetLevelFilter(bool bIsLoading, FSELevelFilter& OutFilter) const;
+
+	void OnThumbnailCaptured(int32 InSizeX, int32 InSizeY, const TArray<FColor>& InImageData);
 };

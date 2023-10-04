@@ -148,60 +148,68 @@ void FSEDataTask_Save::OnStart()
 		}
 	}
 
-	if (bSave)
+	if (!bSave)
 	{
-		const UWorld* World = GetWorld();
-
-		Manager->OnSaveBegan();
-
-		Slot = Manager->GetActiveSlot();
-		SlotData = Slot->GetData();
-		check(SlotData->GetClass() == Slot->DataClass);
-		SlotData->CleanRecords(true);
-
-		check(Slot && SlotData);
-
-		const bool bSlotExisted = Slot->FileName == SlotName;
-		Slot->FileName = SlotName;
-
-		if (bSaveThumbnail)
-		{
-			Slot->CaptureThumbnail(Width, Height);
-		}
-
-		// Time stats
-		{
-			FSaveSlotStats& Stats = Slot->Stats;
-			Stats.SaveDate = FDateTime::Now();
-
-			// If this info has been loaded ever
-			const bool bWasLoaded = Stats.LoadDate.GetTicks() > 0;
-			if (bWasLoaded)
-			{
-				// Now - Loaded
-				const FTimespan SessionTime = Stats.SaveDate - Stats.LoadDate;
-				Stats.PlayedTime += SessionTime;
-				Stats.SlotPlayedTime = bSlotExisted ? (Stats.SlotPlayedTime + SessionTime) : SessionTime;
-			}
-			else
-			{
-				// Slot is new, played time is world seconds
-				Stats.PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
-				Stats.SlotPlayedTime = Stats.PlayedTime;
-			}
-
-			// Save current game seconds
-			SlotData->TimeSeconds = World->TimeSeconds;
-		}
-
-		// Save Level info
-		Slot->Map = FName{FSlotHelpers::GetWorldName(World)};
-
-		SerializeWorld();
-		SaveFile();
+		Finish(false);
 		return;
 	}
-	Finish(false);
+
+	const UWorld* World = GetWorld();
+
+	Manager->OnSaveBegan();
+
+	Slot = Manager->GetActiveSlot();
+	SlotData = Slot->GetData();
+	check(SlotData->GetClass() == Slot->DataClass);
+	SlotData->CleanRecords(true);
+
+	check(Slot && SlotData);
+
+	const bool bSlotExisted = Slot->FileName == SlotName;
+	Slot->FileName = SlotName;
+
+	if (bCaptureThumbnail)
+	{
+		bWaitingThumbnail = true;
+		Slot->CaptureThumbnail(FSEOnThumbnailCaptured::CreateLambda([this](bool bSuccess) {
+			bWaitingThumbnail = false;
+		}), Width, Height);
+	}
+
+	// Time stats
+	{
+		FSaveSlotStats& Stats = Slot->Stats;
+		Stats.SaveDate = FDateTime::Now();
+
+		// If this info has been loaded ever
+		const bool bWasLoaded = Stats.LoadDate.GetTicks() > 0;
+		if (bWasLoaded)
+		{
+			// Now - Loaded
+			const FTimespan SessionTime = Stats.SaveDate - Stats.LoadDate;
+			Stats.PlayedTime += SessionTime;
+			Stats.SlotPlayedTime = bSlotExisted ? (Stats.SlotPlayedTime + SessionTime) : SessionTime;
+		}
+		else
+		{
+			// Slot is new, played time is world seconds
+			Stats.PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
+			Stats.SlotPlayedTime = Stats.PlayedTime;
+		}
+
+		// Save current game seconds
+		SlotData->TimeSeconds = World->TimeSeconds;
+	}
+
+	// Save Level info
+	Slot->Map = FName{FSlotHelpers::GetWorldName(World)};
+
+	SerializeWorld();
+
+	if (!bWaitingThumbnail) // Tick will check if thumbnail is not ready
+	{
+		SaveFile();
+	}
 }
 
 void FSEDataTask_Save::Tick(float DeltaTime)
@@ -211,9 +219,9 @@ void FSEDataTask_Save::Tick(float DeltaTime)
 
 	if (SaveTask && SaveTask->IsDone())
 	{
-		if (bSaveThumbnail)
+		if (bCaptureThumbnail)
 		{
-			if (Slot && Slot->GetThumbnail())
+			if (Slot && Slot->Thumbnail)
 			{
 				Finish(true);
 			}
@@ -222,6 +230,10 @@ void FSEDataTask_Save::Tick(float DeltaTime)
 		{
 			Finish(true);
 		}
+	}
+	else if (!SaveTask && !bWaitingThumbnail)
+	{
+		SaveFile();
 	}
 }
 
@@ -349,7 +361,7 @@ void FSEDataTask_Save::SaveFile()
 	{
 		SaveTask->StartSynchronousTask();
 
-		if (!bSaveThumbnail)
+		if (!bCaptureThumbnail)
 		{
 			Finish(true);
 		}

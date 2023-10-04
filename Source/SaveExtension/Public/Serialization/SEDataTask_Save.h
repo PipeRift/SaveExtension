@@ -23,7 +23,7 @@
 struct FSEDataTask_Save : public FSEDataTask
 {
 	bool bOverride = false;
-	bool bSaveThumbnail = false;
+	bool bCaptureThumbnail = false;
 	FName SlotName;
 	int32 Width = 0;
 	int32 Height = 0;
@@ -43,6 +43,7 @@ protected:
 	FAsyncTask<FSaveFileTask>* SaveTask = nullptr;
 	/** End AsyncTasks */
 
+	bool bWaitingThumbnail = false;
 
 public:
 	FSEDataTask_Save(USaveManager* Manager, USaveSlot* Slot)
@@ -55,7 +56,7 @@ public:
 	{
 		SlotName = InSlotName;
 		bOverride = bInOverride;
-		bSaveThumbnail = bInSaveThumbnail;
+		bCaptureThumbnail = bInSaveThumbnail;
 		Width = InWidth;
 		Height = InHeight;
 

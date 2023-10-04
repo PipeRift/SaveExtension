@@ -88,6 +88,8 @@ struct FSaveFile
 	bool bIsDataCompressed = false;
 	TArray<uint8> DataBytes;
 
+	//TArray<uint8> ThumbnailBytes;
+
 
 	FSaveFile();
 
