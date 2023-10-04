@@ -9,7 +9,6 @@
 struct FSEArchive : public FObjectAndNameAsStringProxyArchive
 {
 public:
-
 	FSEArchive(FArchive &InInnerArchive, bool bInLoadIfFindFails)
 		: FObjectAndNameAsStringProxyArchive(InInnerArchive,bInLoadIfFindFails)
 	{

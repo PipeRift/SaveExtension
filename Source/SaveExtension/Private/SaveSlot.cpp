@@ -2,7 +2,7 @@
 
 #include "SaveSlot.h"
 
-#include "SaveFileHelpers.h"
+#include "SEFileHelpers.h"
 
 #include <Engine/Engine.h>
 #include <Engine/GameViewportClient.h>
@@ -10,6 +10,7 @@
 #include <HighResScreenshot.h>
 #include <IImageWrapper.h>
 #include <IImageWrapperModule.h>
+#include <ImageUtils.h>
 #include <Misc/FileHelper.h>
 
 
@@ -19,122 +20,73 @@ void USaveSlot::PostInitProperties()
 	Data = NewObject<USaveSlotData>(this, DataClass, TEXT("SlotData"));
 }
 
-bool USaveSlot::OnSetIndex(int32 Index)
+void USaveSlot::Serialize(FArchive& Ar)
 {
-	FileName = FName{FString::FromInt(Index)};
-	return true;
-}
+	Super::Serialize(Ar);
 
-int32 USaveSlot::OnGetIndex() const
-{
-	return FCString::Atoi(*FileName.ToString());
-}
-
-UTexture2D* USaveSlot::GetThumbnail() const
-{
-	if (ThumbnailPath.IsEmpty())
+	bool bHasThumbnail = IsValid(Thumbnail);
+	Ar << bHasThumbnail;
+	if (bHasThumbnail)
 	{
-		return nullptr;
-	}
-
-	if (CachedThumbnail)
-	{
-		return CachedThumbnail;
-	}
-
-	// Load thumbnail as Texture2D
-	UTexture2D* Texture{nullptr};
-	TArray<uint8> RawFileData;
-	if (GEngine && FFileHelper::LoadFileToArray(RawFileData, *ThumbnailPath))
-	{
-		IImageWrapperModule& ImageWrapperModule =
-			FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-		TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
-		if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num()))
+		TArray64<uint8> ThumbnailData;
+		if (Ar.IsLoading())
 		{
-			TArray64<uint8> UncompressedBGRA;
-			if (ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA))
-			{
-				Texture = UTexture2D::CreateTransient(
-					ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), PF_B8G8R8A8);
-				void* TextureData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-				FMemory::Memcpy(TextureData, UncompressedBGRA.GetData(), UncompressedBGRA.Num());
-				Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
-				Texture->UpdateResource();
-			}
+			Ar << ThumbnailData;
+			Thumbnail = FImageUtils::ImportBufferAsTexture2D(ThumbnailData);
+		}
+		else
+		{
+			uint8* MipData = static_cast<uint8*>(Thumbnail->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_ONLY));
+			check( MipData != nullptr );
+			int64 MipDataSize = Thumbnail->GetPlatformData()->Mips[0].BulkData.GetBulkDataSize();
+
+			FImageView MipImage(MipData, Thumbnail->GetPlatformData()->SizeX,Thumbnail->GetPlatformData()->SizeY, 1, ERawImageFormat::BGRA8, EGammaSpace::sRGB);
+			FImageUtils::CompressImage(ThumbnailData, TEXT("PNG"), MipImage);
+			Thumbnail->GetPlatformData()->Mips[0].BulkData.Unlock();
+			Ar << ThumbnailData;
 		}
 	}
-	const_cast<USaveSlot*>(this)->CachedThumbnail = Texture;
-	return Texture;
 }
 
-bool USaveSlot::CaptureThumbnail(const int32 Width /*= 640*/, const int32 Height /*= 360*/)
+void USaveSlot::CaptureThumbnail(FSEOnThumbnailCaptured Callback, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
 {
-	if (!GEngine || !GEngine->GameViewport || FileName.IsNone())
+	if (!GEngine || bCapturingThumbnail)
 	{
-		return false;
+		Callback.ExecuteIfBound(false);
+		return;
 	}
 
-	if (auto* Viewport = GEngine->GameViewport->Viewport)
+	auto* Viewport = GEngine->GameViewport? GEngine->GameViewport->Viewport : nullptr;
+	if (!Viewport)
 	{
-		_SetThumbnailPath(FSaveFileHelpers::GetThumbnailPath(FileName.ToString()));
-
-		// TODO: Removal of a thumbnail should be standarized in a function
-		IFileManager& FM = IFileManager::Get();
-		if (ThumbnailPath.Len() > 0 && FM.FileExists(*ThumbnailPath))
-		{
-			FM.Delete(*ThumbnailPath, false, true, true);
-		}
-
-		FHighResScreenshotConfig& HighResScreenshotConfig = GetHighResScreenshotConfig();
-		HighResScreenshotConfig.SetHDRCapture(false);
-		// Set Screenshot path
-		HighResScreenshotConfig.FilenameOverride = ThumbnailPath;
-		// Set Screenshot Resolution
-		GScreenshotResolutionX = Width;
-		GScreenshotResolutionY = Height;
-		Viewport->TakeHighResScreenShot();
-		return true;
+		Callback.ExecuteIfBound(false);
+		return;
 	}
-	return false;
-}
 
-
-int32 USaveSlot::GetMaxIndexes() const
-{
-	return MaxSlots <= 0 ? 16384 : MaxSlots;
-}
-
-bool USaveSlot::IsValidIndex(int32 Index) const
-{
-	return Index >= 0 && Index < GetMaxIndexes();
-}
-
-void USaveSlot::_SetThumbnailPath(const FString& Path)
-{
-	if (ThumbnailPath != Path)
+	FHighResScreenshotConfig& HighResScreenshotConfig = GetHighResScreenshotConfig();
+	HighResScreenshotConfig.SetHDRCapture(false);
+	// Set Screenshot Resolution
+	GScreenshotResolutionX = Width;
+	GScreenshotResolutionY = Height;
+	GEngine->GameViewport->OnScreenshotCaptured().AddUObject(this, &USaveSlot::OnThumbnailCaptured);
+	bCapturingThumbnail = Viewport->TakeHighResScreenShot();
+	if (!bCapturingThumbnail)
 	{
-		ThumbnailPath = Path;
-		CachedThumbnail = nullptr;
+		GEngine->GameViewport->OnScreenshotCaptured().RemoveAll(this);
+		Callback.ExecuteIfBound(false);
+	}
+	else
+	{
+		CapturedThumbnailDelegate = MoveTemp(Callback);
 	}
 }
 
-bool USaveSlot::SetIndex_Implementation(int32 Index)
-{
-	return OnSetIndex(Index);
-}
-
-int32 USaveSlot::GetIndex_Implementation() const
-{
-	return OnGetIndex();
-}
-
-bool USaveSlot::IsMTSerializationLoad() const
+bool USaveSlot::ShouldDeserializeAsync() const
 {
 	return MultithreadedSerialization == ESEAsyncMode::LoadAsync ||
 		   MultithreadedSerialization == ESEAsyncMode::SaveAndLoadAsync;
 }
-bool USaveSlot::IsMTSerializationSave() const
+bool USaveSlot::ShouldSerializeAsync() const
 {
 	return MultithreadedSerialization == ESEAsyncMode::SaveAsync ||
 		   MultithreadedSerialization == ESEAsyncMode::SaveAndLoadAsync;
@@ -151,21 +103,21 @@ float USaveSlot::GetMaxFrameMs() const
 
 bool USaveSlot::IsFrameSplitLoad() const
 {
-	return !IsMTSerializationLoad() && (FrameSplittedSerialization == ESEAsyncMode::LoadAsync ||
-										   FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
+	return !ShouldDeserializeAsync() && (FrameSplittedSerialization == ESEAsyncMode::LoadAsync ||
+											FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
 }
 bool USaveSlot::IsFrameSplitSave() const
 {
-	return !IsMTSerializationSave() && (FrameSplittedSerialization == ESEAsyncMode::SaveAsync ||
-										   FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
+	return !ShouldSerializeAsync() && (FrameSplittedSerialization == ESEAsyncMode::SaveAsync ||
+										  FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
 }
 
-bool USaveSlot::IsMTFilesLoad() const
+bool USaveSlot::ShouldLoadFileAsync() const
 {
 	return MultithreadedFiles == ESEAsyncMode::LoadAsync ||
 		   MultithreadedFiles == ESEAsyncMode::SaveAndLoadAsync;
 }
-bool USaveSlot::IsMTFilesSave() const
+bool USaveSlot::ShouldSaveFileAsync() const
 {
 	return MultithreadedFiles == ESEAsyncMode::SaveAsync ||
 		   MultithreadedFiles == ESEAsyncMode::SaveAndLoadAsync;
@@ -185,4 +137,27 @@ void USaveSlot::OnGetLevelFilter(bool bIsLoading, FSELevelFilter& OutFilter) con
 {
 	OutFilter.ActorFilter = ActorFilter;
 	OutFilter.ComponentFilter = ComponentFilter;
+}
+
+void USaveSlot::OnThumbnailCaptured(int32 InSizeX, int32 InSizeY, const TArray<FColor>& InImageData)
+{
+	if (GEngine->GameViewport)
+	{
+		GEngine->GameViewport->OnScreenshotCaptured().RemoveAll(this);
+	}
+
+	Thumbnail = UTexture2D::CreateTransient(InSizeX, InSizeY, PF_B8G8R8A8);
+	Thumbnail->DeferCompression = true;
+	FColor* TextureData = static_cast<FColor*>(Thumbnail->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	for(int32 i = 0; i < InImageData.Num(); ++i, ++TextureData)
+	{
+		*TextureData = InImageData[i];
+	}
+	Thumbnail->GetPlatformData()->Mips[0].BulkData.Unlock();
+	Thumbnail->UpdateResource();
+
+
+	bCapturingThumbnail = false;
+	CapturedThumbnailDelegate.ExecuteIfBound(true);
+	CapturedThumbnailDelegate = {};
 }

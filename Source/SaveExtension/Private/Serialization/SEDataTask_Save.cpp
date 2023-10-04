@@ -3,13 +3,111 @@
 #include "Serialization/SEDataTask_Save.h"
 
 #include "Misc/SlotHelpers.h"
-#include "SaveFileHelpers.h"
+#include "SEFileHelpers.h"
 #include "SaveManager.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
 
 #include <GameFramework/GameModeBase.h>
 #include <Serialization/MemoryWriter.h>
+#include <Tasks/Task.h>
+
+
+void SerializeActorComponents(
+	const AActor* Actor, FActorRecord& ActorRecord, const FSELevelFilter& Filter)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActorComponents);
+
+	const TSet<UActorComponent*>& Components = Actor->GetComponents();
+	for (auto* Component : Components)
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActorComponents | Component);
+		if (IsValid(Component) && Filter.Stores(Component))
+		{
+			FComponentRecord& ComponentRecord = ActorRecord.ComponentRecords.Add_GetRef({Component});
+
+			if (Filter.StoresTransform(Component))
+			{
+				const USceneComponent* Scene = CastChecked<USceneComponent>(Component);
+				if (Scene->Mobility == EComponentMobility::Movable)
+				{
+					ComponentRecord.Transform = Scene->GetRelativeTransform();
+				}
+			}
+
+			if (Filter.StoresTags(Component))
+			{
+				ComponentRecord.Tags = Component->ComponentTags;
+			}
+
+			if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
+			{
+				FMemoryWriter MemoryWriter(ComponentRecord.Data, true);
+				FSEArchive Archive(MemoryWriter, false);
+				Component->Serialize(Archive);
+			}
+		}
+	}
+}
+
+bool SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFilter& Filter)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor);
+
+	Record = FActorRecord{Actor};
+
+	Record.bHiddenInGame = Actor->IsHidden();
+	Record.bIsProcedural = Filter.IsProcedural(Actor);
+
+	if (Filter.StoresTags(Actor))
+	{
+		Record.Tags = Actor->Tags;
+	}
+	else
+	{
+		// Only save save-tags
+		for (const auto& Tag : Actor->Tags)
+		{
+			if (Filter.IsSaveTag(Tag))
+			{
+				Record.Tags.Add(Tag);
+			}
+		}
+	}
+
+	if (Filter.StoresTransform(Actor))
+	{
+		Record.Transform = Actor->GetTransform();
+
+		if (Filter.StoresPhysics(Actor))
+		{
+			USceneComponent* const Root = Actor->GetRootComponent();
+			if (Root && Root->Mobility == EComponentMobility::Movable)
+			{
+				if (auto* const Primitive = Cast<UPrimitiveComponent>(Root))
+				{
+					Record.LinearVelocity = Primitive->GetPhysicsLinearVelocity();
+					Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInRadians();
+				}
+				else
+				{
+					Record.LinearVelocity = Root->GetComponentVelocity();
+				}
+			}
+		}
+	}
+
+	if (Filter.StoresAnyComponents())
+	{
+		SerializeActorComponents(Actor, Record, Filter);
+	}
+
+	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor | Serialize);
+	FMemoryWriter MemoryWriter(Record.Data, true);
+	FSEArchive Archive(MemoryWriter, false);
+	const_cast<AActor*>(Actor)->Serialize(Archive);
+	return true;
+}
 
 
 /////////////////////////////////////////////////////
@@ -17,10 +115,9 @@
 
 FSEDataTask_Save::~FSEDataTask_Save()
 {
-	if (SaveTask)
+	if (!SaveFileTask.IsCompleted())
 	{
-		SaveTask->EnsureCompletion(false);
-		delete SaveTask;
+		SaveFileTask.Wait();
 	}
 }
 
@@ -33,13 +130,13 @@ void FSEDataTask_Save::OnStart()
 	const FString SlotNameStr = SlotName.ToString();
 	// Overriding
 	{
-		const bool bFileExists = FSaveFileHelpers::FileExists(SlotNameStr);
+		const bool bFileExists = FSEFileHelpers::FileExists(SlotNameStr);
 		if (bOverride)
 		{
 			// Delete previous save
 			if (bFileExists)
 			{
-				FSaveFileHelpers::DeleteFile(SlotNameStr);
+				FSEFileHelpers::DeleteFile(SlotNameStr);
 			}
 		}
 		else
@@ -50,60 +147,68 @@ void FSEDataTask_Save::OnStart()
 		}
 	}
 
-	if (bSave)
+	if (!bSave)
 	{
-		const UWorld* World = GetWorld();
-
-		Manager->OnSaveBegan();
-
-		Slot = Manager->GetActiveSlot();
-		SlotData = Slot->GetData();
-		check(SlotData->GetClass() == Slot->DataClass);
-		SlotData->CleanRecords(true);
-
-		check(Slot && SlotData);
-
-		const bool bSlotExisted = Slot->FileName == SlotName;
-		Slot->FileName = SlotName;
-
-		if (bSaveThumbnail)
-		{
-			Slot->CaptureThumbnail(Width, Height);
-		}
-
-		// Time stats
-		{
-			FSaveSlotStats& Stats = Slot->Stats;
-			Stats.SaveDate = FDateTime::Now();
-
-			// If this info has been loaded ever
-			const bool bWasLoaded = Stats.LoadDate.GetTicks() > 0;
-			if (bWasLoaded)
-			{
-				// Now - Loaded
-				const FTimespan SessionTime = Stats.SaveDate - Stats.LoadDate;
-				Stats.PlayedTime += SessionTime;
-				Stats.SlotPlayedTime = bSlotExisted ? (Stats.SlotPlayedTime + SessionTime) : SessionTime;
-			}
-			else
-			{
-				// Slot is new, played time is world seconds
-				Stats.PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
-				Stats.SlotPlayedTime = Stats.PlayedTime;
-			}
-
-			// Save current game seconds
-			SlotData->TimeSeconds = World->TimeSeconds;
-		}
-
-		// Save Level info
-		Slot->Map = FName{FSlotHelpers::GetWorldName(World)};
-
-		SerializeWorld();
-		SaveFile();
+		Finish(false);
 		return;
 	}
-	Finish(false);
+
+	const UWorld* World = GetWorld();
+
+	Manager->OnSaveBegan();
+
+	Slot = Manager->GetActiveSlot();
+	SlotData = Slot->GetData();
+	check(SlotData->GetClass() == Slot->DataClass);
+	SlotData->CleanRecords(true);
+
+	check(Slot && SlotData);
+
+	const bool bSlotExisted = Slot->Name == SlotName;
+	Slot->Name = SlotName;
+
+	if (bCaptureThumbnail)
+	{
+		bWaitingThumbnail = true;
+		Slot->CaptureThumbnail(FSEOnThumbnailCaptured::CreateLambda([this](bool bSuccess) {
+			bWaitingThumbnail = false;
+		}), Width, Height);
+	}
+
+	// Time stats
+	{
+		FSaveSlotStats& Stats = Slot->Stats;
+		Stats.SaveDate = FDateTime::Now();
+
+		// If this info has been loaded ever
+		const bool bWasLoaded = Stats.LoadDate.GetTicks() > 0;
+		if (bWasLoaded)
+		{
+			// Now - Loaded
+			const FTimespan SessionTime = Stats.SaveDate - Stats.LoadDate;
+			Stats.PlayedTime += SessionTime;
+			Stats.SlotPlayedTime = bSlotExisted ? (Stats.SlotPlayedTime + SessionTime) : SessionTime;
+		}
+		else
+		{
+			// Slot is new, played time is world seconds
+			Stats.PlayedTime = FTimespan::FromSeconds(World->TimeSeconds);
+			Stats.SlotPlayedTime = Stats.PlayedTime;
+		}
+
+		// Save current game seconds
+		SlotData->TimeSeconds = World->TimeSeconds;
+	}
+
+	// Save Level info
+	Slot->Map = FName{FSlotHelpers::GetWorldName(World)};
+
+	SerializeWorld();
+
+	if (!bWaitingThumbnail) // Tick will check if thumbnail is not ready
+	{
+		SaveFile();
+	}
 }
 
 void FSEDataTask_Save::Tick(float DeltaTime)
@@ -111,19 +216,13 @@ void FSEDataTask_Save::Tick(float DeltaTime)
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::Tick);
 	FSEDataTask::Tick(DeltaTime);
 
-	if (SaveTask && SaveTask->IsDone())
+	if (SaveFileTask.IsValid() && SaveFileTask.IsCompleted())
 	{
-		if (bSaveThumbnail)
-		{
-			if (Slot && Slot->GetThumbnail())
-			{
-				Finish(true);
-			}
-		}
-		else
-		{
-			Finish(true);
-		}
+		Finish(SaveFileTask.GetResult());
+	}
+	else if (!SaveFileTask.IsValid() && !bWaitingThumbnail)
+	{
+		SaveFile();
 	}
 }
 
@@ -160,21 +259,27 @@ void FSEDataTask_Save::SerializeWorld()
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 	PrepareAllLevels(Levels);
 
-	// Threads available + 1 (Synchronous Thread)
-	const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn() + 1);
-	const int32 TasksPerLevel = FMath::Max(1, FMath::RoundToInt(float(NumberOfThreads) / (Levels.Num() + 1)));
-	Tasks.Reserve(NumberOfThreads);
-
-	SerializeLevelSync(World->GetCurrentLevel(), TasksPerLevel);
-	for (const ULevelStreaming* Level : Levels)
-	{
-		if (Level->IsLevelLoaded())
+	{ // Serialization
+		UGameInstance* GameInstance = World->GetGameInstance();
+		if (GameInstance && Slot->bStoreGameInstance)
 		{
-			SerializeLevelSync(Level->GetLoadedLevel(), TasksPerLevel, Level);
+			TRACE_CPUPROFILER_EVENT_SCOPE(SerializeGameInstance);
+			FObjectRecord Record{GameInstance};
+			FMemoryWriter MemoryWriter(Record.Data, true);
+			FSEArchive Archive(MemoryWriter, false);
+			GameInstance->Serialize(Archive);
+			SlotData->GameInstance = MoveTemp(Record);
+		}
+
+		SerializeLevel(World->GetCurrentLevel());
+		for (const ULevelStreaming* Level : Levels)
+		{
+			if (Level->IsLevelLoaded())
+			{
+				SerializeLevel(Level->GetLoadedLevel(), Level);
+			}
 		}
 	}
-
-	RunScheduledTasks();
 }
 
 void FSEDataTask_Save::PrepareAllLevels(const TArray<ULevelStreaming*>& Levels)
@@ -199,100 +304,46 @@ void FSEDataTask_Save::PrepareLevel(const ULevel* Level, FLevelRecord& LevelReco
 	LevelRecord.Filter.BakeAllowedClasses();
 }
 
-void FSEDataTask_Save::SerializeLevelSync(
-	const ULevel* Level, int32 AssignedTasks, const ULevelStreaming* StreamingLevel)
+void FSEDataTask_Save::SerializeLevel(
+	const ULevel* Level, const ULevelStreaming* StreamingLevel)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::SerializeLevelSync);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::SerializeLevel);
 	check(IsValid(Level));
-
-	if (!Slot->IsMTSerializationSave())
-	{
-		AssignedTasks = 1;
-	}
 
 	const FName LevelName =
 		StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	// Find level record. By default, main level
-	FLevelRecord* LevelRecord = &SlotData->RootLevel;
-	if (StreamingLevel)
+	auto& LevelRecord = StreamingLevel? *FindLevelRecord(StreamingLevel) : SlotData->RootLevel;
+	const FSELevelFilter& Filter = LevelRecord.Filter;
+
+	LevelRecord.CleanRecords(); // Empty level record before serializing it
+
+	TArray<const AActor*> ActorsToSerialize;
+	for (AActor* Actor : Level->Actors)
 	{
-		LevelRecord = FindLevelRecord(StreamingLevel);
-	}
-	check(LevelRecord);
-
-	// Empty level record before serializing it
-	LevelRecord->CleanRecords();
-
-	const int32 MinObjectsPerTask = 40;
-	const int32 ActorCount = Level->Actors.Num();
-	const int32 NumBalancedPerTask = FMath::CeilToInt((float) ActorCount / AssignedTasks);
-	const int32 NumPerTask = FMath::Max(NumBalancedPerTask, MinObjectsPerTask);
-
-	// Split all actors between multi-threaded tasks
-	int32 Index = 0;
-	while (Index < ActorCount)
-	{
-		const int32 NumRemaining = ActorCount - Index;
-		const int32 NumToSerialize = FMath::Min(NumRemaining, NumPerTask);
-
-		// First task saves the GameInstance
-		bool bStoreGameInstance = Index <= 0 && Slot->bStoreGameInstance;
-		// Add new Task
-		Tasks.Emplace(FMTTask_SerializeActors{GetWorld(), SlotData, &Level->Actors, Index, NumToSerialize,
-			bStoreGameInstance, LevelRecord, &LevelRecord->Filter});
-
-		Index += NumToSerialize;
-	}
-}
-
-void FSEDataTask_Save::RunScheduledTasks()
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::RunScheduledTasks);
-	// Start all serialization tasks
-	if (Tasks.Num() > 0)
-	{
-		for (int32 I = 1; I < Tasks.Num(); ++I)
+		if (Actor && Filter.Stores(Actor))
 		{
-			if (Slot->IsMTSerializationSave())
-				Tasks[I].StartBackgroundTask();
-			else
-				Tasks[I].StartSynchronousTask();
+			ActorsToSerialize.Add(Actor);
 		}
-		// First task stores
-		Tasks[0].StartSynchronousTask();
 	}
-	// Wait until all tasks have finished
-	for (auto& AsyncTask : Tasks)
+	LevelRecord.Actors.SetNum(ActorsToSerialize.Num());
+
+	ParallelFor(ActorsToSerialize.Num(), [&LevelRecord, &ActorsToSerialize, &Filter](int32 i)
 	{
-		AsyncTask.EnsureCompletion();
-	}
-	// All tasks finished, sync data
-	for (auto& AsyncTask : Tasks)
-	{
-		AsyncTask.GetTask().DumpData();
-	}
-	Tasks.Empty();
+		SerializeActor(ActorsToSerialize[i], LevelRecord.Actors[i], Filter);
+	}, Slot->ShouldSerializeAsync()? EParallelForFlags::None : EParallelForFlags::ForceSingleThread);
 }
 
 void FSEDataTask_Save::SaveFile()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::SaveFile);
-	SaveTask =
-		new FAsyncTask<FSaveFileTask>(Manager->GetActiveSlot(), SlotName.ToString(), Slot->bUseCompression);
+	SaveFileTask = FSEFileHelpers::SaveFile(Manager->GetActiveSlot(), SlotName.ToString(), Slot->bUseCompression);
 
-	if (Slot->IsMTFilesSave())
+	if (!Slot->ShouldSaveFileAsync())
 	{
-		SaveTask->StartBackgroundTask();
-	}
-	else
-	{
-		SaveTask->StartSynchronousTask();
-
-		if (!bSaveThumbnail)
-		{
-			Finish(true);
-		}
+		SaveFileTask.Wait();
+		Finish(SaveFileTask.GetResult());
 	}
 }

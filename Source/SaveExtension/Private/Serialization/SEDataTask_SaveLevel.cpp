@@ -19,10 +19,7 @@ void FSEDataTask_SaveLevel::OnStart()
 
 		PrepareLevel(StreamingLevel->GetLoadedLevel(), *LevelRecord);
 
-		const int32 NumberOfThreads = FMath::Max(1, FPlatformMisc::NumberOfWorkerThreadsToSpawn());
-		SerializeLevelSync(StreamingLevel->GetLoadedLevel(), NumberOfThreads, StreamingLevel);
-
-		RunScheduledTasks();
+		SerializeLevel(StreamingLevel->GetLoadedLevel(), StreamingLevel);
 
 		Finish(true);
 		return;
