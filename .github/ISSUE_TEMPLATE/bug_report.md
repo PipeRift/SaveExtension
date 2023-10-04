@@ -3,7 +3,7 @@ name: Bug report
 about: Create a report to help us improve Save Extension
 title: ''
 labels: Bug, To Be Reproduced
-assignees: muit
+assignees:
 
 ---
 
