@@ -159,6 +159,7 @@ void FSEDataTask_Save::OnStart()
 
 	Slot = Manager->GetActiveSlot();
 	SlotData = Slot->GetData();
+
 	check(SlotData->GetClass() == Slot->DataClass);
 	SlotData->CleanRecords(true);
 
@@ -256,6 +257,9 @@ void FSEDataTask_Save::SerializeWorld()
 
 	SELog(Slot, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
+	SubsystemFilter = Slot->SubsystemFilter;
+	SubsystemFilter.BakeAllowedClasses();
+
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 	PrepareAllLevels(Levels);
 
@@ -269,6 +273,30 @@ void FSEDataTask_Save::SerializeWorld()
 			FSEArchive Archive(MemoryWriter, false);
 			GameInstance->Serialize(Archive);
 			SlotData->GameInstance = MoveTemp(Record);
+
+			SlotData->GameInstanceSubsystems.Reset();
+			for(UGameInstanceSubsystem* Subsystem : GameInstance->GetSubsystemArray<UGameInstanceSubsystem>())
+			{
+				if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
+				{
+					auto& SubsystemRecord = SlotData->GameInstanceSubsystems.Add_GetRef({Subsystem});
+					FMemoryWriter SubsystemMemoryWriter(SubsystemRecord.Data, true);
+					FSEArchive Ar(SubsystemMemoryWriter, false);
+					Subsystem->Serialize(Ar);
+				}
+			}
+		}
+
+		SlotData->WorldSubsystems.Reset();
+		for(UWorldSubsystem* Subsystem : World->GetSubsystemArray<UWorldSubsystem>())
+		{
+			if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
+			{
+				auto& SubsystemRecord = SlotData->WorldSubsystems.Add_GetRef({Subsystem});
+				FMemoryWriter SubsystemMemoryWriter(SubsystemRecord.Data, true);
+				FSEArchive Ar(SubsystemMemoryWriter, false);
+				Subsystem->Serialize(Ar);
+			}
 		}
 
 		SerializeLevel(World->GetCurrentLevel());

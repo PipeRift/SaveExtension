@@ -15,15 +15,23 @@ namespace UnrealBuildTool.Rules
 
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
-			"Core",
-			"Engine",
-			"Foliage",
-			"AIModule",
-			"CoreUObject",
-			"DeveloperSettings",
-			"ImageWrapper",
-			"NavigationSystem"
+				"Core",
+				"Engine",
+				"Foliage",
+				"AIModule",
+				"CoreUObject",
+				"DeveloperSettings",
+				"ImageWrapper",
+				"NavigationSystem"
 			});
+
+			if (Target.Type == TargetType.Editor)
+			{
+				PrivateDependencyModuleNames.AddRange(new string[]
+				{
+					"UnrealEd"
+				});
+			}
 		}
 	}
 

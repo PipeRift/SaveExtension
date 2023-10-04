@@ -31,12 +31,8 @@ struct FSEDataTask_Save : public FSEDataTask
 
 protected:
 	TObjectPtr<USaveSlot> Slot;
+	FSEClassFilter SubsystemFilter;
 
-	/** Start Async variables */
-	TWeakObjectPtr<ULevel> CurrentLevel;
-	TWeakObjectPtr<ULevelStreaming> CurrentSLevel;
-	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
-	/** End Async variables */
 
 	UE::Tasks::TTask<bool> SaveFileTask;
 

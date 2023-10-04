@@ -6,6 +6,10 @@
 #include <UObject/UObjectIterator.h>
 
 
+#if WITH_EDITORONLY_DATA
+#include <Kismet2/KismetEditorUtilities.h>
+#endif
+
 FSEClassFilter::FSEClassFilter(UClass* BaseClass) : BaseClass{BaseClass}, IgnoredClasses{} {}
 
 void FSEClassFilter::Merge(const FSEClassFilter& Other)
@@ -49,6 +53,12 @@ void FSEClassFilter::BakeAllowedClasses() const
 			BakedAllowedClasses.Add(AllowedClassPtr);
 			GetDerivedClasses(AllowedClassPtr, ChildrenOfAllowedClasses);
 		}
+
+#if WITH_EDITORONLY_DATA
+		ChildrenOfAllowedClasses.RemoveAllSwap([](UClass* Class){
+			return FKismetEditorUtilities::IsClassABlueprintSkeleton(Class);
+		}, false);
+#endif
 	}
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(Second Pass : Bake Classes);
