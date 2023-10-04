@@ -2,7 +2,7 @@
 
 #include "SaveSlot.h"
 
-#include "SaveFileHelpers.h"
+#include "SEFileHelpers.h"
 
 #include <Engine/Engine.h>
 #include <Engine/GameViewportClient.h>
@@ -112,12 +112,12 @@ bool USaveSlot::IsFrameSplitSave() const
 										  FrameSplittedSerialization == ESEAsyncMode::SaveAndLoadAsync);
 }
 
-bool USaveSlot::IsMTFilesLoad() const
+bool USaveSlot::ShouldLoadFileAsync() const
 {
 	return MultithreadedFiles == ESEAsyncMode::LoadAsync ||
 		   MultithreadedFiles == ESEAsyncMode::SaveAndLoadAsync;
 }
-bool USaveSlot::IsMTFilesSave() const
+bool USaveSlot::ShouldSaveFileAsync() const
 {
 	return MultithreadedFiles == ESEAsyncMode::SaveAsync ||
 		   MultithreadedFiles == ESEAsyncMode::SaveAndLoadAsync;

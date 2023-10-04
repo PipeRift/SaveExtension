@@ -151,8 +151,8 @@ public:
 
 public:
 	/** Slot where this SaveInfo and its saveData are saved */
-	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)
-	FName FileName = TEXT("Default");
+	UPROPERTY(BlueprintReadWrite, Category = SaveSlot)
+	FName Name = TEXT("Default");
 
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)
 	FText DisplayName;
@@ -213,8 +213,8 @@ public:
 	bool IsFrameSplitLoad() const;
 	bool IsFrameSplitSave() const;
 
-	bool IsMTFilesLoad() const;
-	bool IsMTFilesSave() const;
+	bool ShouldLoadFileAsync() const;
+	bool ShouldSaveFileAsync() const;
 
 	UFUNCTION(BlueprintPure, Category = SaveSlot)
 	bool IsLoadingOrSaving() const;

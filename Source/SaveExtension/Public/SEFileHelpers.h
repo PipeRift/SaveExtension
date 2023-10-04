@@ -12,6 +12,7 @@
 #include <Serialization/CustomVersion.h>
 #include <Serialization/ObjectAndNameAsStringProxyArchive.h>
 #include <Templates/SubclassOf.h>
+#include <Tasks/Task.h>
 
 
 class USaveSlot;
@@ -88,8 +89,6 @@ struct FSaveFile
 	bool bIsDataCompressed = false;
 	TArray<uint8> DataBytes;
 
-	//TArray<uint8> ThumbnailBytes;
-
 
 	FSaveFile();
 
@@ -105,21 +104,24 @@ struct FSaveFile
 
 
 /** Based on GameplayStatics to add multi-threading */
-class SAVEEXTENSION_API FSaveFileHelpers
+class SAVEEXTENSION_API FSEFileHelpers
 {
 public:
-	static bool SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bUseCompression);
+	static bool SaveFileSync(USaveSlot* Slot, FStringView OverrideSlotName = {}, const bool bUseCompression = true);
+	static UE::Tasks::TTask<bool> SaveFile(USaveSlot* Slot, FString OverrideSlotName = {}, const bool bUseCompression = true);
 
-	// Not safe for Multi-threading
-	static bool LoadFile(FStringView SlotName, USaveSlot*& Slot, bool bLoadData, const UObject* Outer);
+	static USaveSlot* LoadFileSync(FStringView SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
+	static UE::Tasks::TTask<USaveSlot*> LoadFile(FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
 
 	static bool DeleteFile(FStringView SlotName);
 	static bool FileExists(FStringView SlotName);
 
 	static const FString& GetSaveFolder();
 	static FString GetSlotPath(FStringView SlotName);
-	static FString GetThumbnailPath(FStringView SlotName);
 
 	static UObject* DeserializeObject(
 		UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes);
+
+	// @return the pipe used for save file operations
+	static class UE::Tasks::FPipe& GetPipe();
 };

@@ -3,7 +3,7 @@
 #include "Serialization/SEDataTask_Save.h"
 
 #include "Misc/SlotHelpers.h"
-#include "SaveFileHelpers.h"
+#include "SEFileHelpers.h"
 #include "SaveManager.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
@@ -115,10 +115,9 @@ bool SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFil
 
 FSEDataTask_Save::~FSEDataTask_Save()
 {
-	if (SaveTask)
+	if (!SaveFileTask.IsCompleted())
 	{
-		SaveTask->EnsureCompletion(false);
-		delete SaveTask;
+		SaveFileTask.Wait();
 	}
 }
 
@@ -131,13 +130,13 @@ void FSEDataTask_Save::OnStart()
 	const FString SlotNameStr = SlotName.ToString();
 	// Overriding
 	{
-		const bool bFileExists = FSaveFileHelpers::FileExists(SlotNameStr);
+		const bool bFileExists = FSEFileHelpers::FileExists(SlotNameStr);
 		if (bOverride)
 		{
 			// Delete previous save
 			if (bFileExists)
 			{
-				FSaveFileHelpers::DeleteFile(SlotNameStr);
+				FSEFileHelpers::DeleteFile(SlotNameStr);
 			}
 		}
 		else
@@ -165,8 +164,8 @@ void FSEDataTask_Save::OnStart()
 
 	check(Slot && SlotData);
 
-	const bool bSlotExisted = Slot->FileName == SlotName;
-	Slot->FileName = SlotName;
+	const bool bSlotExisted = Slot->Name == SlotName;
+	Slot->Name = SlotName;
 
 	if (bCaptureThumbnail)
 	{
@@ -217,21 +216,11 @@ void FSEDataTask_Save::Tick(float DeltaTime)
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::Tick);
 	FSEDataTask::Tick(DeltaTime);
 
-	if (SaveTask && SaveTask->IsDone())
+	if (SaveFileTask.IsValid() && SaveFileTask.IsCompleted())
 	{
-		if (bCaptureThumbnail)
-		{
-			if (Slot && Slot->Thumbnail)
-			{
-				Finish(true);
-			}
-		}
-		else
-		{
-			Finish(true);
-		}
+		Finish(SaveFileTask.GetResult());
 	}
-	else if (!SaveTask && !bWaitingThumbnail)
+	else if (!SaveFileTask.IsValid() && !bWaitingThumbnail)
 	{
 		SaveFile();
 	}
@@ -350,20 +339,11 @@ void FSEDataTask_Save::SerializeLevel(
 void FSEDataTask_Save::SaveFile()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::SaveFile);
-	SaveTask =
-		new FAsyncTask<FSaveFileTask>(Manager->GetActiveSlot(), SlotName.ToString(), Slot->bUseCompression);
+	SaveFileTask = FSEFileHelpers::SaveFile(Manager->GetActiveSlot(), SlotName.ToString(), Slot->bUseCompression);
 
-	if (Slot->IsMTFilesSave())
+	if (!Slot->ShouldSaveFileAsync())
 	{
-		SaveTask->StartBackgroundTask();
-	}
-	else
-	{
-		SaveTask->StartSynchronousTask();
-
-		if (!bCaptureThumbnail)
-		{
-			Finish(true);
-		}
+		SaveFileTask.Wait();
+		Finish(SaveFileTask.GetResult());
 	}
 }

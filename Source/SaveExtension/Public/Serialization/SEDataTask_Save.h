@@ -4,7 +4,6 @@
 
 #include "Delegates.h"
 #include "ISaveExtension.h"
-#include "Multithreading/SaveFileTask.h"
 #include "SaveSlotData.h"
 #include "SEDataTask.h"
 
@@ -39,9 +38,7 @@ protected:
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
 	/** End Async variables */
 
-	/** Begin AsyncTasks */
-	FAsyncTask<FSaveFileTask>* SaveTask = nullptr;
-	/** End AsyncTasks */
+	UE::Tasks::TTask<bool> SaveFileTask;
 
 	bool bWaitingThumbnail = false;
 

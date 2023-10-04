@@ -1,8 +1,7 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "SaveFileHelpers.h"
+#include "SEFileHelpers.h"
 
-#include "Multithreading/SaveFileTask.h"
 #include "Serialization/SEArchive.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
@@ -14,9 +13,13 @@
 #include <Serialization/MemoryWriter.h>
 #include <UObject/Package.h>
 #include <UObject/UObjectGlobals.h>
+#include <Tasks/Pipe.h>
 
 
 static const int SE_SAVEGAME_FILE_TYPE_TAG = 0x0001;	// "sAvG"
+
+UE::Tasks::FPipe BackendPipe{ TEXT("SaveExtensionPipe") };
+
 
 struct FSaveGameFileVersion
 {
@@ -210,14 +213,9 @@ void FSaveFile::SerializeData(USaveSlotData* SlotData)
 	SlotData->Serialize(Ar);
 }
 
-bool FSaveFileHelpers::SaveFile(FStringView SlotName, USaveSlot* Slot, const bool bUseCompression)
+bool FSEFileHelpers::SaveFileSync(USaveSlot* Slot, FStringView OverrideSlotName, const bool bUseCompression)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFileHelpers::SaveFile);
-
-	if (SlotName.IsEmpty())
-	{
-		return false;
-	}
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSEFileHelpers::SaveFileSync);
 
 	if (!ensureMsgf(Slot, TEXT("Slot object must be valid")) ||
 		!ensureMsgf(Slot->GetData(), TEXT("Slot Data object must be valid")))
@@ -225,6 +223,7 @@ bool FSaveFileHelpers::SaveFile(FStringView SlotName, USaveSlot* Slot, const boo
 		return false;
 	}
 
+	FString SlotName = OverrideSlotName.IsEmpty()? Slot->Name.ToString() : FString{OverrideSlotName};
 	FScopedFileWriter FileWriter(GetSlotPath(SlotName));
 	if (FileWriter.IsValid())
 	{
@@ -237,19 +236,31 @@ bool FSaveFileHelpers::SaveFile(FStringView SlotName, USaveSlot* Slot, const boo
 	return false;
 }
 
-bool FSaveFileHelpers::LoadFile(FStringView SlotName, USaveSlot*& Slot, bool bLoadData, const UObject* Outer)
+UE::Tasks::TTask<bool> FSEFileHelpers::SaveFile(USaveSlot* Slot, FString OverrideSlotName, const bool bUseCompression)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FSaveFileHelpers::LoadFile);
+	return BackendPipe.Launch(TEXT("SaveFile"), [Slot, OverrideSlotName, bUseCompression]() {
+		return SaveFileSync(Slot, OverrideSlotName, bUseCompression);
+	});
+}
+
+
+USaveSlot* FSEFileHelpers::LoadFileSync(FStringView SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSEFileHelpers::LoadFileSync);
+	if (SlotName.IsEmpty() && SlotHint)
+	{
+		SlotName = SlotHint->Name.ToString();
+	}
 
 	FScopedFileReader Reader(GetSlotPath(SlotName));
 	if (Reader.IsValid())
 	{
 		FSaveFile File{};
 		File.Read(Reader, !bLoadData);
-
+		USaveSlot* Slot;
 		{
 			TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeInfo)
-			Slot = Cast<USaveSlot>(DeserializeObject(Slot, File.ClassName, Outer, File.Bytes));
+			Slot = Cast<USaveSlot>(DeserializeObject(SlotHint, File.ClassName, Manager, File.Bytes));
 		}
 		if (bLoadData)
 		{
@@ -258,38 +269,51 @@ bool FSaveFileHelpers::LoadFile(FStringView SlotName, USaveSlot*& Slot, bool bLo
 				DeserializeObject(Slot->GetData(), File.DataClassName, Slot, File.DataBytes))
 			);
 		}
-		return true;
+		return Slot;
 	}
-	return false;
+	return nullptr;
 }
 
-bool FSaveFileHelpers::DeleteFile(FStringView SlotName)
+UE::Tasks::TTask<USaveSlot*> FSEFileHelpers::LoadFile(FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
+{
+	return BackendPipe.Launch(TEXT("LoadFile"), [SlotName, SlotHint, bLoadData, Manager]()
+	{
+		USaveSlot* Slot = LoadFileSync(SlotName, SlotHint, bLoadData, Manager);
+		// In case we create the slot from async loading thread
+		if (Slot)
+		{
+			Slot->ClearInternalFlags(EInternalObjectFlags::Async);
+			if (IsValid(Slot->GetData()))
+			{
+				Slot->GetData()->ClearInternalFlags(EInternalObjectFlags::Async);
+			}
+		}
+		return Slot;
+	});
+}
+
+bool FSEFileHelpers::DeleteFile(FStringView SlotName)
 {
 	return IFileManager::Get().Delete(*GetSlotPath(SlotName), true, false, true);
 }
 
-bool FSaveFileHelpers::FileExists(FStringView SlotName)
+bool FSEFileHelpers::FileExists(FStringView SlotName)
 {
 	return IFileManager::Get().FileSize(*GetSlotPath(SlotName)) >= 0;
 }
 
-const FString& FSaveFileHelpers::GetSaveFolder()
+const FString& FSEFileHelpers::GetSaveFolder()
 {
 	static const FString Folder = FString::Printf(TEXT("%sSaveGames/"), *FPaths::ProjectSavedDir());
 	return Folder;
 }
 
-FString FSaveFileHelpers::GetSlotPath(FStringView SlotName)
+FString FSEFileHelpers::GetSlotPath(FStringView SlotName)
 {
 	return GetSaveFolder() / FString::Printf(TEXT("%s.sav"), SlotName.GetData());
 }
 
-FString FSaveFileHelpers::GetThumbnailPath(FStringView SlotName)
-{
-	return GetSaveFolder() / FString::Printf(TEXT("%s.png"), SlotName.GetData());
-}
-
-UObject* FSaveFileHelpers::DeserializeObject(UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
+UObject* FSEFileHelpers::DeserializeObject(UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
 {
 	UObject* Object = Hint;
 
@@ -324,4 +348,9 @@ UObject* FSaveFileHelpers::DeserializeObject(UObject* Hint, FStringView ClassNam
 	FSEArchive Ar(Reader, true);
 	Object->Serialize(Ar);
 	return Object;
+}
+
+UE::Tasks::FPipe& FSEFileHelpers::GetPipe()
+{
+	return BackendPipe;
 }

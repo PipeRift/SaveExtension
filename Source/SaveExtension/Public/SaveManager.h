@@ -250,7 +250,7 @@ public:
 	{
 		if (Slot)
 		{
-			DeleteSlotByName(Slot->FileName);
+			DeleteSlotByName(Slot->Name);
 		}
 	}
 
@@ -387,7 +387,7 @@ inline bool USaveManager::SaveSlot(const USaveSlot* Slot, bool bOverrideIfNeeded
 	{
 		return false;
 	}
-	return SaveSlot(Slot->FileName, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
+	return SaveSlot(Slot->Name, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
 }
 
 inline void USaveManager::BPSaveSlot(const USaveSlot* Slot, bool bScreenshot,
@@ -399,7 +399,7 @@ inline void USaveManager::BPSaveSlot(const USaveSlot* Slot, bool bScreenshot,
 		Result = ESEContinueOrFail::Failed;
 		return;
 	}
-	BPSaveSlotByName(Slot->FileName, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
+	BPSaveSlotByName(Slot->Name, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
 }
 
 inline bool USaveManager::SaveActiveSlot(bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
@@ -413,7 +413,7 @@ inline bool USaveManager::LoadSlot(const USaveSlot* Slot, FOnGameLoaded OnLoaded
 	{
 		return false;
 	}
-	return LoadSlot(Slot->FileName, OnLoaded);
+	return LoadSlot(Slot->Name, OnLoaded);
 }
 
 inline void USaveManager::BPLoadSlot(
@@ -424,7 +424,7 @@ inline void USaveManager::BPLoadSlot(
 		Result = ESEContinueOrFail::Failed;
 		return;
 	}
-	BPLoadSlotByName(Slot->FileName, Result, MoveTemp(LatentInfo));
+	BPLoadSlotByName(Slot->Name, Result, MoveTemp(LatentInfo));
 }
 
 inline void USaveManager::IterateSubscribedInterfaces(TFunction<void(UObject*)>&& Callback)

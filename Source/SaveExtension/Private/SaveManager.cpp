@@ -2,7 +2,7 @@
 
 #include "SaveManager.h"
 
-#include "SaveFileHelpers.h"
+#include "SEFileHelpers.h"
 #include "SaveSettings.h"
 #include "Serialization/SEDataTask_LoadLevel.h"
 #include "Serialization/SEDataTask_SaveLevel.h"
@@ -22,8 +22,6 @@
 #include <Misc/Paths.h>
 #include <Tasks/Pipe.h>
 
-
-UE::Tasks::FPipe BackendPipe{ TEXT("SaveExtensionPipe") };
 
 // From SaveGameSystem.cpp
 void OnAsyncComplete(TFunction<void()> Callback)
@@ -212,7 +210,7 @@ void USaveManager::Deinitialize()
 {
 	Super::Deinitialize();
 
-	BackendPipe.WaitUntilEmpty();
+	FSEFileHelpers::GetPipe().WaitUntilEmpty();
 
 	if (GetActiveSlot()->bSaveOnClose)
 		SaveActiveSlot();
@@ -264,20 +262,19 @@ bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
 
 void USaveManager::PreloadAllSlots(FSEOnAllSlotsPreloaded Callback, bool bSortByRecent)
 {
-	BackendPipe.Launch(UE_SOURCE_LOCATION, [this, Callback, bSortByRecent]()
+	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, Callback, bSortByRecent]()
 	{
 		TArray<USaveSlot*> Slots;
 		PreloadAllSlotsSync(Slots, bSortByRecent);
-
-		for (auto& Slot : Slots)
-		{
-			Slot->ClearInternalFlags(EInternalObjectFlags::Async);
-		}
 
 		if (Callback)
 		{
 			OnAsyncComplete([Slots = MoveTemp(Slots), Callback]()
 			{
+				for(auto* Slot : Slots)
+				{
+					Slot->ClearInternalFlags(EInternalObjectFlags::Async);
+				}
 				Callback(Slots);
 			});
 		}
@@ -294,7 +291,7 @@ void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRe
 	for (const FString& FileName : FileNames)
 	{
 		// Load all files
-		FScopedFileReader Reader(FSaveFileHelpers::GetSlotPath(FileName));
+		FScopedFileReader Reader(FSEFileHelpers::GetSlotPath(FileName));
 		if (Reader.IsValid())
 		{
 			LoadedFiles.AddDefaulted_GetRef()
@@ -306,7 +303,7 @@ void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRe
 	for (const auto& File : LoadedFiles)
 	{
 		auto* Slot = Cast<USaveSlot>(
-			FSaveFileHelpers::DeserializeObject(nullptr, File.ClassName, this, File.Bytes));
+			FSEFileHelpers::DeserializeObject(nullptr, File.ClassName, this, File.Bytes));
 		if (Slot)
 		{
 			Slots.Add(Slot);
@@ -324,15 +321,12 @@ void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRe
 bool USaveManager::DeleteSlotByNameSync(FName SlotName)
 {
 	const FString NameStr = SlotName.ToString();
-	const FString ScreenshotPath = FSaveFileHelpers::GetThumbnailPath(NameStr);
-	bool bIsDeleteSlotSuccess = FSaveFileHelpers::DeleteFile(NameStr);
-	bool bIsDeleteScreenshotSuccess = IFileManager::Get().Delete(*ScreenshotPath, true);
-	return bIsDeleteSlotSuccess || bIsDeleteScreenshotSuccess;
+	return FSEFileHelpers::DeleteFile(NameStr);
 }
 
 void USaveManager::DeleteSlotByName(FName SlotName)
 {
-	BackendPipe.Launch(UE_SOURCE_LOCATION, [this, SlotName]()
+	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, SlotName]()
 	{
 		DeleteSlotByNameSync(SlotName);
 	});
@@ -346,17 +340,14 @@ int32 USaveManager::DeleteAllSlotsSync()
 	int32 Count = 0;
 	for (const FString& SlotName : FoundSlots)
 	{
-		const FString ScreenshotPath = FSaveFileHelpers::GetThumbnailPath(SlotName);
-		bool bIsDeleteSlotSuccess = FSaveFileHelpers::DeleteFile(SlotName);
-		bool bIsDeleteScreenshotSuccess = IFileManager::Get().Delete(*ScreenshotPath, true);
-		Count += bIsDeleteSlotSuccess || bIsDeleteScreenshotSuccess;
+		Count += FSEFileHelpers::DeleteFile(SlotName);
 	}
 	return Count;
 }
 
 void USaveManager::DeleteAllSlots(FSEOnAllSlotsDeleted Callback)
 {
-	BackendPipe.Launch(UE_SOURCE_LOCATION, [this, Callback]()
+	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, Callback]()
 	{
 		const int32 Count = DeleteAllSlotsSync();
 		if (Callback)
@@ -436,13 +427,13 @@ USaveSlot* USaveManager::PreloadSlot(FName SlotName)
 {
 	USaveSlot* Slot = nullptr;
 	const FString NameStr = SlotName.ToString();
-    FSaveFileHelpers::LoadFile(NameStr, Slot, true, this);
+    Slot = FSEFileHelpers::LoadFileSync(NameStr, nullptr, true, this);
 	return Slot;
 }
 
 bool USaveManager::IsSlotSaved(FName SlotName) const
 {
-	return FSaveFileHelpers::FileExists(SlotName.ToString());
+	return FSEFileHelpers::FileExists(SlotName.ToString());
 }
 
 bool USaveManager::CanLoadOrSave()

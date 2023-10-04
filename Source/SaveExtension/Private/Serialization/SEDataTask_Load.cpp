@@ -18,10 +18,9 @@
 
 FSEDataTask_Load::~FSEDataTask_Load()
 {
-	if (LoadDataTask)
+	if (!LoadFileTask.IsCompleted())
 	{
-		LoadDataTask->EnsureCompletion(false);
-		delete LoadDataTask;
+		LoadFileTask.Wait();
 	}
 }
 
@@ -39,7 +38,7 @@ void FSEDataTask_Load::OnStart()
 	}
 
 	// We load data while the map opens or GC runs
-	StartLoadingData();
+	StartLoadingFile();
 
 	const UWorld* World = GetWorld();
 
@@ -55,7 +54,7 @@ void FSEDataTask_Load::OnStart()
 			UE_LOG(LogSaveExtension, Warning,
 				TEXT("Slot '%s' was saved in map '%s' but it did not exist while loading. Corrupted save "
 					 "file?"),
-				*Slot->FileName.ToString(), *MapToOpen);
+				*Slot->Name.ToString(), *MapToOpen);
 			Finish(false);
 			return;
 		}
@@ -67,7 +66,7 @@ void FSEDataTask_Load::OnStart()
 			FColor::White, false, 1);
 		return;
 	}
-	else if (IsDataLoaded())
+	else if (CheckFileLoaded())
 	{
 		StartDeserialization();
 	}
@@ -90,7 +89,7 @@ void FSEDataTask_Load::Tick(float DeltaTime)
 			break;
 
 		case ELoadDataTaskState::WaitingForData:
-			if (IsDataLoaded())
+			if (CheckFileLoaded())
 			{
 				StartDeserialization();
 			}
@@ -127,7 +126,7 @@ void FSEDataTask_Load::OnMapLoaded()
 	const FName NewMapName{FSlotHelpers::GetWorldName(World)};
 	if (NewMapName == Slot->Map)
 	{
-		if (IsDataLoaded())
+		if (CheckFileLoaded())
 		{
 			StartDeserialization();
 		}
@@ -145,7 +144,6 @@ void FSEDataTask_Load::StartDeserialization()
 
 	LoadState = ELoadDataTaskState::Deserializing;
 
-	SlotData = GetLoadedData();
 	if (!SlotData)
 	{
 		// Failed to load data
@@ -168,23 +166,25 @@ void FSEDataTask_Load::StartDeserialization()
 		DeserializeSync();
 }
 
-void FSEDataTask_Load::StartLoadingData()
+void FSEDataTask_Load::StartLoadingFile()
 {
-	LoadDataTask = new FAsyncTask<FLoadFileTask>(Manager, Slot, SlotName.ToString());
-
-	if (Slot->IsMTFilesLoad())
-		LoadDataTask->StartBackgroundTask();
-	else
-		LoadDataTask->StartSynchronousTask();
+	LoadFileTask = FSEFileHelpers::LoadFile(SlotName.ToString(), Slot, true, Manager);
+	if (!Slot->ShouldLoadFileAsync())
+	{
+		LoadFileTask.Wait();
+		CheckFileLoaded();
+	}
 }
 
-USaveSlotData* FSEDataTask_Load::GetLoadedData() const
+bool FSEDataTask_Load::CheckFileLoaded()
 {
-	if (IsDataLoaded())
+	if (LoadFileTask.IsCompleted())
 	{
-		return LoadDataTask->GetTask().GetData();
+		Slot = LoadFileTask.GetResult();
+		SlotData = Slot->GetData();
+		return true;
 	}
-	return nullptr;
+	return false;
 }
 
 void FSEDataTask_Load::BeforeDeserialize()

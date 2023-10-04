@@ -4,7 +4,6 @@
 
 #include "Delegates.h"
 #include "ISaveExtension.h"
-#include "Multithreading/LoadFileTask.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
 #include "SEDataTask.h"
@@ -48,9 +47,7 @@ protected:
 	int32 CurrentActorIndex = 0;
 	TArray<TWeakObjectPtr<AActor>> CurrentLevelActors;
 
-	/** Start AsyncTasks */
-	FAsyncTask<FLoadFileTask>* LoadDataTask;
-	/** End AsyncTasks */
+	UE::Tasks::TTask<USaveSlot*> LoadFileTask;
 
 	ELoadDataTaskState LoadState = ELoadDataTaskState::NotStarted;
 
@@ -87,16 +84,8 @@ private:
 	void RespawnActors(const TArray<FActorRecord*>& Records, const ULevel* Level, FLevelRecord& LevelRecord);
 
 protected:
-	//~ Begin Files
-	void StartLoadingData();
-
-	USaveSlotData* GetLoadedData() const;
-	const bool IsDataLoaded() const
-	{
-		return LoadDataTask && LoadDataTask->IsDone();
-	};
-	//~ End Files
-
+	void StartLoadingFile();
+	bool CheckFileLoaded();
 
 	/** BEGIN Deserialization */
 	void BeforeDeserialize();
