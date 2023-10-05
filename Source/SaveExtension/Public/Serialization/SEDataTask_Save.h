@@ -2,18 +2,26 @@
 
 #pragma once
 
-#include "ISaveExtension.h"
-#include "SaveSlotData.h"
-#include "SaveManager.h"
 #include "SEDataTask.h"
 
 #include <AIController.h>
-#include <Async/AsyncWork.h>
 #include <Engine/Level.h>
 #include <Engine/LevelScriptActor.h>
 #include <Engine/LevelStreaming.h>
 #include <GameFramework/Actor.h>
 #include <GameFramework/Controller.h>
+#include <Tasks/Task.h>
+
+
+class USaveManager;
+class USaveSlot;
+class USaveSlotData;
+
+
+/** Called when game has been saved
+ * @param SaveSlot the saved slot. Null if save failed
+ */
+DECLARE_DELEGATE_OneParam(FOnGameSaved, USaveSlot*);
 
 
 /**
@@ -31,6 +39,7 @@ struct FSEDataTask_Save : public FSEDataTask
 
 protected:
 	TObjectPtr<USaveSlot> Slot;
+	TObjectPtr<USaveSlotData> SlotData;
 	FSEClassFilter SubsystemFilter;
 
 
@@ -39,9 +48,7 @@ protected:
 	bool bWaitingThumbnail = false;
 
 public:
-	FSEDataTask_Save(USaveManager* Manager, USaveSlot* Slot)
-		: FSEDataTask(Manager, Slot, ESETaskType::Save)
-	{}
+	FSEDataTask_Save(USaveManager* Manager, USaveSlot* Slot);
 	~FSEDataTask_Save();
 
 	auto& Setup(

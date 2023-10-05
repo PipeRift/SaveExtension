@@ -10,7 +10,6 @@
 #include <Engine/LevelScriptActor.h>
 #include <Engine/LevelStreaming.h>
 #include <GameFramework/SaveGame.h>
-#include <Serialization/ObjectAndNameAsStringProxyArchive.h>
 
 #include "SaveSlotData.generated.h"
 
@@ -20,9 +19,9 @@
  * Works like a common SaveGame object
  * E.g: Items, Quests, Enemies, World Actors, AI, Physics
  */
-UCLASS(ClassGroup = SaveExtension, hideCategories = ("Activation", "Actor Tick", "Actor", "Input",
+UCLASS(Blueprintable, BlueprintType, ClassGroup = SaveExtension, hideCategories = ("Activation", "Actor Tick", "Actor", "Input",
 									   "Rendering", "Replication", "Socket", "Thumbnail"))
-class SAVEEXTENSION_API USaveSlotData : public USaveGame
+class SAVEEXTENSION_API USaveSlotData : public UObject
 {
 	GENERATED_BODY()
 

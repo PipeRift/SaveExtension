@@ -2,10 +2,6 @@
 
 #pragma once
 
-#include "ISaveExtension.h"
-#include "SaveSlot.h"
-#include "SaveSlotData.h"
-#include "SaveManager.h"
 #include "SEDataTask.h"
 
 #include <Engine/Level.h>
@@ -13,6 +9,18 @@
 #include <Engine/LevelStreaming.h>
 #include <GameFramework/Actor.h>
 #include <GameFramework/Controller.h>
+#include <Tasks/Task.h>
+
+
+class USaveManager;
+class USaveSlot;
+class USaveSlotData;
+
+
+/** Called when game has been loaded
+ * @param SaveSlot the loaded slot. Null if load failed
+ */
+DECLARE_DELEGATE_OneParam(FOnGameLoaded, USaveSlot*);
 
 
 enum class ELoadDataTaskState : uint8
@@ -36,6 +44,8 @@ protected:
 	FName SlotName;
 
 	TObjectPtr<USaveSlot> Slot;
+	TObjectPtr<USaveSlotData> SlotData;
+	float MaxFrameMs = 0.f;
 	FSEClassFilter SubsystemFilter;
 
 	FOnGameLoaded Delegate;
@@ -54,9 +64,7 @@ protected:
 
 
 public:
-	FSEDataTask_Load(USaveManager* Manager, USaveSlot* Slot)
-		: FSEDataTask(Manager, Slot, ESETaskType::Load)
-	{}
+	FSEDataTask_Load(USaveManager* Manager, USaveSlot* Slot);
 	~FSEDataTask_Load();
 
 	auto& Setup(FName InSlotName)

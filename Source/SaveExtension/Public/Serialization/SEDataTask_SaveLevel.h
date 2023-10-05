@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "ISaveExtension.h"
 #include "SEDataTask_Save.h"
 
 
@@ -27,8 +26,5 @@ public:
 
 private:
 	virtual void OnStart() override;
-	virtual void OnFinish(bool bSuccess) override
-	{
-		SELog(Slot, "Finished Serializing level", FColor::Green);
-	}
+	virtual void OnFinish(bool bSuccess) override;
 };

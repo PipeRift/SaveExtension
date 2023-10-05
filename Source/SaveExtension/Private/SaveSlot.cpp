@@ -6,10 +6,8 @@
 
 #include <Engine/Engine.h>
 #include <Engine/GameViewportClient.h>
-#include <EngineUtils.h>
+#include <Engine/Texture2D.h>
 #include <HighResScreenshot.h>
-#include <IImageWrapper.h>
-#include <IImageWrapperModule.h>
 #include <ImageUtils.h>
 #include <Misc/FileHelper.h>
 
@@ -147,7 +145,9 @@ void USaveSlot::OnThumbnailCaptured(int32 InSizeX, int32 InSizeY, const TArray<F
 	}
 
 	Thumbnail = UTexture2D::CreateTransient(InSizeX, InSizeY, PF_B8G8R8A8);
+#if WITH_EDITORONLY_DATA
 	Thumbnail->DeferCompression = true;
+#endif
 	FColor* TextureData = static_cast<FColor*>(Thumbnail->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
 	for(int32 i = 0; i < InImageData.Num(); ++i, ++TextureData)
 	{

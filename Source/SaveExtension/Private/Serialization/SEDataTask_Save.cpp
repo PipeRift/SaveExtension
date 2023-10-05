@@ -2,10 +2,14 @@
 
 #include "Serialization/SEDataTask_Save.h"
 
-#include "SEFileHelpers.h"
+#include "SaveExtension.h"
 #include "SaveManager.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
+#include "SEFileHelpers.h"
+#include "Serialization/Records.h"
+#include "Serialization/SEArchive.h"
+#include "SEFileHelpers.h"
 
 #include <GameFramework/GameModeBase.h>
 #include <Serialization/MemoryWriter.h>
@@ -111,6 +115,11 @@ bool SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFil
 
 /////////////////////////////////////////////////////
 // FSEDataTask_Save
+
+FSEDataTask_Save::FSEDataTask_Save(USaveManager* Manager, USaveSlot* Slot)
+	: FSEDataTask(Manager, ESETaskType::Save)
+	, SlotData(Slot->GetData())
+{}
 
 FSEDataTask_Save::~FSEDataTask_Save()
 {
@@ -342,7 +351,7 @@ void FSEDataTask_Save::SerializeLevel(
 	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	// Find level record. By default, main level
-	auto& LevelRecord = StreamingLevel? *FindLevelRecord(StreamingLevel) : SlotData->RootLevel;
+	auto& LevelRecord = StreamingLevel? *FindLevelRecord(*SlotData, StreamingLevel) : SlotData->RootLevel;
 	const FSELevelFilter& Filter = LevelRecord.Filter;
 
 	LevelRecord.CleanRecords(); // Empty level record before serializing it

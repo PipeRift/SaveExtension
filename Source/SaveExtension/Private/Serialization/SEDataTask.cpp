@@ -3,6 +3,7 @@
 #include "Serialization/SEDataTask.h"
 
 #include "SaveManager.h"
+#include "SaveSlotData.h"
 
 
 /////////////////////////////////////////////////////
@@ -37,13 +38,13 @@ bool FSEDataTask::IsScheduled() const
 	});
 }
 
-FLevelRecord* FSEDataTask::FindLevelRecord(const ULevelStreaming* Level) const
+FLevelRecord* FSEDataTask::FindLevelRecord(USaveSlotData& Data, const ULevelStreaming* Level) const
 {
 	if (Level)
 	{
-		return SlotData->SubLevels.FindByKey(Level);
+		return Data.SubLevels.FindByKey(Level);
 	}
-	return &SlotData->RootLevel;
+	return &Data.RootLevel;
 }
 
 UWorld* FSEDataTask::GetWorld() const

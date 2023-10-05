@@ -4,7 +4,6 @@
 
 #include "SaveSlot.h"
 
-#include <CoreMinimal.h>
 #include <Engine/DeveloperSettings.h>
 
 #include "SaveSettings.generated.h"

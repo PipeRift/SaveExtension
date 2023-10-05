@@ -7,12 +7,9 @@
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
 #include "Serialization/SEDataTask.h"
+#include "Serialization/SEDataTask_Load.h"
+#include "Serialization/SEDataTask_Save.h"
 
-#include <Async/AsyncWork.h>
-#include <CoreMinimal.h>
-#include <Engine/GameInstance.h>
-#include <GenericPlatform/GenericPlatformFile.h>
-#include <HAL/PlatformFilemanager.h>
 #include <Subsystems/GameInstanceSubsystem.h>
 #include <Tickable.h>
 
@@ -20,21 +17,13 @@
 
 
 struct FLatentActionInfo;
+class UGameInstance;
+
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC, USaveSlot*, Slot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USaveSlot*, Slot);
 using FSEOnAllSlotsPreloaded = TFunction<void(const TArray<class USaveSlot*>& Slots)>;
 using FSEOnAllSlotsDeleted = TFunction<void(int32 Count)>;
-
-/** Called when game has been saved
- * @param SaveSlot the saved slot. Null if save failed
- */
-DECLARE_DELEGATE_OneParam(FOnGameSaved, USaveSlot*);
-
-/** Called when game has been loaded
- * @param SaveSlot the loaded slot. Null if load failed
- */
-DECLARE_DELEGATE_OneParam(FOnGameLoaded, USaveSlot*);
 
 
 UENUM()
@@ -134,8 +123,7 @@ public:
 		const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
 
 	/** Save the currently loaded Slot */
-	bool SaveActiveSlot(
-		bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
+	bool SaveActiveSlot(bool bScreenshot = false, const FScreenshotSize Size = {}, FOnGameSaved OnSaved = {});
 
 
 	/** Load game from a file name */
@@ -210,14 +198,14 @@ public:
 
 	/** Load game from a slot name */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
-		meta = (DisplayName = "Load Slot by Name", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result",
-			UnsafeDuringActorConstruction))
+		meta = (DisplayName = "Load Slot by Name", Latent, LatentInfo = "LatentInfo",
+			ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
 	void BPLoadSlotByName(FName SlotName, ESEContinueOrFail& Result, FLatentActionInfo LatentInfo);
 
 	/** Load game from a Slot */
 	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Loading",
-		meta = (DisplayName = "Load Slot", Latent, LatentInfo = "LatentInfo",
-			ExpandEnumAsExecs = "Result", UnsafeDuringActorConstruction))
+		meta = (DisplayName = "Load Slot", Latent, LatentInfo = "LatentInfo", ExpandEnumAsExecs = "Result",
+			UnsafeDuringActorConstruction))
 	void BPLoadSlot(const USaveSlot* Slot, ESEContinueOrFail& Result, FLatentActionInfo LatentInfo);
 
 	/** Reload the currently loaded slot if any */
@@ -314,9 +302,7 @@ private:
 	template <typename TaskType>
 	TaskType& CreateTask()
 	{
-		return static_cast<TaskType&>(
-			*Tasks.Add_GetRef(MakeUnique<TaskType>(this, ActiveSlot))
-		);
+		return static_cast<TaskType&>(*Tasks.Add_GetRef(MakeUnique<TaskType>(this, ActiveSlot)));
 	}
 
 	void FinishTask(FSEDataTask* Task);
@@ -399,9 +385,8 @@ inline bool USaveManager::SaveSlot(const USaveSlot* Slot, bool bOverrideIfNeeded
 	return SaveSlot(Slot->Name, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
 }
 
-inline void USaveManager::BPSaveSlot(const USaveSlot* Slot, bool bScreenshot,
-	const FScreenshotSize Size, ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo,
-	bool bOverrideIfNeeded)
+inline void USaveManager::BPSaveSlot(const USaveSlot* Slot, bool bScreenshot, const FScreenshotSize Size,
+	ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded)
 {
 	if (!Slot)
 	{

@@ -1,8 +1,7 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "LifetimeComponent.h"
-
-
+#include "SaveExtension.h"
 
 
 ULifetimeComponent::ULifetimeComponent() : Super() {}

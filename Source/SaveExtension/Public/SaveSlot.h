@@ -5,12 +5,12 @@
 #include "SaveSlotData.h"
 
 #include <CoreMinimal.h>
-#include <Engine/Texture2D.h>
 #include <GameFramework/SaveGame.h>
 
 #include "SaveSlot.generated.h"
 
 struct FSELevelFilter;
+class UTexture2D;
 
 
 DECLARE_DELEGATE_OneParam(FSEOnThumbnailCaptured, bool);

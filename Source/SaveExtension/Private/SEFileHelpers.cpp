@@ -2,9 +2,11 @@
 
 #include "SEFileHelpers.h"
 
+#include "SaveExtension.h"
 #include "Serialization/SEArchive.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
+#include "SaveManager.h"
 
 #include <SaveGameSystem.h>
 #include <Serialization/ArchiveLoadCompressedProxy.h>

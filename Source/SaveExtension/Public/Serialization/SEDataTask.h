@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "ISaveExtension.h"
 #include "LevelFilter.h"
 #include "SaveSlotData.h"
 
@@ -12,6 +11,8 @@
 
 
 class USaveManager;
+class USaveSlotData;
+
 
 enum class ESETaskType : uint8
 {
@@ -34,16 +35,12 @@ private:
 protected:
 
 	TObjectPtr<USaveManager> Manager;
-	TObjectPtr<USaveSlotData> SlotData;
-	float MaxFrameMs = 0.f;
 
 
 public:
-	FSEDataTask(USaveManager* Manager, USaveSlot* Slot, ESETaskType Type)
+	FSEDataTask(USaveManager* Manager, ESETaskType Type)
 		: Type(Type)
 		, Manager(Manager)
-		, SlotData(Slot->GetData())
-		, MaxFrameMs(Slot->GetMaxFrameMs())
 	{}
 	virtual ~FSEDataTask() = default;
 
@@ -80,7 +77,7 @@ protected:
 
 	void BakeAllFilters();
 
-	FLevelRecord* FindLevelRecord(const ULevelStreaming* Level) const;
+	FLevelRecord* FindLevelRecord(USaveSlotData& Data, const ULevelStreaming* Level) const;
 
 	float GetTimeMilliseconds() const
 	{

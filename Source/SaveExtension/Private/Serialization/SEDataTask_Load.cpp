@@ -2,7 +2,12 @@
 
 #include "Serialization/SEDataTask_Load.h"
 
+#include "SEFileHelpers.h"
+#include "SaveExtension.h"
 #include "SaveManager.h"
+#include "SaveSlot.h"
+#include "SaveSlotData.h"
+#include "Serialization/Records.h"
 #include "Serialization/SEArchive.h"
 
 #include <Components/PrimitiveComponent.h>
@@ -14,6 +19,12 @@
 
 /////////////////////////////////////////////////////
 // USaveDataTask_Loader
+
+FSEDataTask_Load::FSEDataTask_Load(USaveManager* Manager, USaveSlot* Slot)
+	: FSEDataTask(Manager, ESETaskType::Load)
+	, SlotData(Slot->GetData())
+	, MaxFrameMs(Slot->GetMaxFrameMs())
+{}
 
 FSEDataTask_Load::~FSEDataTask_Load()
 {
@@ -209,7 +220,7 @@ void FSEDataTask_Load::BeforeDeserialize()
 			GameInstance->Serialize(Archive);
 		}
 
-		for(const FSubsystemRecord& SubsystemRecord : SlotData->GameInstanceSubsystems)
+		for (const FSubsystemRecord& SubsystemRecord : SlotData->GameInstanceSubsystems)
 		{
 			if (SubsystemRecord.IsValid() && SubsystemFilter.IsAllowed(SubsystemRecord.Class))
 			{
@@ -223,7 +234,7 @@ void FSEDataTask_Load::BeforeDeserialize()
 		}
 	}
 
-	for(const FSubsystemRecord& SubsystemRecord : SlotData->WorldSubsystems)
+	for (const FSubsystemRecord& SubsystemRecord : SlotData->WorldSubsystems)
 	{
 		if (SubsystemRecord.IsValid() && SubsystemFilter.IsAllowed(SubsystemRecord.Class))
 		{
@@ -265,8 +276,7 @@ void FSEDataTask_Load::DeserializeSync()
 	FinishedDeserializing();
 }
 
-void FSEDataTask_Load::DeserializeLevelSync(
-	const ULevel* Level, const ULevelStreaming* StreamingLevel)
+void FSEDataTask_Load::DeserializeLevelSync(const ULevel* Level, const ULevelStreaming* StreamingLevel)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::DeserializeLevelSync);
 
@@ -279,8 +289,8 @@ void FSEDataTask_Load::DeserializeLevelSync(
 		StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
-	const FLevelRecord& LevelRecord = *FindLevelRecord(StreamingLevel);
-	for(const auto& RecordToActor : LevelRecord.RecordsToActors)
+	const FLevelRecord& LevelRecord = *FindLevelRecord(*SlotData, StreamingLevel);
+	for (const auto& RecordToActor : LevelRecord.RecordsToActors)
 	{
 		const FActorRecord* Record = RecordToActor.Key;
 		AActor* Actor = RecordToActor.Value.Get();
@@ -308,7 +318,7 @@ void FSEDataTask_Load::DeserializeLevelASync(ULevel* Level, ULevelStreaming* Str
 		StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
 	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
-	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
+	FLevelRecord* LevelRecord = FindLevelRecord(*SlotData, StreamingLevel);
 	if (!LevelRecord)
 	{
 		Finish(false);
@@ -331,7 +341,7 @@ void FSEDataTask_Load::DeserializeASyncLoop(float StartMS)
 		StartMS = GetTimeMilliseconds();
 	}
 
-	FLevelRecord& LevelRecord = *FindLevelRecord(CurrentSLevel.Get());
+	FLevelRecord& LevelRecord = *FindLevelRecord(*SlotData, CurrentSLevel.Get());
 
 	// Continue Iterating actors every tick
 	for (; CurrentActorIndex < LevelRecord.RecordsToActors.Num(); ++CurrentActorIndex)
@@ -391,7 +401,7 @@ void FSEDataTask_Load::PrepareLevel(const ULevel* Level, FLevelRecord& LevelReco
 	}
 
 	TArray<AActor*> ActorsToDestroy{};
-	{ // Filter actors by whether they should be destroyed or spawned - O(M*Log(N))
+	{	 // Filter actors by whether they should be destroyed or spawned - O(M*Log(N))
 		for (AActor* const Actor : Level->Actors)
 		{
 			if (UNLIKELY(!Actor))
@@ -402,7 +412,7 @@ void FSEDataTask_Load::PrepareLevel(const ULevel* Level, FLevelRecord& LevelReco
 			const int32 Index = ActorRecordsToSpawn.IndexOfByPredicate([Actor](auto* Record) {
 				return *Record == Actor;
 			});
-			if (Index != INDEX_NONE) // Actor found, therefore doesn't need to be spawned
+			if (Index != INDEX_NONE)	// Actor found, therefore doesn't need to be spawned
 			{
 				if (LevelRecord.Filter.Stores(Actor))
 				{
@@ -417,7 +427,6 @@ void FSEDataTask_Load::PrepareLevel(const ULevel* Level, FLevelRecord& LevelReco
 			}
 			// TODO: Consider unmatching class actors to be respawned
 		}
-
 	}
 
 	// The serializable actors that were not found will be destroyed
@@ -455,7 +464,7 @@ void FSEDataTask_Load::PrepareAllLevels()
 	{
 		if (Level->IsLevelLoaded())
 		{
-			FLevelRecord* LevelRecord = FindLevelRecord(Level);
+			FLevelRecord* LevelRecord = FindLevelRecord(*SlotData, Level);
 			if (LevelRecord)
 			{
 				PrepareLevel(Level->GetLoadedLevel(), *LevelRecord);
@@ -464,7 +473,8 @@ void FSEDataTask_Load::PrepareAllLevels()
 	}
 }
 
-void FSEDataTask_Load::RespawnActors(const TArray<FActorRecord*>& Records, const ULevel* Level, FLevelRecord& LevelRecord)
+void FSEDataTask_Load::RespawnActors(
+	const TArray<FActorRecord*>& Records, const ULevel* Level, FLevelRecord& LevelRecord)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::RespawnActors);
 
@@ -486,13 +496,15 @@ void FSEDataTask_Load::RespawnActors(const TArray<FActorRecord*>& Records, const
 	}
 }
 
-bool FSEDataTask_Load::DeserializeActor(AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord)
+bool FSEDataTask_Load::DeserializeActor(
+	AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::DeserializeActor);
 
 	if (Actor->GetClass() != ActorRecord.Class)
 	{
-		SELog(Slot, "Actor '" + ActorRecord.Name.ToString() + "' already exists but class doesn't match", FColor::Green, true, 1);
+		SELog(Slot, "Actor '" + ActorRecord.Name.ToString() + "' already exists but class doesn't match",
+			FColor::Green, true, 1);
 		return false;
 	}
 
@@ -533,7 +545,8 @@ bool FSEDataTask_Load::DeserializeActor(AActor* Actor, const FActorRecord& Actor
 	return true;
 }
 
-void FSEDataTask_Load::DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord, int8 Indent)
+void FSEDataTask_Load::DeserializeActorComponents(
+	AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord, int8 Indent)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UFSEDataTask_Load::DeserializeActorComponents);
 

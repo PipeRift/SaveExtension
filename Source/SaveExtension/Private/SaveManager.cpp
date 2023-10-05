@@ -2,13 +2,15 @@
 
 #include "SaveManager.h"
 
-#include "SEFileHelpers.h"
+#include "SaveExtension.h"
 #include "SaveSettings.h"
+#include "SEFileHelpers.h"
 #include "Serialization/SEDataTask_LoadLevel.h"
 #include "Serialization/SEDataTask_SaveLevel.h"
 #include "Serialization/SEDataTask_Load.h"
 #include "Serialization/SEDataTask_Save.h"
 
+#include <Engine/GameInstance.h>
 #include <Engine/GameViewportClient.h>
 #include <Engine/LatentActionManager.h>
 #include <Engine/LevelStreaming.h>

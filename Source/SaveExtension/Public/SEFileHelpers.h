@@ -2,19 +2,15 @@
 
 #pragma once
 
-#include "ISaveExtension.h"
-
 #include <Containers/StringView.h>
-#include <CoreMinimal.h>
-#include <GameFramework/SaveGame.h>
 #include <Misc/EngineVersion.h>
 #include <PlatformFeatures.h>
 #include <Serialization/CustomVersion.h>
-#include <Serialization/ObjectAndNameAsStringProxyArchive.h>
 #include <Templates/SubclassOf.h>
 #include <Tasks/Task.h>
 
 
+class USaveManager;
 class USaveSlot;
 class USaveSlotData;
 class FMemoryReader;

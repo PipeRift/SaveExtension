@@ -9,12 +9,20 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSaveExtension, All, All);
 
-class ISaveExtension : public IModuleInterface
+
+class FSaveExtension : public IModuleInterface
 {
 public:
-	static inline ISaveExtension& Get()
+	void StartupModule() override {}
+	void ShutdownModule() override {}
+	bool SupportsDynamicReloading() override
 	{
-		return FModuleManager::LoadModuleChecked<ISaveExtension>("SaveExtension");
+		return true;
+	}
+
+	static inline FSaveExtension& Get()
+	{
+		return FModuleManager::LoadModuleChecked<FSaveExtension>("SaveExtension");
 	}
 	static inline bool IsAvailable()
 	{
@@ -27,32 +35,7 @@ public:
 	}
 
 	static void Log(const USaveSlot* Slot, const FString& Message, FColor Color = FColor::White,
-		bool bError = false, const float Duration = 2.f)
-	{
-		if (Slot->bDebug)
-		{
-			if (bError)
-			{
-				Color = FColor::Red;
-			}
-
-			const FString ComposedMessage{FString::Printf(TEXT("SE: %s"), *Message)};
-
-			if (bError)
-			{
-				UE_LOG(LogSaveExtension, Error, TEXT("%s"), *ComposedMessage);
-			}
-			else
-			{
-				UE_LOG(LogSaveExtension, Log, TEXT("%s"), *ComposedMessage);
-			}
-
-			if (Slot->bDebugInScreen && GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, Duration, Color, ComposedMessage);
-			}
-		}
-	}
+		bool bError = false, const float Duration = 2.f);
 };
 
 // Only log in Editor
@@ -60,7 +43,7 @@ public:
 template <typename... Args>
 void SELog(Args&&... args)
 {
-	ISaveExtension::Log(Forward<Args>(args)...);
+	FSaveExtension::Log(Forward<Args>(args)...);
 }
 #else
 template <typename... Args>

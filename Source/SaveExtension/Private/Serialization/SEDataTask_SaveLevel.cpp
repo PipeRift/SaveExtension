@@ -2,6 +2,8 @@
 
 #include "Serialization/SEDataTask_SaveLevel.h"
 
+#include "SaveExtension.h"
+
 
 /////////////////////////////////////////////////////
 // FSaveDataTask_LevelSaver
@@ -10,7 +12,7 @@ void FSEDataTask_SaveLevel::OnStart()
 {
 	if (SlotData && StreamingLevel && StreamingLevel->IsLevelLoaded())
 	{
-		FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
+		FLevelRecord* LevelRecord = FindLevelRecord(*SlotData, StreamingLevel);
 		if (!LevelRecord)
 		{
 			Finish(false);
@@ -25,4 +27,9 @@ void FSEDataTask_SaveLevel::OnStart()
 		return;
 	}
 	Finish(false);
+}
+
+void FSEDataTask_SaveLevel::OnFinish(bool bSuccess)
+{
+	SELog(Slot, "Finished Serializing level", FColor::Green);
 }

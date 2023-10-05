@@ -2,6 +2,8 @@
 
 #include "Serialization/SEDataTask_LoadLevel.h"
 
+#include "SaveSlot.h"
+
 
 /////////////////////////////////////////////////////
 // USaveDataTask_LevelLoader
@@ -14,7 +16,7 @@ void FSEDataTask_LoadLevel::OnStart()
 		return;
 	}
 
-	FLevelRecord* LevelRecord = FindLevelRecord(StreamingLevel);
+	FLevelRecord* LevelRecord = FindLevelRecord(*SlotData, StreamingLevel);
 	if (!LevelRecord)
 	{
 		Finish(false);
@@ -43,7 +45,7 @@ void FSEDataTask_LoadLevel::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 		StartMS = GetTimeMilliseconds();
 	}
 
-	FLevelRecord& LevelRecord = *FindLevelRecord(CurrentSLevel.Get());
+	FLevelRecord& LevelRecord = *FindLevelRecord(*SlotData, CurrentSLevel.Get());
 
 	// Continue Iterating actors every tick
 	for (; CurrentActorIndex < LevelRecord.RecordsToActors.Num(); ++CurrentActorIndex)
