@@ -65,60 +65,60 @@ class SAVEEXTENSION_API USaveSlot : public USaveGame
 public:
 	/** Begin Settings */
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Slot")
 	TSubclassOf<USaveSlotData> DataClass = USaveSlotData::StaticClass();
 
 	/** If checked, will attempt to Save Game to first Slot found, timed event. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Automatic")
 	bool bPeriodicSave = false;
 
 	/** Interval in seconds for auto saving */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Automatic",
 		meta = (EditCondition = "bPeriodicSave", UIMin = "15", UIMax = "3600"))
 	int32 PeriodicSaveInterval = 120.f;
 
 	/** If checked, will attempt to Save Game to current Slot found, timed event. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Automatic")
 	bool bSaveOnClose = false;
 
 	/** If checked, will attempt to Load Game from last Slot found, when game starts */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Automatic")
 	bool bLoadOnStart = false;
+
+	/** If true will store the game instance */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Serialization")
+	bool bStoreGameInstance = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Serialization")
+	FSEClassFilter ActorFilter{ AActor::StaticClass() };
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Serialization")
+	FSEClassFilter ComponentFilter{ UActorComponent::StaticClass() };
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Serialization")
+	FSEClassFilter SubsystemFilter{ USubsystem::StaticClass() };
+
+	/** If true, will save and load sub-levels when they are shown or hidden.
+	 * This includes level streaming and world composition.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Serialization")
+	bool bStoreSublevels = true;
 
 	/** If true save files will be compressed
 	 * Performance: Can add from 10ms to 20ms to loading and saving (estimate) but reduce file sizes making
 	 * them up to 30x smaller
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Files")
 	bool bUseCompression = true;
 
-	/** If true will store the game instance */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Serialization)
-	bool bStoreGameInstance = true;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
-	FSEActorClassFilter ActorFilter;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
-	FSEComponentClassFilter ComponentFilter;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Settings|Serialization")
-	FSEClassFilter SubsystemFilter{ USubsystem::StaticClass() };
-
-	/** If true, will Save and Load levels when they are shown or hidden.
-	 * This includes level streaming and world composition.
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Level Streaming")
-	bool bSaveAndLoadSublevels = true;
-
 	/** Serialization will be multi-threaded between all available cores. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Async")
 	ESEAsyncMode MultithreadedSerialization = ESEAsyncMode::SaveAndLoadSync;
 
 	/** Split serialization between multiple frames. Ignored if MultithreadedSerialization is used
 	 * Currently only implemented on Loading
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Async")
 	ESEAsyncMode FrameSplittedSerialization = ESEAsyncMode::SaveAndLoadSync;
 
 	/** Max milliseconds to use every frame in an asynchronous operation.
@@ -127,25 +127,26 @@ public:
 	 * This means gameplay will not be stopped nor have frame drops while saving or loading. Works best for
 	 * non multi-threaded platforms
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async", meta = (UIMin = "3", UIMax = "10"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Async",
+		meta = (UIMin = "3", UIMax = "10", EditCondition="FrameSplittedSerialization != ESEAsyncMode::SaveAndLoadSync"))
 	float MaxFrameMs = 5.f;
 
 	/** Files will be loaded or saved on a secondary thread while game continues */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Async")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Async")
 	ESEAsyncMode MultithreadedFiles = ESEAsyncMode::SaveAndLoadAsync;
 
 	/**
 	 * If checked, will print messages to Log, and Viewport if DebugInScreen is enabled.
 	 * Ignored in package or Shipping mode.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Debug", AdvancedDisplay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", AdvancedDisplay)
 	bool bDebug = false;
 
 	/**
 	 * If checked and Debug is enabled, will print messages to Viewport.
 	 * Ignored in package or Shipping mode.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Debug", AdvancedDisplay,
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", AdvancedDisplay,
 		meta = (EditCondition = "bDebug"))
 	bool bDebugInScreen = true;
 

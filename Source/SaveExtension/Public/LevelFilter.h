@@ -27,10 +27,10 @@ struct FSELevelFilter
 
 public:
 	UPROPERTY(SaveGame)
-	FSEActorClassFilter ActorFilter;
+	FSEClassFilter ActorFilter;
 
 	UPROPERTY(SaveGame)
-	FSEComponentClassFilter ComponentFilter;
+	FSEClassFilter ComponentFilter;
 
 
 	FSELevelFilter() = default;

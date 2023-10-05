@@ -46,10 +46,6 @@ void FSaveExtensionEditor::RegisterPropertyTypeCustomizations()
 
 	RegisterCustomPropertyTypeLayout("SEClassFilter",
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEClassFilterCustomization::MakeInstance));
-	RegisterCustomPropertyTypeLayout("SEActorClassFilter",
-		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEClassFilterCustomization::MakeInstance));
-	RegisterCustomPropertyTypeLayout("SEComponentClassFilter",
-		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSEClassFilterCustomization::MakeInstance));
 
 	RegisterCustomPinFactory<FSEClassFilterGraphPanelPinFactory>();
 }

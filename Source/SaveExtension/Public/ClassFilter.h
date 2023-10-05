@@ -64,23 +64,3 @@ public:
 
 	bool operator==(const FSEClassFilter& Other) const;
 };
-
-
-USTRUCT(BlueprintType)
-struct FSEActorClassFilter : public FSEClassFilter
-{
-	GENERATED_BODY()
-
-	FSEActorClassFilter() : Super(AActor::StaticClass()) {}
-	FSEActorClassFilter(TSubclassOf<AActor> ActorClass) : Super(ActorClass) {}
-};
-
-
-USTRUCT(BlueprintType)
-struct FSEComponentClassFilter : public FSEClassFilter
-{
-	GENERATED_BODY()
-
-	FSEComponentClassFilter() : Super(UActorComponent::StaticClass()) {}
-	FSEComponentClassFilter(TSubclassOf<UActorComponent> CompClass) : Super(CompClass) {}
-};

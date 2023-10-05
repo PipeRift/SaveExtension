@@ -29,8 +29,6 @@ private:
 
 	FSlateColor GetWarningColor() const;
 	EVisibility GetWarningVisibility() const;
-	bool CanEditAsynchronous() const;
-
 
 	TWeakObjectPtr<USaveSlot> Slot;
 };
