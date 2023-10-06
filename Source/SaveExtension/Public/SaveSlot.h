@@ -4,10 +4,13 @@
 
 #include "SaveSlotData.h"
 
+#include <Components/ActorComponent.h>
 #include <CoreMinimal.h>
+#include <GameFramework/Actor.h>
 #include <GameFramework/SaveGame.h>
 
 #include "SaveSlot.generated.h"
+
 
 struct FSELevelFilter;
 class UTexture2D;
@@ -90,13 +93,13 @@ public:
 	bool bStoreGameInstance = true;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Serialization")
-	FSEClassFilter ActorFilter{ AActor::StaticClass() };
+	FSEClassFilter ActorFilter{AActor::StaticClass()};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Serialization")
-	FSEClassFilter ComponentFilter{ UActorComponent::StaticClass() };
+	FSEClassFilter ComponentFilter{UActorComponent::StaticClass()};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Serialization")
-	FSEClassFilter SubsystemFilter{ USubsystem::StaticClass() };
+	FSEClassFilter SubsystemFilter{USubsystem::StaticClass()};
 
 	/** If true, will save and load sub-levels when they are shown or hidden.
 	 * This includes level streaming and world composition.
@@ -128,7 +131,8 @@ public:
 	 * non multi-threaded platforms
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Async",
-		meta = (UIMin = "3", UIMax = "10", EditCondition="FrameSplittedSerialization != ESEAsyncMode::SaveAndLoadSync"))
+		meta = (UIMin = "3", UIMax = "10",
+			EditCondition = "FrameSplittedSerialization != ESEAsyncMode::SaveAndLoadSync"))
 	float MaxFrameMs = 5.f;
 
 	/** Files will be loaded or saved on a secondary thread while game continues */
@@ -168,11 +172,10 @@ public:
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)
 	FSaveSlotStats Stats;
 
-	UPROPERTY(BlueprintReadWrite, Transient) // Saved
+	UPROPERTY(BlueprintReadWrite, Transient)	// Saved
 	TObjectPtr<UTexture2D> Thumbnail;
 
 protected:
-
 	UPROPERTY(Transient)
 	bool bCapturingThumbnail = false;
 	FSEOnThumbnailCaptured CapturedThumbnailDelegate;

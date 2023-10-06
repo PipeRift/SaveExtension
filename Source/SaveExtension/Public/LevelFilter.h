@@ -4,6 +4,9 @@
 
 #include "ClassFilter.h"
 
+#include <Components/ActorComponent.h>
+#include <GameFramework/Actor.h>
+
 #include "LevelFilter.generated.h"
 
 
@@ -21,11 +24,11 @@ struct FSELevelFilter
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(SaveGame)
-	FSEClassFilter ActorFilter;
+	UPROPERTY(SaveGame, BlueprintReadWrite)
+	FSEClassFilter ActorFilter{AActor::StaticClass()};
 
-	UPROPERTY(SaveGame)
-	FSEClassFilter ComponentFilter;
+	UPROPERTY(SaveGame, BlueprintReadWrite)
+	FSEClassFilter ComponentFilter{UActorComponent::StaticClass()};
 
 
 	FSELevelFilter() = default;

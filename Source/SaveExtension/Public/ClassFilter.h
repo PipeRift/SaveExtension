@@ -2,11 +2,7 @@
 
 #pragma once
 
-#include <Components/ActorComponent.h>
-#include <GameFramework/Actor.h>
-
 #include "ClassFilter.generated.h"
-
 
 
 USTRUCT(BlueprintType)

@@ -15,7 +15,6 @@
 void USaveSlot::PostInitProperties()
 {
 	Super::PostInitProperties();
-	Data = NewObject<USaveSlotData>(this, DataClass, TEXT("SlotData"));
 }
 
 void USaveSlot::Serialize(FArchive& Ar)
@@ -34,11 +33,13 @@ void USaveSlot::Serialize(FArchive& Ar)
 		}
 		else
 		{
-			uint8* MipData = static_cast<uint8*>(Thumbnail->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_ONLY));
-			check( MipData != nullptr );
+			uint8* MipData =
+				static_cast<uint8*>(Thumbnail->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_ONLY));
+			check(MipData != nullptr);
 			int64 MipDataSize = Thumbnail->GetPlatformData()->Mips[0].BulkData.GetBulkDataSize();
 
-			FImageView MipImage(MipData, Thumbnail->GetPlatformData()->SizeX,Thumbnail->GetPlatformData()->SizeY, 1, ERawImageFormat::BGRA8, EGammaSpace::sRGB);
+			FImageView MipImage(MipData, Thumbnail->GetPlatformData()->SizeX,
+				Thumbnail->GetPlatformData()->SizeY, 1, ERawImageFormat::BGRA8, EGammaSpace::sRGB);
 			FImageUtils::CompressImage(ThumbnailData, TEXT("PNG"), MipImage);
 			Thumbnail->GetPlatformData()->Mips[0].BulkData.Unlock();
 			Ar << ThumbnailData;
@@ -46,7 +47,8 @@ void USaveSlot::Serialize(FArchive& Ar)
 	}
 }
 
-void USaveSlot::CaptureThumbnail(FSEOnThumbnailCaptured Callback, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
+void USaveSlot::CaptureThumbnail(
+	FSEOnThumbnailCaptured Callback, const int32 Width /*= 640*/, const int32 Height /*= 360*/)
 {
 	if (!GEngine || bCapturingThumbnail)
 	{
@@ -54,7 +56,7 @@ void USaveSlot::CaptureThumbnail(FSEOnThumbnailCaptured Callback, const int32 Wi
 		return;
 	}
 
-	auto* Viewport = GEngine->GameViewport? GEngine->GameViewport->Viewport : nullptr;
+	auto* Viewport = GEngine->GameViewport ? GEngine->GameViewport->Viewport : nullptr;
 	if (!Viewport)
 	{
 		Callback.ExecuteIfBound(false);
@@ -148,8 +150,9 @@ void USaveSlot::OnThumbnailCaptured(int32 InSizeX, int32 InSizeY, const TArray<F
 #if WITH_EDITORONLY_DATA
 	Thumbnail->DeferCompression = true;
 #endif
-	FColor* TextureData = static_cast<FColor*>(Thumbnail->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-	for(int32 i = 0; i < InImageData.Num(); ++i, ++TextureData)
+	FColor* TextureData =
+		static_cast<FColor*>(Thumbnail->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	for (int32 i = 0; i < InImageData.Num(); ++i, ++TextureData)
 	{
 		*TextureData = InImageData[i];
 	}
