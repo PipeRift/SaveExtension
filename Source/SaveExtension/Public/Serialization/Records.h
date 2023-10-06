@@ -1,6 +1,5 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-
 #pragma once
 
 #include <CoreMinimal.h>
@@ -10,6 +9,7 @@
 #include "Records.generated.h"
 
 
+struct FSELevelFilter;
 class USaveSlotData;
 
 
@@ -122,3 +122,31 @@ struct FSubsystemRecord : public FObjectRecord
 	FSubsystemRecord() : Super() {}
 	FSubsystemRecord(const USubsystem* Subsystem) : Super(Subsystem) {}
 };
+
+USTRUCT()
+struct FControlledRecord
+{
+	GENERATED_BODY()
+
+};
+
+
+namespace SERecords
+{
+	extern const FName TagNoTransform;
+	extern const FName TagNoPhysics;
+	extern const FName TagNoTags;
+
+
+	void SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFilter& Filter);
+	bool DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSELevelFilter& Filter);
+	void SerializePlayer(const APlayerState* PlayerState, FActorRecord& Record);
+	void DeserializePlayer(APlayerState* PlayerState, const FActorRecord& Record);
+
+	bool IsSaveTag(const FName& Tag);
+	bool StoresTransform(const AActor* Actor);
+	bool StoresPhysics(const AActor* Actor);
+	bool StoresTags(const AActor* Actor);
+	bool IsProcedural(const AActor* Actor);
+	bool StoresTags(const UActorComponent* Component);
+}

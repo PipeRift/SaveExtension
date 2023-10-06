@@ -295,7 +295,7 @@ void FSEDataTask_Load::DeserializeLevelSync(const ULevel* Level, const ULevelStr
 		const FActorRecord* Record = RecordToActor.Key;
 		AActor* Actor = RecordToActor.Value.Get();
 		check(Record && Actor);
-		DeserializeActor(Actor, *Record, LevelRecord);
+		SERecords::DeserializeActor(Actor, *Record, LevelRecord.Filter);
 	}
 }
 
@@ -355,7 +355,7 @@ void FSEDataTask_Load::DeserializeASyncLoop(float StartMS)
 		{
 			continue;
 		}
-		DeserializeActor(Actor, *Record, LevelRecord);
+		SERecords::DeserializeActor(Actor, *Record, LevelRecord.Filter);
 
 		const float CurrentMS = GetTimeMilliseconds();
 		if (CurrentMS - StartMS >= MaxFrameMs)
@@ -493,104 +493,6 @@ void FSEDataTask_Load::RespawnActors(
 		// We update the name on the record in case it changed
 		Record->Name = NewActor->GetFName();
 		LevelRecord.RecordsToActors.Add({Record, NewActor});
-	}
-}
-
-bool FSEDataTask_Load::DeserializeActor(
-	AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord)
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::DeserializeActor);
-
-	if (Actor->GetClass() != ActorRecord.Class)
-	{
-		SELog(Slot, "Actor '" + ActorRecord.Name.ToString() + "' already exists but class doesn't match",
-			FColor::Green, true, 1);
-		return false;
-	}
-
-	// Always load saved tags
-	Actor->Tags = ActorRecord.Tags;
-
-	const bool bSavesPhysics = FSELevelFilter::StoresPhysics(Actor);
-	if (FSELevelFilter::StoresTransform(Actor))
-	{
-		Actor->SetActorTransform(ActorRecord.Transform);
-
-		if (FSELevelFilter::StoresPhysics(Actor))
-		{
-			USceneComponent* Root = Actor->GetRootComponent();
-			if (auto* Primitive = Cast<UPrimitiveComponent>(Root))
-			{
-				Primitive->SetPhysicsLinearVelocity(ActorRecord.LinearVelocity);
-				Primitive->SetPhysicsAngularVelocityInRadians(ActorRecord.AngularVelocity);
-			}
-			else
-			{
-				Root->ComponentVelocity = ActorRecord.LinearVelocity;
-			}
-		}
-	}
-
-	Actor->SetActorHiddenInGame(ActorRecord.bHiddenInGame);
-
-	DeserializeActorComponents(Actor, ActorRecord, LevelRecord, 2);
-
-	{
-		// Serialize from Record Data
-		FMemoryReader MemoryReader(ActorRecord.Data, true);
-		FSEArchive Archive(MemoryReader, false);
-		Actor->Serialize(Archive);
-	}
-
-	return true;
-}
-
-void FSEDataTask_Load::DeserializeActorComponents(
-	AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord, int8 Indent)
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(UFSEDataTask_Load::DeserializeActorComponents);
-
-	if (!LevelRecord.Filter.StoresAnyComponents())
-	{
-		return;
-	}
-
-	for (auto* Component : Actor->GetComponents())
-	{
-		if (!IsValid(Component) || !LevelRecord.Filter.Stores(Component))
-		{
-			continue;
-		}
-
-		// Find the record
-		const FComponentRecord* Record = ActorRecord.ComponentRecords.FindByKey(Component);
-		if (!Record)
-		{
-			SELog(Slot, "Component '" + Component->GetFName().ToString() + "' - Record not found",
-				FColor::Red, false, Indent + 1);
-			continue;
-		}
-
-		if (FSELevelFilter::StoresTransform(Component))
-		{
-			USceneComponent* Scene = CastChecked<USceneComponent>(Component);
-			if (Scene->Mobility == EComponentMobility::Movable)
-			{
-				Scene->SetRelativeTransform(Record->Transform);
-			}
-		}
-
-		if (FSELevelFilter::StoresTags(Component))
-		{
-			Component->ComponentTags = Record->Tags;
-		}
-
-		if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
-		{
-			FMemoryReader MemoryReader(Record->Data, true);
-			FSEArchive Archive(MemoryReader, false);
-			Component->Serialize(Archive);
-		}
 	}
 }
 

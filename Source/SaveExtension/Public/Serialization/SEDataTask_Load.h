@@ -112,11 +112,5 @@ protected:
 	void PrepareLevel(const ULevel* Level, FLevelRecord& LevelRecord);
 
 	void FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const;
-
-	/** Serializes an actor into this Actor Record */
-	bool DeserializeActor(AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord);
-
-	/** Deserializes the components of an actor from a provided Record */
-	void DeserializeActorComponents(AActor* Actor, const FActorRecord& ActorRecord, const FLevelRecord& LevelRecord, int8 indent = 0);
 	/** END Deserialization */
 };

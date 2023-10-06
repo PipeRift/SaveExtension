@@ -20,11 +20,6 @@ struct FSELevelFilter
 {
 	GENERATED_BODY()
 
-	static const FName TagNoTransform;
-	static const FName TagNoPhysics;
-	static const FName TagNoTags;
-	static const FName TagTransform;
-
 public:
 	UPROPERTY(SaveGame)
 	FSEClassFilter ActorFilter;
@@ -40,17 +35,4 @@ public:
 	bool Stores(const AActor* Actor) const;
 	bool StoresAnyComponents() const;
 	bool Stores(const UActorComponent* Component) const;
-
-	static bool StoresTransform(const UActorComponent* Component);
-	static bool StoresTags(const UActorComponent* Component);
-
-	static bool IsSaveTag(const FName& Tag);
-
-	static bool StoresTransform(const AActor* Actor);
-	static bool StoresPhysics(const AActor* Actor);
-	static bool StoresTags(const AActor* Actor);
-	static bool IsProcedural(const AActor* Actor);
-
-	static bool HasTag(const AActor* Actor, const FName Tag);
-	static bool HasTag(const UActorComponent* Component, const FName Tag);
 };

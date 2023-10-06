@@ -16,103 +16,6 @@
 #include <Tasks/Task.h>
 
 
-void SerializeActorComponents(
-	const AActor* Actor, FActorRecord& ActorRecord, const FSELevelFilter& Filter)
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActorComponents);
-
-	const TSet<UActorComponent*>& Components = Actor->GetComponents();
-	for (auto* Component : Components)
-	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActorComponents | Component);
-		if (IsValid(Component) && Filter.Stores(Component))
-		{
-			FComponentRecord& ComponentRecord = ActorRecord.ComponentRecords.Add_GetRef({Component});
-
-			if (Filter.StoresTransform(Component))
-			{
-				const USceneComponent* Scene = CastChecked<USceneComponent>(Component);
-				if (Scene->Mobility == EComponentMobility::Movable)
-				{
-					ComponentRecord.Transform = Scene->GetRelativeTransform();
-				}
-			}
-
-			if (Filter.StoresTags(Component))
-			{
-				ComponentRecord.Tags = Component->ComponentTags;
-			}
-
-			if (!Component->GetClass()->IsChildOf<UPrimitiveComponent>())
-			{
-				FMemoryWriter MemoryWriter(ComponentRecord.Data, true);
-				FSEArchive Archive(MemoryWriter, false);
-				Component->Serialize(Archive);
-			}
-		}
-	}
-}
-
-bool SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFilter& Filter)
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor);
-
-	Record = FActorRecord{Actor};
-
-	Record.bHiddenInGame = Actor->IsHidden();
-	Record.bIsProcedural = Filter.IsProcedural(Actor);
-
-	if (Filter.StoresTags(Actor))
-	{
-		Record.Tags = Actor->Tags;
-	}
-	else
-	{
-		// Only save save-tags
-		for (const auto& Tag : Actor->Tags)
-		{
-			if (Filter.IsSaveTag(Tag))
-			{
-				Record.Tags.Add(Tag);
-			}
-		}
-	}
-
-	if (Filter.StoresTransform(Actor))
-	{
-		Record.Transform = Actor->GetTransform();
-
-		if (Filter.StoresPhysics(Actor))
-		{
-			USceneComponent* const Root = Actor->GetRootComponent();
-			if (Root && Root->Mobility == EComponentMobility::Movable)
-			{
-				if (auto* const Primitive = Cast<UPrimitiveComponent>(Root))
-				{
-					Record.LinearVelocity = Primitive->GetPhysicsLinearVelocity();
-					Record.AngularVelocity = Primitive->GetPhysicsAngularVelocityInRadians();
-				}
-				else
-				{
-					Record.LinearVelocity = Root->GetComponentVelocity();
-				}
-			}
-		}
-	}
-
-	if (Filter.StoresAnyComponents())
-	{
-		SerializeActorComponents(Actor, Record, Filter);
-	}
-
-	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor | Serialize);
-	FMemoryWriter MemoryWriter(Record.Data, true);
-	FSEArchive Archive(MemoryWriter, false);
-	const_cast<AActor*>(Actor)->Serialize(Archive);
-	return true;
-}
-
-
 /////////////////////////////////////////////////////
 // FSEDataTask_Save
 
@@ -368,7 +271,7 @@ void FSEDataTask_Save::SerializeLevel(
 
 	ParallelFor(ActorsToSerialize.Num(), [&LevelRecord, &ActorsToSerialize, &Filter](int32 i)
 	{
-		SerializeActor(ActorsToSerialize[i], LevelRecord.Actors[i], Filter);
+		SERecords::SerializeActor(ActorsToSerialize[i], LevelRecord.Actors[i], Filter);
 	}, Slot->ShouldSerializeAsync()? EParallelForFlags::None : EParallelForFlags::ForceSingleThread);
 }
 
