@@ -29,5 +29,5 @@ jobs:
         run: git clone https://github.com/PipeRift/CICDScripts Scripts
 
       - name: Build Plugin
-        run: python Scripts/build.py plugin -n ${{ env.CI_PLUGIN }} -p .
+        run: python3 Scripts/build.py plugin -n ${{ env.CI_PLUGIN }} -p .
 
