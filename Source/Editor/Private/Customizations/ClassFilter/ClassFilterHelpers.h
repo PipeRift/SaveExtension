@@ -1,8 +1,8 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 #pragma once
 
-#include "ClassFilterNode.h"
 #include "ClassFilter.h"
+#include "ClassFilterNode.h"
 
 #include <AssetRegistry/AssetData.h>
 #include <AssetRegistry/AssetRegistryModule.h>
@@ -13,7 +13,6 @@
 #include <EditorDirectories.h>
 #include <Engine/Blueprint.h>
 #include <Framework/Multibox/MultiBoxBuilder.h>
-#include <GameProjectGeneration/Public/GameProjectGenerationModule.h>
 #include <IContentBrowserSingleton.h>
 #include <Kismet2/KismetEditorUtilities.h>
 #include <Logging/MessageLog.h>
@@ -104,8 +103,8 @@ namespace ClassFilter
 
 	private:
 		/** Recursive function to build a tree, will not filter.
-		 *	@param InOutRootNode						The node that this function will add the children of to the
-		 *tree.
+		 *	@param InOutRootNode						The node that this function will add the children of
+		 *to the tree.
 		 *  @param PackageNameToAssetDataMap			The asset registry map of blueprint package names to
 		 *blueprint data
 		 */
@@ -265,14 +264,14 @@ namespace ClassFilter
 
 		/** Recursive function to build a tree, filtering out nodes based on the InitOptions and filter search
 		 *terms.
-		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses and
-		 *DisallowedClasses.
-		 *	@param InOutRootNode						The node that this function will add the children of to the
-		 *tree.
+		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses
+		 *and DisallowedClasses.
+		 *	@param InOutRootNode						The node that this function will add the children of
+		 *to the tree.
 		 *	@param InRootClassIndex						The index of the root node.
 		 *	@param bInOnlyBlueprintBases				Filter option to remove non-blueprint base classes.
-		 *	@param bInShowUnloadedBlueprints			Filter option to not remove unloaded blueprints due to class
-		 *filter options.
+		 *	@param bInShowUnloadedBlueprints			Filter option to not remove unloaded blueprints due to
+		 *class filter options.
 		 *  @param bInInternalClasses                   Filter option for showing internal classes.
 		 *  @param InternalClasses                      The classes that have been marked as Internal Only.
 		 *  @param InternalPaths                        The paths that have been marked Internal Only.
@@ -356,12 +355,12 @@ namespace ClassFilter
 		}
 
 		/** Builds the class tree.
-		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses and
-		 *DisallowedClasses.
+		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses
+		 *and DisallowedClasses.
 		 *	@param InOutRootNode						The node to root the tree to.
 		 *	@param bInOnlyBlueprintBases				Filter option to remove non-blueprint base classes.
-		 *	@param bInShowUnloadedBlueprints			Filter option to not remove unloaded blueprints due to class
-		 *filter options.
+		 *	@param bInShowUnloadedBlueprints			Filter option to not remove unloaded blueprints due to
+		 *class filter options.
 		 *  @param bInInternalClasses                   Filter option for showing internal classes.
 		 *  @param InternalClasses                      The classes that have been marked as Internal Only.
 		 *  @param InternalPaths                        The paths that have been marked Internal Only.
@@ -393,14 +392,14 @@ namespace ClassFilter
 
 		/** Recursive function to build the list, filtering out nodes based on the InitOptions and filter
 		 *search terms.
-		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses and
-		 *DisallowedClasses.
-		 *	@param InOutRootNode						The node that this function will add the children of to the
-		 *tree.
+		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses
+		 *and DisallowedClasses.
+		 *	@param InOutRootNode						The node that this function will add the children of
+		 *to the tree.
 		 *	@param InRootClassIndex						The index of the root node.
 		 *	@param bInOnlyBlueprintBases				Filter option to remove non-blueprint base classes.
-		 *	@param bInShowUnloadedBlueprints			Filter option to not remove unloaded blueprints due to class
-		 *filter options.
+		 *	@param bInShowUnloadedBlueprints			Filter option to not remove unloaded blueprints due to
+		 *class filter options.
 		 *  @param bInInternalClasses                   Filter option for showing internal classes.
 		 *  @param InternalClasses                      The classes that have been marked as Internal Only.
 		 *  @param InternalPaths                        The paths that have been marked Internal Only.
@@ -475,12 +474,12 @@ namespace ClassFilter
 		}
 
 		/** Builds the class list.
-		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses and
-		 *DisallowedClasses.
+		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses
+		 *and DisallowedClasses.
 		 *	@param InOutNodeList						The list to add all the nodes to.
 		 *	@param bInOnlyBlueprintBases				Filter option to remove non-blueprint base classes.
-		 *	@param bInShowUnloadedBlueprints			Filter option to not remove unloaded blueprints due to class
-		 *filter options.
+		 *	@param bInShowUnloadedBlueprints			Filter option to not remove unloaded blueprints due to
+		 *class filter options.
 		 *  @param bInInternalClasses                   Filter option for showing internal classes.
 		 *  @param InternalClasses                      The classes that have been marked as Internal Only.
 		 *  @param InternalPaths                        The paths that have been marked Internal Only.

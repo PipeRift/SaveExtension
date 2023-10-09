@@ -1,7 +1,7 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 #pragma once
 
-#include "Helpers/TestGameInstance.h"
+#include "Helpers/SETestGameInstance.h"
 
 #include <SaveSlot.h>
 
