@@ -36,6 +36,5 @@ public:
 	void BakeAllowedClasses() const;
 
 	bool Stores(const AActor* Actor) const;
-	bool StoresAnyComponents() const;
 	bool Stores(const UActorComponent* Component) const;
 };

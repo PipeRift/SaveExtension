@@ -81,6 +81,15 @@ void USaveSlot::CaptureThumbnail(
 	}
 }
 
+USaveSlotData* USaveSlot::AssureData()
+{
+	if (!IsValid(Data))
+	{
+		AssignData(NewObject<USaveSlotData>(this, DataClass, NAME_None));
+	}
+	return Data;
+}
+
 bool USaveSlot::ShouldDeserializeAsync() const
 {
 	return MultithreadedSerialization == ESEAsyncMode::LoadAsync ||

@@ -21,7 +21,7 @@
 
 FSEDataTask_Save::FSEDataTask_Save(USaveManager* Manager, USaveSlot* Slot)
 	: FSEDataTask(Manager, ESETaskType::Save)
-	, SlotData(Slot->GetData())
+	, SlotData(Slot->AssureData())
 {}
 
 FSEDataTask_Save::~FSEDataTask_Save()
@@ -67,9 +67,6 @@ void FSEDataTask_Save::OnStart()
 	const UWorld* World = GetWorld();
 
 	Manager->OnSaveBegan();
-
-	Slot = Manager->GetActiveSlot();
-	SlotData = Slot->GetData();
 
 	check(SlotData->GetClass() == Slot->DataClass);
 	SlotData->CleanRecords(true);
@@ -271,7 +268,7 @@ void FSEDataTask_Save::SerializeLevel(
 
 	ParallelFor(ActorsToSerialize.Num(), [&LevelRecord, &ActorsToSerialize, &Filter](int32 i)
 	{
-		SERecords::SerializeActor(ActorsToSerialize[i], LevelRecord.Actors[i], Filter);
+		SERecords::SerializeActor(ActorsToSerialize[i], LevelRecord.Actors[i], Filter.ComponentFilter);
 	}, Slot->ShouldSerializeAsync()? EParallelForFlags::None : EParallelForFlags::ForceSingleThread);
 }
 

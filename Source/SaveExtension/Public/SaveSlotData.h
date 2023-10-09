@@ -14,6 +14,9 @@
 #include "SaveSlotData.generated.h"
 
 
+struct FUniqueNetIdRepl;
+
+
 /**
  * USaveSlotData stores all information that can be accessible only while the game is loaded.
  * Works like a common SaveGame object
@@ -27,7 +30,7 @@ class SAVEEXTENSION_API USaveSlotData : public UObject
 
 public:
 	/** Game world time since game started in seconds */
-	UPROPERTY(SaveGame, Category = SaveData, BlueprintReadOnly)
+	UPROPERTY(SaveGame, Category = SaveSlotData, BlueprintReadOnly)
 	float TimeSeconds;
 
 	/** Records
@@ -42,9 +45,19 @@ public:
 	FPersistentLevelRecord RootLevel;
 	TArray<FStreamingLevelRecord> SubLevels;
 
+	TArray<FPlayerRecord> Players;
+
 
 	void CleanRecords(bool bKeepSublevels);
 
 	/** Using manual serialization. It's way faster than reflection serialization */
 	virtual void Serialize(FArchive& Ar) override;
+
+	UFUNCTION(BlueprintPure, Category = SaveSlotData)
+	FPlayerRecord& FindOrAddPlayerRecord(const FUniqueNetIdRepl& UniqueId);
+	FPlayerRecord* FindPlayerRecord(const FUniqueNetIdRepl& UniqueId);
+	UFUNCTION(BlueprintPure, Category = SaveSlotData)
+	bool FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, UPARAM(Ref) FPlayerRecord& Record);
+	UFUNCTION(BlueprintPure, Category = SaveSlotData)
+	bool RemovePlayerRecord(const FUniqueNetIdRepl& UniqueId);
 };
