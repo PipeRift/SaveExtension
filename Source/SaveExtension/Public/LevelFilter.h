@@ -24,10 +24,10 @@ struct FSELevelFilter
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(SaveGame, BlueprintReadWrite)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = LevelFilter)
 	FSEClassFilter ActorFilter{AActor::StaticClass()};
 
-	UPROPERTY(SaveGame, BlueprintReadWrite)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = LevelFilter)
 	FSEClassFilter ComponentFilter{UActorComponent::StaticClass()};
 
 

@@ -6,11 +6,11 @@
 #include <CoreMinimal.h>
 #include <Engine/GameInstance.h>
 
-#include "TestGameInstance.generated.h"
+#include "SETestGameInstance.generated.h"
 
 
 UCLASS()
-class UTestGameInstance : public UGameInstance
+class USETestGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 

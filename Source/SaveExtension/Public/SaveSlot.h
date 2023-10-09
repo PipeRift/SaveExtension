@@ -172,7 +172,7 @@ public:
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)
 	FSaveSlotStats Stats;
 
-	UPROPERTY(BlueprintReadWrite, Transient)	// Saved
+	UPROPERTY(BlueprintReadWrite, Transient, Category = SaveSlot)	 // Saved
 	TObjectPtr<UTexture2D> Thumbnail;
 
 protected:

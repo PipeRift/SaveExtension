@@ -22,7 +22,7 @@ class FSaveSpec_GameInstance : public Automatron::FTestSpec
 		bCanUsePIEWorld = false;
 
 		DefaultWorldSettings.bShouldTick = true;
-		DefaultWorldSettings.GameInstance = UTestGameInstance::StaticClass();
+		DefaultWorldSettings.GameInstance = USETestGameInstance::StaticClass();
 	}
 };
 
@@ -38,7 +38,7 @@ void FSaveSpec_GameInstance::Define()
 	});
 
 	It("GameInstance can be saved", [this]() {
-		auto* GI = GetMainWorld()->GetGameInstance<UTestGameInstance>();
+		auto* GI = GetMainWorld()->GetGameInstance<USETestGameInstance>();
 		GI->bMyBool = true;
 
 		SaveManager->SaveSlot(0);
