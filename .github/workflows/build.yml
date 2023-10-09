@@ -10,15 +10,16 @@ on:
 
 jobs:
   publish:
-    name: ${{ matrix.os }} ${{ matrix.config }} (UE ${{ matrix.version }})
-    runs-on: [self-hosted, UE-${{ matrix.version }}, ${{ matrix.os }}]
+    name: "${{ matrix.os }} ${{ matrix.config }} - UE ${{ matrix.version }}"
+    runs-on: [self-hosted, "UE-${{ matrix.version }}", "${{ matrix.os }}"]
+    env:
+      CI_PLUGIN: SaveExtension
     strategy:
       fail-fast: false
       matrix:
-        name: SaveExtension
-        config: [Debug, Release]
+        config: [Release]
         os: [Windows, Linux]
-        version: "5.3"
+        version: [ "5.3" ]
 
     steps:
       - name: Checkout
