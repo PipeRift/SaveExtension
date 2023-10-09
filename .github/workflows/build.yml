@@ -29,5 +29,7 @@ jobs:
         run: git clone https://github.com/PipeRift/CICDScripts Scripts
 
       - name: Build Plugin
-        run: py ./Scripts/build.py plugin
+        run: |
+          cd Scripts
+          python build.py plugin
 
