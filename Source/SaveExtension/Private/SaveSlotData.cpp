@@ -28,3 +28,37 @@ void USaveSlotData::CleanRecords(bool bKeepSublevels)
 		SubLevels.Empty();
 	}
 }
+
+FPlayerRecord& USaveSlotData::FindOrAddPlayerRecord(const FUniqueNetIdRepl& UniqueId)
+{
+	return Players[Players.AddUnique({UniqueId})];
+}
+
+FPlayerRecord* USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId)
+{
+	const int32 Index = Players.IndexOfByPredicate([&UniqueId](const FPlayerRecord& Record) {
+		return Record.UniqueId == UniqueId;
+	});
+	if (Index != INDEX_NONE)
+	{
+		return &Players[Index];
+	}
+	return nullptr;
+}
+
+bool USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, UPARAM(Ref) FPlayerRecord& Record)
+{
+	if (FPlayerRecord* FoundRecord = FindPlayerRecord(UniqueId))
+	{
+		Record = *FoundRecord;
+		return true;
+	}
+	return false;
+}
+
+bool USaveSlotData::RemovePlayerRecord(const FUniqueNetIdRepl& UniqueId)
+{
+	return Players.RemoveAll([&UniqueId](const FPlayerRecord& Record){
+		return Record.UniqueId == UniqueId;
+	}) > 0;
+}

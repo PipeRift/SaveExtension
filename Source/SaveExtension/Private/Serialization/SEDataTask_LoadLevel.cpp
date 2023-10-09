@@ -59,7 +59,7 @@ void FSEDataTask_LoadLevel::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 		{
 			continue;
 		}
-		SERecords::DeserializeActor(Actor, *Record, LevelRecord.Filter);
+		SERecords::DeserializeActor(Actor, *Record, LevelRecord.Filter.ComponentFilter);
 
 		const float CurrentMS = GetTimeMilliseconds();
 		if (CurrentMS - StartMS >= MaxFrameMs)

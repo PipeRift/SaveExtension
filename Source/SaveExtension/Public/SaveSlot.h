@@ -211,6 +211,10 @@ public:
 		Data = NewData;
 	}
 
+	// Gets the data instance, and creates it if wasn't already
+	UFUNCTION(BlueprintCallable, Category = SaveSlot)
+	USaveSlotData* AssureData();
+
 	bool ShouldDeserializeAsync() const;
 	bool ShouldSerializeAsync() const;
 

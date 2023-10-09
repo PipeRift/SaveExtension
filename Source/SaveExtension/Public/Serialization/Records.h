@@ -3,14 +3,13 @@
 #pragma once
 
 #include <CoreMinimal.h>
-#include <Engine/LevelScriptActor.h>
-#include <Engine/LevelStreaming.h>
 
 #include "Records.generated.h"
 
 
-struct FSELevelFilter;
+struct FSEClassFilter;
 class USaveSlotData;
+class APlayerState;
 
 
 USTRUCT()
@@ -123,11 +122,22 @@ struct FSubsystemRecord : public FObjectRecord
 	FSubsystemRecord(const USubsystem* Subsystem) : Super(Subsystem) {}
 };
 
-USTRUCT()
-struct FControlledRecord
+USTRUCT(BlueprintType)
+struct FPlayerRecord
 {
 	GENERATED_BODY()
 
+	FUniqueNetIdRepl UniqueId;
+
+	FActorRecord PlayerState;
+	FActorRecord Controller;
+	FActorRecord Pawn;
+
+
+	bool operator==(const FPlayerRecord& Other) const
+	{
+		return UniqueId == Other.UniqueId;
+	}
 };
 
 
@@ -138,10 +148,10 @@ namespace SERecords
 	extern const FName TagNoTags;
 
 
-	void SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFilter& Filter);
-	bool DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSELevelFilter& Filter);
-	void SerializePlayer(const APlayerState* PlayerState, FActorRecord& Record);
-	void DeserializePlayer(APlayerState* PlayerState, const FActorRecord& Record);
+	void SerializeActor(const AActor* Actor, FActorRecord& Record, const FSEClassFilter& ComponentFilter);
+	bool DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSEClassFilter& ComponentFilter);
+	void SerializePlayer(const APlayerState* PlayerState, FPlayerRecord& Record, const FSEClassFilter& ComponentFilter);
+	void DeserializePlayer(APlayerState* PlayerState, const FPlayerRecord& Record, const FSEClassFilter& ComponentFilter);
 
 	bool IsSaveTag(const FName& Tag);
 	bool StoresTransform(const AActor* Actor);

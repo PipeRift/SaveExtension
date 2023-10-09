@@ -295,7 +295,7 @@ void FSEDataTask_Load::DeserializeLevelSync(const ULevel* Level, const ULevelStr
 		const FActorRecord* Record = RecordToActor.Key;
 		AActor* Actor = RecordToActor.Value.Get();
 		check(Record && Actor);
-		SERecords::DeserializeActor(Actor, *Record, LevelRecord.Filter);
+		SERecords::DeserializeActor(Actor, *Record, LevelRecord.Filter.ComponentFilter);
 	}
 }
 
@@ -355,7 +355,7 @@ void FSEDataTask_Load::DeserializeASyncLoop(float StartMS)
 		{
 			continue;
 		}
-		SERecords::DeserializeActor(Actor, *Record, LevelRecord.Filter);
+		SERecords::DeserializeActor(Actor, *Record, LevelRecord.Filter.ComponentFilter);
 
 		const float CurrentMS = GetTimeMilliseconds();
 		if (CurrentMS - StartMS >= MaxFrameMs)

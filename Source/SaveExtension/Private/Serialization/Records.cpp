@@ -3,9 +3,13 @@
 #include "Serialization/Records.h"
 
 #include "SaveExtension.h"
-#include "LevelFilter.h"
+#include "ClassFilter.h"
 #include "SaveSlotData.h"
 #include "Serialization/SEArchive.h"
+
+#include <GameFramework/PlayerState.h>
+#include <GameFramework/PlayerController.h>
+#include <GameFramework/Pawn.h>
 
 
 
@@ -86,7 +90,7 @@ const FName SERecords::TagNoPhysics{"!SavePhysics"};
 const FName SERecords::TagNoTags{"!SaveTags"};
 
 
-void SERecords::SerializeActor(const AActor* Actor, FActorRecord& Record, const FSELevelFilter& Filter)
+void SERecords::SerializeActor(const AActor* Actor, FActorRecord& Record, const FSEClassFilter& ComponentFilter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor);
 
@@ -131,12 +135,12 @@ void SERecords::SerializeActor(const AActor* Actor, FActorRecord& Record, const 
 		}
 	}
 
-	if (Filter.StoresAnyComponents())
+	if (ComponentFilter.IsAnyAllowed())
 	{
 		for (auto* Component : Actor->GetComponents())
 		{
 			TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor | Component);
-			if (IsValid(Component) && Filter.Stores(Component))
+			if (IsValid(Component) && ComponentFilter.IsAllowed(Component->GetClass()))
 			{
 				FComponentRecord& ComponentRecord = Record.ComponentRecords.Add_GetRef({Component});
 				if (const auto* SceneComp = Cast<USceneComponent>(Component))
@@ -170,7 +174,7 @@ void SERecords::SerializeActor(const AActor* Actor, FActorRecord& Record, const 
 	const_cast<AActor*>(Actor)->Serialize(Archive);
 }
 
-bool SERecords::DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSELevelFilter& Filter)
+bool SERecords::DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSEClassFilter& ComponentFilter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeActor);
 
@@ -205,12 +209,12 @@ bool SERecords::DeserializeActor(AActor* Actor, const FActorRecord& Record, cons
 
 	TRACE_CPUPROFILER_EVENT_SCOPE(UFSEDataTask_Load::DeserializeActorComponents);
 
-	if (Filter.StoresAnyComponents())
+	if (ComponentFilter.IsAnyAllowed())
 	{
 		for (auto* Component : Actor->GetComponents())
 		{
 			TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeActor | Component);
-			if (!IsValid(Component) || !Filter.Stores(Component))
+			if (!IsValid(Component) || !ComponentFilter.IsAllowed(Component->GetClass()))
 			{
 				continue;
 			}
@@ -248,9 +252,43 @@ bool SERecords::DeserializeActor(AActor* Actor, const FActorRecord& Record, cons
 	return true;
 }
 
-void SERecords::SerializePlayer(const APlayerState* PlayerState, FActorRecord& Record) {}
+void SERecords::SerializePlayer(const APlayerState* PlayerState, FPlayerRecord& Record, const FSEClassFilter& ComponentFilter)
+{
+	check(PlayerState);
 
-void SERecords::DeserializePlayer(APlayerState* PlayerState, const FActorRecord& Record) {}
+	APlayerController* PC = PlayerState->GetPlayerController();
+	APawn* Pawn = PlayerState->GetPawn();
+
+	Record.UniqueId = PlayerState->GetUniqueId();
+	SERecords::SerializeActor(PlayerState, Record.PlayerState, ComponentFilter);
+	if (Pawn)
+	{
+		SERecords::SerializeActor(Pawn, Record.Pawn, ComponentFilter);
+	}
+	if (PC)
+	{
+		SERecords::SerializeActor(PC, Record.Controller, ComponentFilter);
+	}
+}
+
+void SERecords::DeserializePlayer(APlayerState* PlayerState, const FPlayerRecord& Record, const FSEClassFilter& ComponentFilter)
+{
+	check(PlayerState);
+	check(PlayerState->GetUniqueId() == Record.UniqueId);
+
+	APlayerController* PC = PlayerState->GetPlayerController();
+	APawn* Pawn = PlayerState->GetPawn();
+
+	SERecords::DeserializeActor(PlayerState, Record.PlayerState, ComponentFilter);
+	if (Pawn)
+	{
+		SERecords::DeserializeActor(Pawn, Record.Pawn, ComponentFilter);
+	}
+	if (PC)
+	{
+		SERecords::DeserializeActor(PC, Record.Controller, ComponentFilter);
+	}
+}
 
 
 bool SERecords::IsSaveTag(const FName& Tag)

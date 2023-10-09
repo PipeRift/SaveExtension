@@ -21,10 +21,6 @@ bool FSELevelFilter::Stores(const AActor* Actor) const
 	return ActorFilter.IsAllowed(Actor->GetClass());
 }
 
-bool FSELevelFilter::StoresAnyComponents() const
-{
-	return ComponentFilter.IsAnyAllowed();
-}
 bool FSELevelFilter::Stores(const UActorComponent* Component) const
 {
 	return ComponentFilter.IsAllowed(Component->GetClass());
