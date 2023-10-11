@@ -1,0 +1,84 @@
+
+@font-face { font-family: 'Lovelo';      src: url('fonts/Lovelo-Black.otf') format('opentype'); }
+@font-face { font-family: 'Lovelo Line'; src: url('fonts/Lovelo-LineBold.otf') format('opentype'); font-weight: bold; }
+@font-face { font-family: 'Lovelo Line'; src: url('fonts/Lovelo-LineLight.otf') format('opentype'); }
+
+@font-face { font-family: 'Century Gothic'; src: url('fonts/Gothic.ttf') format('truetype'); }
+@font-face { font-family: 'Century Gothic'; src: url('fonts/Gothic-Bold.ttf') format('truetype'); font-weight: bold; }
+@font-face { font-family: 'Century Gothic'; src: url('fonts/Gothic-Italic.ttf') format('truetype'); font-style: italic; }
+@font-face { font-family: 'Century Gothic'; src: url('fonts/Gothic-BoldItalic.ttf') format('truetype'); font-weight: bold; font-style: italic; }
+
+
+:root {
+  --base-font-size: 14px;
+  --theme-color   : #F02D3A; /*Complementary: #A4303F*/
+  --base-background-color: #1E2229;
+  --base-font-family: Source Sans Pro, Helvetica Neue, Arial, sans-serif;;
+
+  /* Menus */
+  --sidebar-background: #3D4552;
+
+  --heading-font-family: 'Century Gothic', Helvetica, Arial, sans-serif;
+  --heading-h1-font-family: 'Lovelo', Helvetica, Arial, sans-serif;
+  /*--heading-h1-font-weight: bold;*/
+  --heading-h1-border-color: var(--theme-color);
+  --heading-h2-border-color: var(--theme-color);
+  --sidebar-nav-pagelink-background-image--active: url("./navbar_link.svg");
+  --sidebar-nav-pagelink-background-image--loaded: url("./navbar_link.svg");
+
+  /* Cover */
+  --cover-heading-color: var(--theme-color);
+  --cover-max-width                 : 60em;
+  --cover-background-blend-mode     : color-burn;
+  --cover-background-color          :  #1E2229;
+  --cover-background-image          : url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAIAAACRXR/mAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAABnSURBVHja7M5RDYAwDEXRDgmvEocnlrQS2SwUFST9uEfBGWs9c97nbGtDcquqiKhOImLs/UpuzVzWEi1atGjRokWLFi1atGjRokWLFi1atGjRokWLFi1af7Ukz8xWp8z8AAAA//8DAJ4LoEAAlL1nAAAAAElFTkSuQmCC");
+  --cover-background-mask-color     : #1E2229;
+  --cover-background-mask-opacity   : 0;
+  --cover-background-mask-visibility: hidden;
+  --cover-background-position       : center center;
+  --cover-background-repeat         : repeat;
+  --cover-background-size           : ;
+}
+
+@-webkit-keyframes cover-scrolling {
+  0% { background-position: 0px 0px; }
+  100% { background-position: 50px 50px; }
+}
+@-moz-keyframes    cover-scrolling {
+  0% { background-position: 0px 0px; }
+  100% { background-position: 50px 50px; }
+}
+@-o-keyframes      cover-scrolling {
+  0% { background-position: 0px 0px; }
+  100% { background-position: 50px 50px; }
+}
+@keyframes         cover-scrolling {
+  0% { background-position: 0px 0px; }
+  100% { background-position: 50px 50px; }
+}
+
+.cover.show::before {
+  -webkit-animation: cover-scrolling 1.92s infinite; /* Safari 4+ */
+  -moz-animation:    cover-scrolling 1.92s infinite; /* Fx 5+ */
+  -o-animation:      cover-scrolling 1.92s infinite; /* Opera 12+ */
+  animation:         cover-scrolling 1.92s infinite; /* IE 10+ */
+  -webkit-animation-timing-function: linear;
+  -moz-animation-timing-function:    linear;
+  -o-animation-timing-function:      linear;
+  animation-timing-function:         linear;
+}
+
+.cover h1 {
+  font-family: 'Lovelo Line', Helvetica, Arial, sans-serif;
+}
+
+.cover p {
+  font-family: 'Century Gothic', Helvetica, Arial, sans-serif;
+  font-weight: lighter;
+  font-size: 18px;
+}
+
+.docsify-copy-code-button {
+  padding: 0.1em 0.1em;
+  font-size: 0.9em;
+}
