@@ -4,7 +4,6 @@
 
 #include "SEFileHelpers.h"
 
-#include <Components/Viewport.h>
 #include <Engine/Engine.h>
 #include <Engine/GameViewportClient.h>
 #include <Engine/Texture2D.h>
