@@ -12,6 +12,7 @@
 #include <ImageUtils.h>
 #include <Misc/FileHelper.h>
 #include <TextureResource.h>
+#include <UnrealClient.h>
 
 
 void USaveSlot::PostInitProperties()

@@ -2,13 +2,12 @@
 
 #pragma once
 
-#include <CoreMinimal.h>
+#include <GameFramework/OnlineReplStructs.h>
 
 #include "Records.generated.h"
 
 
 struct FSEClassFilter;
-struct FUniqueNetIdRepl;
 class USaveSlotData;
 class APlayerState;
 class USubsystem;
@@ -121,7 +120,7 @@ struct FSubsystemRecord : public FObjectRecord
 	GENERATED_BODY()
 
 	FSubsystemRecord() : Super() {}
-	FSubsystemRecord(const USubsystem* Subsystem) : Super(Subsystem) {}
+	FSubsystemRecord(const USubsystem* Subsystem);
 };
 
 USTRUCT(BlueprintType)

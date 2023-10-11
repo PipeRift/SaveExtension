@@ -8,7 +8,6 @@
 #include "Serialization/SEArchive.h"
 
 #include <Components/PrimitiveComponent.h>
-#include <GameFramework/OnlineReplStructs.h>
 #include <GameFramework/Pawn.h>
 #include <GameFramework/PlayerController.h>
 #include <GameFramework/PlayerState.h>
@@ -84,6 +83,10 @@ bool FActorRecord::Serialize(FArchive& Ar)
 	Ar << ComponentRecords;
 	return true;
 }
+
+
+FSubsystemRecord::FSubsystemRecord(const USubsystem* Subsystem) : Super(Subsystem) {}
+
 
 bool FPlayerRecord::operator==(const FPlayerRecord& Other) const
 {
