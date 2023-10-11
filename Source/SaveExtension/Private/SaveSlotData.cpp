@@ -2,6 +2,7 @@
 
 #include "SaveSlotData.h"
 
+#include <GameFramework/OnlineReplStructs.h>
 #include <TimerManager.h>
 
 
@@ -31,7 +32,7 @@ void USaveSlotData::CleanRecords(bool bKeepSublevels)
 
 FPlayerRecord& USaveSlotData::FindOrAddPlayerRecord(const FUniqueNetIdRepl& UniqueId)
 {
-	return Players[Players.AddUnique({UniqueId})];
+	return Players[Players.AddUnique(FPlayerRecord(UniqueId))];
 }
 
 FPlayerRecord* USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId)
@@ -58,7 +59,7 @@ bool USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, UPARAM(Re
 
 bool USaveSlotData::RemovePlayerRecord(const FUniqueNetIdRepl& UniqueId)
 {
-	return Players.RemoveAll([&UniqueId](const FPlayerRecord& Record){
+	return Players.RemoveAll([&UniqueId](const FPlayerRecord& Record) {
 		return Record.UniqueId == UniqueId;
 	}) > 0;
 }

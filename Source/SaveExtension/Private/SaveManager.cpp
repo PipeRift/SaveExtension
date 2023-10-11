@@ -2,13 +2,13 @@
 
 #include "SaveManager.h"
 
+#include "SEFileHelpers.h"
 #include "SaveExtension.h"
 #include "SaveSettings.h"
-#include "SEFileHelpers.h"
-#include "Serialization/SEDataTask_LoadLevel.h"
-#include "Serialization/SEDataTask_SaveLevel.h"
 #include "Serialization/SEDataTask_Load.h"
+#include "Serialization/SEDataTask_LoadLevel.h"
 #include "Serialization/SEDataTask_Save.h"
+#include "Serialization/SEDataTask_SaveLevel.h"
 
 #include <Engine/GameInstance.h>
 #include <Engine/GameViewportClient.h>
@@ -28,14 +28,13 @@
 // From SaveGameSystem.cpp
 void OnAsyncComplete(TFunction<void()> Callback)
 {
-	// NB. Using Ticker because AsyncTask may run during async package loading which may not be suitable for save data
-	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda(
-		[Callback = MoveTemp(Callback)](float) -> bool
-		{
+	// NB. Using Ticker because AsyncTask may run during async package loading which may not be suitable for
+	// save data
+	FTSTicker::GetCoreTicker().AddTicker(
+		FTickerDelegate::CreateLambda([Callback = MoveTemp(Callback)](float) -> bool {
 			Callback();
 			return false;
-		}
-	));
+		}));
 }
 
 // BEGIN Async Actions
@@ -128,10 +127,12 @@ public:
 		, CallbackTarget(LatentInfo.CallbackTarget)
 	{
 		Result = ESEContinue::InProgress;
-		Manager->PreloadAllSlots([this](const TArray<USaveSlot*>& InSlots) {
-			Slots = InSlots;
-			Result = ESEContinue::Continue;
-		}, bSortByRecent);
+		Manager->PreloadAllSlots(
+			[this](const TArray<USaveSlot*>& InSlots) {
+				Slots = InSlots;
+				Result = ESEContinue::Continue;
+			},
+			bSortByRecent);
 	}
 	virtual void UpdateOperation(FLatentResponse& Response) override
 	{
@@ -242,11 +243,26 @@ bool USaveManager::SaveSlot(FName SlotName, bool bOverrideIfNeeded, bool bScreen
 
 	// Launch task, always fail if it didn't finish or wasn't scheduled
 	auto& Task = CreateTask<FSEDataTask_Save>()
-		.Setup(SlotName, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
-		.Bind(OnSaved)
-		.Start();
+					 .Setup(SlotName, bOverrideIfNeeded, bScreenshot, Size.Width, Size.Height)
+					 .Bind(OnSaved)
+					 .Start();
 
 	return Task.IsSucceeded() || Task.IsScheduled();
+}
+
+bool USaveManager::SaveSlot(const USaveSlot* Slot, bool bOverrideIfNeeded, bool bScreenshot,
+	const FScreenshotSize Size, FOnGameSaved OnSaved)
+{
+	if (!Slot)
+	{
+		return false;
+	}
+	return SaveSlot(Slot->Name, bOverrideIfNeeded, bScreenshot, Size, OnSaved);
+}
+
+bool USaveManager::SaveActiveSlot(bool bScreenshot, const FScreenshotSize Size, FOnGameSaved OnSaved)
+{
+	return SaveSlot(ActiveSlot, true, bScreenshot, Size, OnSaved);
 }
 
 bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
@@ -262,18 +278,25 @@ bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
 	return Task.IsSucceeded() || Task.IsScheduled();
 }
 
+bool USaveManager::LoadSlot(const USaveSlot* Slot, FOnGameLoaded OnLoaded)
+{
+	if (!Slot)
+	{
+		return false;
+	}
+	return LoadSlot(Slot->Name, OnLoaded);
+}
+
 void USaveManager::PreloadAllSlots(FSEOnAllSlotsPreloaded Callback, bool bSortByRecent)
 {
-	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, Callback, bSortByRecent]()
-	{
+	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, Callback, bSortByRecent]() {
 		TArray<USaveSlot*> Slots;
 		PreloadAllSlotsSync(Slots, bSortByRecent);
 
 		if (Callback)
 		{
-			OnAsyncComplete([Slots = MoveTemp(Slots), Callback]()
-			{
-				for(auto* Slot : Slots)
+			OnAsyncComplete([Slots = MoveTemp(Slots), Callback]() {
+				for (auto* Slot : Slots)
 				{
 					Slot->ClearInternalFlags(EInternalObjectFlags::Async);
 				}
@@ -296,16 +319,15 @@ void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRe
 		FScopedFileReader Reader(FSEFileHelpers::GetSlotPath(FileName));
 		if (Reader.IsValid())
 		{
-			LoadedFiles.AddDefaulted_GetRef()
-				.Read(Reader, true);
+			LoadedFiles.AddDefaulted_GetRef().Read(Reader, true);
 		}
 	}
 
 	Slots.Reserve(Slots.Num() + LoadedFiles.Num());
 	for (const auto& File : LoadedFiles)
 	{
-		auto* Slot = Cast<USaveSlot>(
-			FSEFileHelpers::DeserializeObject(nullptr, File.ClassName, this, File.Bytes));
+		auto* Slot =
+			Cast<USaveSlot>(FSEFileHelpers::DeserializeObject(nullptr, File.ClassName, this, File.Bytes));
 		if (Slot)
 		{
 			Slots.Add(Slot);
@@ -328,8 +350,7 @@ bool USaveManager::DeleteSlotByNameSync(FName SlotName)
 
 void USaveManager::DeleteSlotByName(FName SlotName)
 {
-	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, SlotName]()
-	{
+	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, SlotName]() {
 		DeleteSlotByNameSync(SlotName);
 	});
 }
@@ -349,13 +370,11 @@ int32 USaveManager::DeleteAllSlotsSync()
 
 void USaveManager::DeleteAllSlots(FSEOnAllSlotsDeleted Callback)
 {
-	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, Callback]()
-	{
+	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, Callback]() {
 		const int32 Count = DeleteAllSlotsSync();
 		if (Callback)
 		{
-			OnAsyncComplete([Count, Callback]()
-			{
+			OnAsyncComplete([Count, Callback]() {
 				Callback(Count);
 			});
 		}
@@ -380,7 +399,8 @@ void USaveManager::BPSaveSlotByName(FName SlotName, bool bScreenshot, const FScr
 	Result = ESEContinueOrFail::Failed;
 }
 
-void USaveManager::BPLoadSlotByName(FName SlotName, ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPLoadSlotByName(
+	FName SlotName, ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -419,8 +439,8 @@ void USaveManager::BPDeleteAllSlots(ESEContinue& Result, struct FLatentActionInf
 		if (LatentActionManager.FindExistingAction<FDeleteAllSlotsAction>(
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
-			LatentActionManager.AddNewAction(
-				LatentInfo.CallbackTarget, LatentInfo.UUID, new FDeleteAllSlotsAction(this, Result, LatentInfo));
+			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
+				new FDeleteAllSlotsAction(this, Result, LatentInfo));
 		}
 	}
 }
@@ -429,7 +449,7 @@ USaveSlot* USaveManager::PreloadSlot(FName SlotName)
 {
 	USaveSlot* Slot = nullptr;
 	const FString NameStr = SlotName.ToString();
-    Slot = FSEFileHelpers::LoadFileSync(NameStr, nullptr, true, this);
+	Slot = FSEFileHelpers::LoadFileSync(NameStr, nullptr, true, this);
 	return Slot;
 }
 
@@ -510,7 +530,9 @@ void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
 
 void USaveManager::FinishTask(FSEDataTask* Task)
 {
-	Tasks.RemoveAll([Task](auto& TaskPtr) { return TaskPtr.Get() == Task; });
+	Tasks.RemoveAll([Task](auto& TaskPtr) {
+		return TaskPtr.Get() == Task;
+	});
 
 	// Start next task
 	if (Tasks.Num() > 0)
@@ -647,4 +669,65 @@ UWorld* USaveManager::GetWorld() const
 		return nullptr;
 
 	return GetGameInstance()->GetWorld();
+}
+
+inline void USaveManager::BPSaveSlot(const USaveSlot* Slot, bool bScreenshot, const FScreenshotSize Size,
+	ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded)
+{
+	if (!Slot)
+	{
+		Result = ESEContinueOrFail::Failed;
+		return;
+	}
+	BPSaveSlotByName(Slot->Name, bScreenshot, Size, Result, MoveTemp(LatentInfo), bOverrideIfNeeded);
+}
+
+void USaveManager::BPLoadSlot(const USaveSlot* Slot, ESEContinueOrFail& Result, FLatentActionInfo LatentInfo)
+{
+	if (!Slot)
+	{
+		Result = ESEContinueOrFail::Failed;
+		return;
+	}
+	BPLoadSlotByName(Slot->Name, Result, MoveTemp(LatentInfo));
+}
+
+void USaveManager::IterateSubscribedInterfaces(TFunction<void(UObject*)>&& Callback)
+{
+	for (const TScriptInterface<ISaveExtensionInterface>& Interface : SubscribedInterfaces)
+	{
+		if (UObject* const Object = Interface.GetObject())
+		{
+			Callback(Object);
+		}
+	}
+}
+
+USaveManager* USaveManager::Get(const UWorld* World)
+{
+	if (World)
+	{
+		return UGameInstance::GetSubsystem<USaveManager>(World->GetGameInstance());
+	}
+	return nullptr;
+}
+USaveManager* USaveManager::Get(const UObject* Context)
+{
+	return USaveManager::Get(
+		GEngine->GetWorldFromContextObject(Context, EGetWorldErrorMode::LogAndReturnNull));
+}
+
+bool USaveManager::IsTickable() const
+{
+	return !HasAnyFlags(RF_ClassDefaultObject) && IsValid(this);
+}
+
+UWorld* USaveManager::GetTickableGameObjectWorld() const
+{
+	return bTickWithGameWorld ? GetWorld() : nullptr;
+}
+
+TStatId USaveManager::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(USaveManager, STATGROUP_Tickables);
 }

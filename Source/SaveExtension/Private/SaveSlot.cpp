@@ -4,12 +4,14 @@
 
 #include "SEFileHelpers.h"
 
+#include <Components/Viewport.h>
 #include <Engine/Engine.h>
 #include <Engine/GameViewportClient.h>
 #include <Engine/Texture2D.h>
 #include <HighResScreenshot.h>
 #include <ImageUtils.h>
 #include <Misc/FileHelper.h>
+#include <TextureResource.h>
 
 
 void USaveSlot::PostInitProperties()

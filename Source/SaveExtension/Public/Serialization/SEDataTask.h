@@ -27,21 +27,18 @@ enum class ESETaskType : uint8
 struct FSEDataTask
 {
 	ESETaskType Type = ESETaskType::None;
+
 private:
 	bool bRunning = false;
 	bool bFinished = false;
 	bool bSucceeded = false;
 
 protected:
-
 	TObjectPtr<USaveManager> Manager;
 
 
 public:
-	FSEDataTask(USaveManager* Manager, ESETaskType Type)
-		: Type(Type)
-		, Manager(Manager)
-	{}
+	FSEDataTask(USaveManager* Manager, ESETaskType Type) : Type(Type), Manager(Manager) {}
 	virtual ~FSEDataTask() = default;
 
 	FSEDataTask& Start();
@@ -89,29 +86,4 @@ protected:
 
 public:
 	static FString GetWorldName(const UWorld* World);
-};
-
-
-/////////////////////////////////////////////////////
-// FSlotDataActorsTask
-// Async task to serialize actors from a level.
-class FSlotDataActorsTask : public FNonAbandonableTask
-{
-protected:
-	const bool bIsSync;
-	/** USE ONLY IF SYNC */
-	const UWorld* const World;
-	/** USE ONLY IF SYNC */
-	USaveSlotData* SlotData;
-
-	const FSELevelFilter& Filter;
-
-
-	FSlotDataActorsTask(
-		const bool bInIsSync, const UWorld* InWorld, USaveSlotData* InSlotData, const FSELevelFilter& Filter)
-		: bIsSync(bInIsSync)
-		, World(InWorld)
-		, SlotData(InSlotData)
-		, Filter(Filter)
-	{}
 };

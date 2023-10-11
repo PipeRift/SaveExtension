@@ -8,6 +8,7 @@
 #include <CoreMinimal.h>
 #include <GameFramework/Actor.h>
 #include <GameFramework/SaveGame.h>
+#include <Subsystems/Subsystem.h>
 
 #include "SaveSlot.generated.h"
 
