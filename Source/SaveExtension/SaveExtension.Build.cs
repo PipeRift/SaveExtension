@@ -17,13 +17,12 @@ namespace UnrealBuildTool.Rules
 			{
 				"Core",
 				"Engine",
-				"Foliage",
 				"AIModule",
 				"CoreUObject",
-				"DeveloperSettings",
-				"ImageWrapper",
-				"NavigationSystem"
+				"DeveloperSettings"
 			});
+
+			PrivateDependencyModuleNames.AddRange(new string[] { });
 
 			if (Target.Type == TargetType.Editor)
 			{

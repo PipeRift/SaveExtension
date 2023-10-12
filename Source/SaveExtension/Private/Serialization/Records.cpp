@@ -2,15 +2,15 @@
 
 #include "Serialization/Records.h"
 
-#include "SaveExtension.h"
 #include "ClassFilter.h"
+#include "SaveExtension.h"
 #include "SaveSlotData.h"
 #include "Serialization/SEArchive.h"
 
-#include <GameFramework/PlayerState.h>
-#include <GameFramework/PlayerController.h>
+#include <Components/PrimitiveComponent.h>
 #include <GameFramework/Pawn.h>
-
+#include <GameFramework/PlayerController.h>
+#include <GameFramework/PlayerState.h>
 
 
 /////////////////////////////////////////////////////
@@ -85,12 +85,22 @@ bool FActorRecord::Serialize(FArchive& Ar)
 }
 
 
+FSubsystemRecord::FSubsystemRecord(const USubsystem* Subsystem) : Super(Subsystem) {}
+
+
+bool FPlayerRecord::operator==(const FPlayerRecord& Other) const
+{
+	return UniqueId == Other.UniqueId;
+}
+
+
 const FName SERecords::TagNoTransform{"!SaveTransform"};
 const FName SERecords::TagNoPhysics{"!SavePhysics"};
 const FName SERecords::TagNoTags{"!SaveTags"};
 
 
-void SERecords::SerializeActor(const AActor* Actor, FActorRecord& Record, const FSEClassFilter& ComponentFilter)
+void SERecords::SerializeActor(
+	const AActor* Actor, FActorRecord& Record, const FSEClassFilter& ComponentFilter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor);
 
@@ -174,14 +184,14 @@ void SERecords::SerializeActor(const AActor* Actor, FActorRecord& Record, const 
 	const_cast<AActor*>(Actor)->Serialize(Archive);
 }
 
-bool SERecords::DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSEClassFilter& ComponentFilter)
+bool SERecords::DeserializeActor(
+	AActor* Actor, const FActorRecord& Record, const FSEClassFilter& ComponentFilter)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeActor);
 
 	if (Actor->GetClass() != Record.Class)
 	{
-		UE_LOG(
-			LogSaveExtension, Log, TEXT("Actor '{}' exists but class doesn't match"), Record.Name);
+		UE_LOG(LogSaveExtension, Log, TEXT("Actor '{}' exists but class doesn't match"), Record.Name);
 		return false;
 	}
 
@@ -252,7 +262,8 @@ bool SERecords::DeserializeActor(AActor* Actor, const FActorRecord& Record, cons
 	return true;
 }
 
-void SERecords::SerializePlayer(const APlayerState* PlayerState, FPlayerRecord& Record, const FSEClassFilter& ComponentFilter)
+void SERecords::SerializePlayer(
+	const APlayerState* PlayerState, FPlayerRecord& Record, const FSEClassFilter& ComponentFilter)
 {
 	check(PlayerState);
 
@@ -271,7 +282,8 @@ void SERecords::SerializePlayer(const APlayerState* PlayerState, FPlayerRecord& 
 	}
 }
 
-void SERecords::DeserializePlayer(APlayerState* PlayerState, const FPlayerRecord& Record, const FSEClassFilter& ComponentFilter)
+void SERecords::DeserializePlayer(
+	APlayerState* PlayerState, const FPlayerRecord& Record, const FSEClassFilter& ComponentFilter)
 {
 	check(PlayerState);
 	check(PlayerState->GetUniqueId() == Record.UniqueId);

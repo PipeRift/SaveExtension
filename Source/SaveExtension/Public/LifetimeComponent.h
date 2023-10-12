@@ -11,7 +11,6 @@
 #include "LifetimeComponent.generated.h"
 
 
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeStartSignature);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLifetimeSavedSignature);
@@ -44,12 +43,6 @@ public:
 
 	// Event called when Load process ends
 	virtual void OnLoadFinished(const FSELevelFilter& Filter, bool bError);
-
-
-	USaveManager* GetManager() const
-	{
-		return USaveManager::Get(GetWorld());
-	}
 
 
 	/***********************************************************************/

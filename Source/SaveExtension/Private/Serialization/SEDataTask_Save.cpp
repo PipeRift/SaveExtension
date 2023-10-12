@@ -2,15 +2,15 @@
 
 #include "Serialization/SEDataTask_Save.h"
 
+#include "SEFileHelpers.h"
 #include "SaveExtension.h"
 #include "SaveManager.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
-#include "SEFileHelpers.h"
 #include "Serialization/Records.h"
 #include "Serialization/SEArchive.h"
-#include "SEFileHelpers.h"
 
+#include <Async/ParallelFor.h>
 #include <GameFramework/GameModeBase.h>
 #include <Serialization/MemoryWriter.h>
 #include <Tasks/Task.h>
@@ -81,7 +81,8 @@ void FSEDataTask_Save::OnStart()
 		bWaitingThumbnail = true;
 		Slot->CaptureThumbnail(FSEOnThumbnailCaptured::CreateLambda([this](bool bSuccess) {
 			bWaitingThumbnail = false;
-		}), Width, Height);
+		}),
+			Width, Height);
 	}
 
 	// Time stats
@@ -114,7 +115,7 @@ void FSEDataTask_Save::OnStart()
 
 	SerializeWorld();
 
-	if (!bWaitingThumbnail) // Tick will check if thumbnail is not ready
+	if (!bWaitingThumbnail)	   // Tick will check if thumbnail is not ready
 	{
 		SaveFile();
 	}
@@ -171,7 +172,7 @@ void FSEDataTask_Save::SerializeWorld()
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 	PrepareAllLevels(Levels);
 
-	{ // Serialization
+	{	 // Serialization
 		UGameInstance* GameInstance = World->GetGameInstance();
 		if (GameInstance && Slot->bStoreGameInstance)
 		{
@@ -183,7 +184,8 @@ void FSEDataTask_Save::SerializeWorld()
 			SlotData->GameInstance = MoveTemp(Record);
 
 			SlotData->GameInstanceSubsystems.Reset();
-			for(UGameInstanceSubsystem* Subsystem : GameInstance->GetSubsystemArray<UGameInstanceSubsystem>())
+			for (UGameInstanceSubsystem* Subsystem :
+				GameInstance->GetSubsystemArray<UGameInstanceSubsystem>())
 			{
 				if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
 				{
@@ -196,7 +198,7 @@ void FSEDataTask_Save::SerializeWorld()
 		}
 
 		SlotData->WorldSubsystems.Reset();
-		for(UWorldSubsystem* Subsystem : World->GetSubsystemArray<UWorldSubsystem>())
+		for (UWorldSubsystem* Subsystem : World->GetSubsystemArray<UWorldSubsystem>())
 		{
 			if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
 			{
@@ -240,8 +242,7 @@ void FSEDataTask_Save::PrepareLevel(const ULevel* Level, FLevelRecord& LevelReco
 	LevelRecord.Filter.BakeAllowedClasses();
 }
 
-void FSEDataTask_Save::SerializeLevel(
-	const ULevel* Level, const ULevelStreaming* StreamingLevel)
+void FSEDataTask_Save::SerializeLevel(const ULevel* Level, const ULevelStreaming* StreamingLevel)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::SerializeLevel);
 	check(IsValid(Level));
@@ -251,10 +252,10 @@ void FSEDataTask_Save::SerializeLevel(
 	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	// Find level record. By default, main level
-	auto& LevelRecord = StreamingLevel? *FindLevelRecord(*SlotData, StreamingLevel) : SlotData->RootLevel;
+	auto& LevelRecord = StreamingLevel ? *FindLevelRecord(*SlotData, StreamingLevel) : SlotData->RootLevel;
 	const FSELevelFilter& Filter = LevelRecord.Filter;
 
-	LevelRecord.CleanRecords(); // Empty level record before serializing it
+	LevelRecord.CleanRecords();	   // Empty level record before serializing it
 
 	TArray<const AActor*> ActorsToSerialize;
 	for (AActor* Actor : Level->Actors)
@@ -266,16 +267,19 @@ void FSEDataTask_Save::SerializeLevel(
 	}
 	LevelRecord.Actors.SetNum(ActorsToSerialize.Num());
 
-	ParallelFor(ActorsToSerialize.Num(), [&LevelRecord, &ActorsToSerialize, &Filter](int32 i)
-	{
-		SERecords::SerializeActor(ActorsToSerialize[i], LevelRecord.Actors[i], Filter.ComponentFilter);
-	}, Slot->ShouldSerializeAsync()? EParallelForFlags::None : EParallelForFlags::ForceSingleThread);
+	ParallelFor(
+		ActorsToSerialize.Num(),
+		[&LevelRecord, &ActorsToSerialize, &Filter](int32 i) {
+			SERecords::SerializeActor(ActorsToSerialize[i], LevelRecord.Actors[i], Filter.ComponentFilter);
+		},
+		Slot->ShouldSerializeAsync() ? EParallelForFlags::None : EParallelForFlags::ForceSingleThread);
 }
 
 void FSEDataTask_Save::SaveFile()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::SaveFile);
-	SaveFileTask = FSEFileHelpers::SaveFile(Manager->GetActiveSlot(), SlotName.ToString(), Slot->bUseCompression);
+	SaveFileTask =
+		FSEFileHelpers::SaveFile(Manager->GetActiveSlot(), SlotName.ToString(), Slot->bUseCompression);
 
 	if (!Slot->ShouldSaveFileAsync())
 	{

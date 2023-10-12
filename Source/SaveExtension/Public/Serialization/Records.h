@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CoreMinimal.h>
+#include <GameFramework/OnlineReplStructs.h>
 
 #include "Records.generated.h"
 
@@ -10,6 +10,7 @@
 struct FSEClassFilter;
 class USaveSlotData;
 class APlayerState;
+class USubsystem;
 
 
 USTRUCT()
@@ -119,7 +120,7 @@ struct FSubsystemRecord : public FObjectRecord
 	GENERATED_BODY()
 
 	FSubsystemRecord() : Super() {}
-	FSubsystemRecord(const USubsystem* Subsystem) : Super(Subsystem) {}
+	FSubsystemRecord(const USubsystem* Subsystem);
 };
 
 USTRUCT(BlueprintType)
@@ -134,10 +135,9 @@ struct FPlayerRecord
 	FActorRecord Pawn;
 
 
-	bool operator==(const FPlayerRecord& Other) const
-	{
-		return UniqueId == Other.UniqueId;
-	}
+	FPlayerRecord() = default;
+	FPlayerRecord(const FUniqueNetIdRepl& UniqueId) : UniqueId(UniqueId) {}
+	bool operator==(const FPlayerRecord& Other) const;
 };
 
 
@@ -150,8 +150,10 @@ namespace SERecords
 
 	void SerializeActor(const AActor* Actor, FActorRecord& Record, const FSEClassFilter& ComponentFilter);
 	bool DeserializeActor(AActor* Actor, const FActorRecord& Record, const FSEClassFilter& ComponentFilter);
-	void SerializePlayer(const APlayerState* PlayerState, FPlayerRecord& Record, const FSEClassFilter& ComponentFilter);
-	void DeserializePlayer(APlayerState* PlayerState, const FPlayerRecord& Record, const FSEClassFilter& ComponentFilter);
+	void SerializePlayer(
+		const APlayerState* PlayerState, FPlayerRecord& Record, const FSEClassFilter& ComponentFilter);
+	void DeserializePlayer(
+		APlayerState* PlayerState, const FPlayerRecord& Record, const FSEClassFilter& ComponentFilter);
 
 	bool IsSaveTag(const FName& Tag);
 	bool StoresTransform(const AActor* Actor);
@@ -159,4 +161,4 @@ namespace SERecords
 	bool StoresTags(const AActor* Actor);
 	bool IsProcedural(const AActor* Actor);
 	bool StoresTags(const UActorComponent* Component);
-}
+}	 // namespace SERecords

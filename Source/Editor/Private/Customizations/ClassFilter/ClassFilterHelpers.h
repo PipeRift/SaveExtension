@@ -12,7 +12,6 @@
 #include <Dialogs/Dialogs.h>
 #include <EditorDirectories.h>
 #include <Engine/Blueprint.h>
-#include <Framework/Multibox/MultiBoxBuilder.h>
 #include <IContentBrowserSingleton.h>
 #include <Kismet2/KismetEditorUtilities.h>
 #include <Logging/MessageLog.h>

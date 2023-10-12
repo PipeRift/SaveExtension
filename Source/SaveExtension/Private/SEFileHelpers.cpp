@@ -3,25 +3,26 @@
 #include "SEFileHelpers.h"
 
 #include "SaveExtension.h"
-#include "Serialization/SEArchive.h"
+#include "SaveManager.h"
 #include "SaveSlot.h"
 #include "SaveSlotData.h"
-#include "SaveManager.h"
+#include "Serialization/SEArchive.h"
 
+#include <HAL/PlatformFile.h>
+#include <HAL/PlatformFileManager.h>
 #include <SaveGameSystem.h>
 #include <Serialization/ArchiveLoadCompressedProxy.h>
 #include <Serialization/ArchiveSaveCompressedProxy.h>
 #include <Serialization/MemoryReader.h>
 #include <Serialization/MemoryWriter.h>
+#include <Tasks/Pipe.h>
 #include <UObject/Package.h>
 #include <UObject/UObjectGlobals.h>
-#include <Tasks/Pipe.h>
-#include <HAL/PlatformFile.h>
 
 
 static const int SE_SAVEGAME_FILE_TYPE_TAG = 0x0001;	// "sAvG"
 
-UE::Tasks::FPipe BackendPipe{ TEXT("SaveExtensionPipe") };
+UE::Tasks::FPipe BackendPipe{TEXT("SaveExtensionPipe")};
 
 
 /** Used to find next available slot id */
@@ -255,7 +256,7 @@ bool FSEFileHelpers::SaveFileSync(USaveSlot* Slot, FStringView OverrideSlotName,
 		return false;
 	}
 
-	FString SlotName = OverrideSlotName.IsEmpty()? Slot->Name.ToString() : FString{OverrideSlotName};
+	FString SlotName = OverrideSlotName.IsEmpty() ? Slot->Name.ToString() : FString{OverrideSlotName};
 	FScopedFileWriter FileWriter(GetSlotPath(SlotName));
 	if (FileWriter.IsValid())
 	{
@@ -268,7 +269,8 @@ bool FSEFileHelpers::SaveFileSync(USaveSlot* Slot, FStringView OverrideSlotName,
 	return false;
 }
 
-UE::Tasks::TTask<bool> FSEFileHelpers::SaveFile(USaveSlot* Slot, FString OverrideSlotName, const bool bUseCompression)
+UE::Tasks::TTask<bool> FSEFileHelpers::SaveFile(
+	USaveSlot* Slot, FString OverrideSlotName, const bool bUseCompression)
 {
 	return BackendPipe.Launch(TEXT("SaveFile"), [Slot, OverrideSlotName, bUseCompression]() {
 		return SaveFileSync(Slot, OverrideSlotName, bUseCompression);
@@ -276,7 +278,8 @@ UE::Tasks::TTask<bool> FSEFileHelpers::SaveFile(USaveSlot* Slot, FString Overrid
 }
 
 
-USaveSlot* FSEFileHelpers::LoadFileSync(FStringView SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
+USaveSlot* FSEFileHelpers::LoadFileSync(
+	FStringView SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEFileHelpers::LoadFileSync);
 	if (SlotName.IsEmpty() && SlotHint)
@@ -298,18 +301,17 @@ USaveSlot* FSEFileHelpers::LoadFileSync(FStringView SlotName, USaveSlot* SlotHin
 		{
 			TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeData)
 			Slot->AssignData(Cast<USaveSlotData>(
-				DeserializeObject(Slot->GetData(), File.DataClassName, Slot, File.DataBytes))
-			);
+				DeserializeObject(Slot->GetData(), File.DataClassName, Slot, File.DataBytes)));
 		}
 		return Slot;
 	}
 	return nullptr;
 }
 
-UE::Tasks::TTask<USaveSlot*> FSEFileHelpers::LoadFile(FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
+UE::Tasks::TTask<USaveSlot*> FSEFileHelpers::LoadFile(
+	FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
 {
-	return BackendPipe.Launch(TEXT("LoadFile"), [SlotName, SlotHint, bLoadData, Manager]()
-	{
+	return BackendPipe.Launch(TEXT("LoadFile"), [SlotName, SlotHint, bLoadData, Manager]() {
 		USaveSlot* Slot = LoadFileSync(SlotName, SlotHint, bLoadData, Manager);
 		// In case we create the slot from async loading thread
 		if (Slot)
@@ -348,11 +350,11 @@ FString FSEFileHelpers::GetSlotPath(FStringView SlotName)
 void FSEFileHelpers::FindAllFilesSync(TArray<FString>& FoundSlots)
 {
 	FSEFindSlotVisitor Visitor{FoundSlots};
-	FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(
-		*FSEFileHelpers::GetSaveFolder(), Visitor);
+	FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(*FSEFileHelpers::GetSaveFolder(), Visitor);
 }
 
-UObject* FSEFileHelpers::DeserializeObject(UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
+UObject* FSEFileHelpers::DeserializeObject(
+	UObject* Hint, FStringView ClassName, const UObject* Outer, const TArray<uint8>& Bytes)
 {
 	UObject* Object = Hint;
 

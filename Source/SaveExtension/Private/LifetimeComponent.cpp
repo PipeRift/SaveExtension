@@ -1,6 +1,7 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "LifetimeComponent.h"
+
 #include "SaveExtension.h"
 
 
@@ -10,7 +11,7 @@ void ULifetimeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (USaveManager* Manager = GetManager())
+	if (USaveManager* Manager = USaveManager::Get(this))
 	{
 		Manager->SubscribeForEvents(this);
 
@@ -30,7 +31,7 @@ void ULifetimeComponent::BeginPlay()
 
 void ULifetimeComponent::EndPlay(EEndPlayReason::Type Reason)
 {
-	if (USaveManager* Manager = GetManager())
+	if (USaveManager* Manager = USaveManager::Get(this))
 	{
 		// If manager is loading, it has probably manually destroyed
 		// this actor and its not a natural destroy
