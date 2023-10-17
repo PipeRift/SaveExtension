@@ -21,6 +21,7 @@
 
 FSEDataTask_Save::FSEDataTask_Save(USaveManager* Manager, USaveSlot* Slot)
 	: FSEDataTask(Manager, ESETaskType::Save)
+	, Slot(Slot)
 	, SlotData(Slot->AssureData())
 {}
 
