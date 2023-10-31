@@ -628,7 +628,8 @@ void USaveManager::OnLoadFinished(const bool bError)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadFinished);
 
-	/*IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
+	FSELevelFilter Filter;
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -637,7 +638,7 @@ void USaveManager::OnLoadFinished(const bool bError)
 			Interface->OnLoadFinished(Filter, bError);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnLoadFinished(Object, Filter, bError);
-	});*/
+	});
 
 	if (!bError)
 	{
