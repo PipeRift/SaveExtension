@@ -47,7 +47,7 @@ FPlayerRecord* USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId)
 	return nullptr;
 }
 
-bool USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, UPARAM(Ref) FPlayerRecord& Record)
+bool USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, FPlayerRecord& Record)
 {
 	if (FPlayerRecord* FoundRecord = FindPlayerRecord(UniqueId))
 	{

@@ -574,7 +574,8 @@ void USaveManager::OnSaveBegan()
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveBegan);
 
 	// TODO: Needs reworking
-	/*IterateSubscribedInterfaces([&Filter](auto* Object) {
+	FSELevelFilter Filter;
+	IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -583,7 +584,7 @@ void USaveManager::OnSaveBegan()
 			Interface->OnSaveBegan(Filter);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnSaveBegan(Object, Filter);
-	});*/
+	});
 }
 
 void USaveManager::OnSaveFinished(const bool bError)
@@ -591,7 +592,8 @@ void USaveManager::OnSaveFinished(const bool bError)
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnSaveFinished);
 
 	// TODO: Needs reworking
-	/*IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
+	FSELevelFilter Filter;
+	IterateSubscribedInterfaces([&Filter, bError](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -600,7 +602,7 @@ void USaveManager::OnSaveFinished(const bool bError)
 			Interface->OnSaveFinished(Filter, bError);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnSaveFinished(Object, Filter, bError);
-	});*/
+	});
 
 	if (!bError)
 	{
@@ -611,8 +613,9 @@ void USaveManager::OnSaveFinished(const bool bError)
 void USaveManager::OnLoadBegan()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadBegan);
-
-	/*IterateSubscribedInterfaces([&Filter](auto* Object) {
+	
+	FSELevelFilter Filter;
+	IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
 
 		// C++ event
@@ -621,7 +624,7 @@ void USaveManager::OnLoadBegan()
 			Interface->OnLoadBegan(Filter);
 		}
 		ISaveExtensionInterface::Execute_ReceiveOnLoadBegan(Object, Filter);
-	});*/
+	});
 }
 
 void USaveManager::OnLoadFinished(const bool bError)
