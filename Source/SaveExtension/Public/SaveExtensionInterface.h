@@ -1,11 +1,13 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #pragma once
 
+#include "LevelFilter.h"
+
 #include <UObject/Interface.h>
 
-#include "LevelFilter.h"
 #include "SaveExtensionInterface.generated.h"
+
 
 
 UINTERFACE(Category = SaveExtension, BlueprintType)
@@ -16,11 +18,9 @@ class SAVEEXTENSION_API USaveExtensionInterface : public UInterface
 
 class SAVEEXTENSION_API ISaveExtensionInterface
 {
-
 	GENERATED_BODY()
 
 public:
-
 	/** BP API **/
 
 	// Event called when Save process starts

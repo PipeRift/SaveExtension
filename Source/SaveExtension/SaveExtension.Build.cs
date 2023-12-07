@@ -3,27 +3,35 @@
 using UnrealBuildTool;
 using System.IO;
 
-namespace UnrealBuildTool.Rules {
-
-public class SaveExtension : ModuleRules
+namespace UnrealBuildTool.Rules
 {
-	public SaveExtension(ReadOnlyTargetRules Target) : base(Target)
-	{
-		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-		bEnforceIWYU = true;
 
-		PublicDependencyModuleNames.AddRange(new string[]
+	public class SaveExtension : ModuleRules
+	{
+		public SaveExtension(ReadOnlyTargetRules Target) : base(Target)
 		{
-			"Core",
-			"Engine",
-			"Foliage",
-			"AIModule",
-			"CoreUObject",
-			"DeveloperSettings",
-			"ImageWrapper",
-			"NavigationSystem"
-		});
+			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+			IWYUSupport = IWYUSupport.Full;
+
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"Core",
+				"Engine",
+				"AIModule",
+				"CoreUObject",
+				"DeveloperSettings"
+			});
+
+			PrivateDependencyModuleNames.AddRange(new string[] { });
+
+			if (Target.Type == TargetType.Editor)
+			{
+				PrivateDependencyModuleNames.AddRange(new string[]
+				{
+					"UnrealEd"
+				});
+			}
+		}
 	}
-}
 
 }

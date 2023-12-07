@@ -1,7 +1,9 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Serialization/SEArchive.h"
+
 #include <UObject/NoExportTypes.h>
+
 
 
 /////////////////////////////////////////////////////
@@ -45,7 +47,7 @@ FArchive& FSEArchive::operator<<(UObject*& Obj)
 		if (Obj)
 		{
 			// Serialize the fully qualified object name
-			FString SavedString{ Obj->GetPathName() };
+			FString SavedString{Obj->GetPathName()};
 			InnerArchive << SavedString;
 
 			/*bool bIsLocallyOwned = IsObjectOwned(Obj);
@@ -57,7 +59,7 @@ FArchive& FSEArchive::operator<<(UObject*& Obj)
 		}
 		else
 		{
-			FString SavedString{ "" };
+			FString SavedString{""};
 			InnerArchive << SavedString;
 
 			/*bool bIsLocallyOwned = false;

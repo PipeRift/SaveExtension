@@ -5,12 +5,14 @@ using System.IO;
 
 namespace UnrealBuildTool.Rules
 {
-	public class SaveExtensionEditor : ModuleRules {
-		public SaveExtensionEditor(ReadOnlyTargetRules Target) : base(Target) {
+	public class SaveExtensionEditor : ModuleRules
+	{
+		public SaveExtensionEditor(ReadOnlyTargetRules Target) : base(Target)
+		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-			bEnforceIWYU = true;
+			IWYUSupport = IWYUSupport.Full;
 
-			PublicDependencyModuleNames.AddRange( new string[]
+			PublicDependencyModuleNames.AddRange(new string[]
 			{
 				"Core",
 				"Engine",
@@ -19,7 +21,7 @@ namespace UnrealBuildTool.Rules
 				"SaveExtension"
 			});
 
-			PrivateDependencyModuleNames.AddRange( new string[]
+			PrivateDependencyModuleNames.AddRange(new string[]
 			{
 				"AssetTools",
 				"Projects",
@@ -30,7 +32,8 @@ namespace UnrealBuildTool.Rules
 				"EditorStyle",
 				"ClassViewer",
 				"BlueprintGraph",
-				"GraphEditor"
+				"GraphEditor",
+				"PropertyEditor"
 			});
 		}
 	}
