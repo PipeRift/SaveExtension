@@ -57,6 +57,7 @@ bool FMTTask_SerializeActors::SerializeActor(const AActor* Actor, FActorRecord& 
 
 	Record.bHiddenInGame = Actor->IsHidden();
 	Record.bIsProcedural = Filter.IsProcedural(Actor);
+	Record.ClassName = Actor->GetClass()->GetPathName();
 
 	if (Filter.StoresTags(Actor))
 	{

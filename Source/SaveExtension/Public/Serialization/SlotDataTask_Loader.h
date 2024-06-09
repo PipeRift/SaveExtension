@@ -120,6 +120,8 @@ protected:
 	void FindNextAsyncLevel(ULevelStreaming*& OutLevelStreaming) const;
 
 private:
+	// Returns a class with the given name
+	UClass* GetClassFromName(const FString& ClassName) const;
 
 	/** Deserializes Game Instance Object and its Properties.
 	Requires 'SaveGameMode' flag to be used. */

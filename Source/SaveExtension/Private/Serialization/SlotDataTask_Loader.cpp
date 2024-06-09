@@ -8,6 +8,7 @@
 #include <Components/PrimitiveComponent.h>
 #include <UObject/UObjectGlobals.h>
 
+#include "TimerManager.h"
 #include "Misc/SlotHelpers.h"
 #include "SavePreset.h"
 #include "SaveManager.h"
@@ -414,8 +415,20 @@ void USlotDataTask_Loader::PrepareLevel(const ULevel* Level, FLevelRecord& Level
 		ActorsToSpawn.Shrink();
 	}
 
-	// Create Actors that doesn't exist now but were saved
-	RespawnActors(ActorsToSpawn, Level);
+	UWorld* const World = GetWorld();
+	CollectGarbage(RF_NoFlags);
+	FTimerHandle DummyHandle;
+	// Collect garbage to avoid spawning issues
+	World->GetTimerManager().SetTimer(
+		DummyHandle,
+		[this, ActorsToSpawn, Level]
+		{
+			// Create Actors that doesn't exist now but were saved
+			this->RespawnActors(ActorsToSpawn, Level);
+		},
+		0.01f,
+		false
+	);
 }
 
 void USlotDataTask_Loader::FinishedDeserializing()
@@ -452,6 +465,19 @@ void USlotDataTask_Loader::PrepareAllLevels()
 	}
 }
 
+// Function to find and return a UClass* from a class name string
+UClass* USlotDataTask_Loader::GetClassFromName(const FString& ClassName) const
+{
+	if (ClassName.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ClassName is empty."));
+		return nullptr;
+	}
+
+	UClass* FoundClass = StaticLoadClass(UObject::StaticClass(), nullptr, *ClassName);
+	return FoundClass;
+}
+
 void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord*>& Records, const ULevel* Level)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USlotDataTask_Loader::RespawnActors);
@@ -466,8 +492,20 @@ void USlotDataTask_Loader::RespawnActors(const TArray<FActorRecord*>& Records, c
 	for (auto* Record : Records)
 	{
 		SpawnInfo.Name = Record->Name;
-		auto* NewActor = World->SpawnActor(Record->Class, &Record->Transform, SpawnInfo);
 
+		UClass* RecordClass = Record->Class->IsValidLowLevel() ? Record->Class : GetClassFromName(Record->ClassName);
+		if (RecordClass == nullptr || !RecordClass->IsValidLowLevel())
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to respawn actor."))
+			continue;
+		}
+
+		auto* NewActor = World->SpawnActor(RecordClass, &Record->Transform, SpawnInfo);
+		if (NewActor == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to respawn actor."))
+			continue;
+		}
 		// We update the name on the record in case it changed
 		Record->Name = NewActor->GetFName();
 	}

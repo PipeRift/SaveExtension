@@ -20,6 +20,7 @@ FObjectRecord::FObjectRecord(const UObject* Object) : Super()
 	{
 		Name = Object->GetFName();
 		Class = Object->GetClass();
+		ClassName = Object->GetClass()->GetFullName();
 	}
 }
 
@@ -32,6 +33,7 @@ bool FObjectRecord::Serialize(FArchive& Ar)
 	else if (Ar.IsLoading())
 		Class = nullptr;
 
+	Ar << ClassName;
 	if (Class)
 	{
 		Ar << Data;
