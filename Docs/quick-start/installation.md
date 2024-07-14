@@ -14,4 +14,4 @@ This are the general steps for installing the plugin into your project:
 ## From Marketplace
 
 Install from the launcher:
-[AVAILABLE HERE](https://www.unrealengine.com/marketplace/factions-extension)
+[AVAILABLE HERE](https://www.unrealengine.com/marketplace/save-extension)
