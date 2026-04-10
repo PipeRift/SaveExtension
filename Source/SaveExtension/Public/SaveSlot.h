@@ -160,7 +160,7 @@ public:
 
 public:
 	/** Slot where this SaveInfo and its saveData are saved */
-	UPROPERTY(BlueprintReadWrite, Category = SaveSlot)
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)
 	FName Name = TEXT("Default");
 
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = SaveSlot)

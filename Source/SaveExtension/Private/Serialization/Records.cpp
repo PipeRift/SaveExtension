@@ -4,6 +4,8 @@
 
 #include "ClassFilter.h"
 #include "SaveExtension.h"
+#include "SaveExtensionInterface.h"
+#include "SaveManager.h"
 #include "SaveSlotData.h"
 #include "Serialization/SEArchive.h"
 
@@ -22,14 +24,10 @@ bool FBaseRecord::Serialize(FArchive& Ar)
 	return true;
 }
 
-FObjectRecord::FObjectRecord(const UObject* Object) : Super()
+FObjectRecord::FObjectRecord(const UObject& Object) : Super()
 {
-	Class = nullptr;
-	if (Object)
-	{
-		Name = Object->GetFName();
-		Class = Object->GetClass();
-	}
+	Name = Object.GetFName();
+	Class = Object.GetClass();
 }
 
 bool FObjectRecord::Serialize(FArchive& Ar)
@@ -37,14 +35,25 @@ bool FObjectRecord::Serialize(FArchive& Ar)
 	Super::Serialize(Ar);
 
 	if (!Name.IsNone())
-		Ar << Class;
-	else if (Ar.IsLoading())
-		Class = nullptr;
-
-	if (Class)
 	{
+		TSoftClassPtr<> SoftClassPtr = Class.Get();
+		if (Ar.IsSaving())
+		{
+			Ar << SoftClassPtr;
+		}
+		else
+		{
+			Ar << SoftClassPtr;
+			Class = SoftClassPtr.LoadSynchronous();
+		}
 		Ar << Data;
 		Ar << Tags;
+	}
+	else if (Ar.IsLoading())
+	{
+		Class = nullptr;
+		Data.Empty();
+		Tags.Empty();
 	}
 	return true;
 }
@@ -57,6 +66,12 @@ bool FComponentRecord::Serialize(FArchive& Ar)
 		Ar << Transform;
 	}
 	return true;
+}
+
+FActorRecord::FActorRecord(const AActor& Actor) : Super(Actor)
+{
+	bHiddenInGame = Actor.IsHidden();
+	bIsProcedural = SERecords::IsProcedural(Actor);
 }
 
 bool FActorRecord::Serialize(FArchive& Ar)
@@ -85,8 +100,14 @@ bool FActorRecord::Serialize(FArchive& Ar)
 }
 
 
-FSubsystemRecord::FSubsystemRecord(const USubsystem* Subsystem) : Super(Subsystem) {}
-
+bool FPlayerRecord::Serialize(FArchive& Ar)
+{
+	Ar << UniqueId;
+	Ar << PlayerState;
+	Ar << Controller;
+	Ar << Pawn;
+	return true;
+}
 
 bool FPlayerRecord::operator==(const FPlayerRecord& Other) const
 {
@@ -104,10 +125,7 @@ void SERecords::SerializeActor(
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor);
 
-	Record = FActorRecord{Actor};
-
-	Record.bHiddenInGame = Actor->IsHidden();
-	Record.bIsProcedural = Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);
+	Record = FActorRecord{*Actor};
 
 	if (StoresTags(Actor))
 	{
@@ -152,7 +170,7 @@ void SERecords::SerializeActor(
 			TRACE_CPUPROFILER_EVENT_SCOPE(SerializeActor | Component);
 			if (IsValid(Component) && ComponentFilter.IsAllowed(Component->GetClass()))
 			{
-				FComponentRecord& ComponentRecord = Record.ComponentRecords.Add_GetRef({Component});
+				FComponentRecord& ComponentRecord = Record.ComponentRecords.Add_GetRef({*Component});
 				if (const auto* SceneComp = Cast<USceneComponent>(Component))
 				{
 					if (SceneComp->Mobility == EComponentMobility::Movable)
@@ -194,7 +212,7 @@ bool SERecords::DeserializeActor(
 		UE_LOG(LogSaveExtension, Log, TEXT("Actor '{}' exists but class doesn't match"), Record.Name);
 		return false;
 	}
-
+	
 	Actor->Tags = Record.Tags;
 
 	if (StoresTransform(Actor))
@@ -257,6 +275,7 @@ bool SERecords::DeserializeActor(
 
 	TRACE_CPUPROFILER_EVENT_SCOPE(DeserializeActor | Deserialize);
 	FMemoryReader MemoryReader(Record.Data, true);
+	MemoryReader.Seek(0);
 	FSEArchive Archive(MemoryReader, false);
 	Actor->Serialize(Archive);
 	return true;
@@ -270,7 +289,7 @@ void SERecords::SerializePlayer(
 	APlayerController* PC = PlayerState->GetPlayerController();
 	APawn* Pawn = PlayerState->GetPawn();
 
-	Record.UniqueId = PlayerState->GetUniqueId();
+	Record.UniqueId = PlayerState->GetUniqueId().ToString();
 	SERecords::SerializeActor(PlayerState, Record.PlayerState, ComponentFilter);
 	if (Pawn)
 	{
@@ -286,7 +305,7 @@ void SERecords::DeserializePlayer(
 	APlayerState* PlayerState, const FPlayerRecord& Record, const FSEClassFilter& ComponentFilter)
 {
 	check(PlayerState);
-	check(PlayerState->GetUniqueId() == Record.UniqueId);
+	check(PlayerState->GetUniqueId().ToString() == Record.UniqueId);
 
 	APlayerController* PC = PlayerState->GetPlayerController();
 	APawn* Pawn = PlayerState->GetPawn();
@@ -323,9 +342,9 @@ bool SERecords::StoresTags(const AActor* Actor)
 	return !Actor->ActorHasTag(TagNoTags);
 }
 
-bool SERecords::IsProcedural(const AActor* Actor)
+bool SERecords::IsProcedural(const AActor& Actor)
 {
-	return Actor->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);
+	return Actor.HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);
 }
 
 bool SERecords::StoresTags(const UActorComponent* Component)

@@ -43,8 +43,8 @@ struct FSEDataTask_Load : public FSEDataTask
 protected:
 	FName SlotName;
 
-	TObjectPtr<USaveSlot> Slot;
-	TObjectPtr<USaveSlotData> SlotData;
+	TWeakObjectPtr<USaveSlot> Slot;
+	TWeakObjectPtr<USaveSlotData> SlotData;
 	float MaxFrameMs = 0.f;
 	FSEClassFilter SubsystemFilter;
 

@@ -336,7 +336,7 @@ bool FSEFileHelpers::FileExists(FStringView SlotName)
 
 const FString& FSEFileHelpers::GetSaveFolder()
 {
-	static const FString Folder = FString::Printf(TEXT("%sSaveGames/"), *FPaths::ProjectSavedDir());
+	static const FString Folder = FPaths::Combine(FPaths::ProjectSavedDir(), "SaveGames");
 	return Folder;
 }
 
@@ -347,8 +347,19 @@ FString FSEFileHelpers::GetSlotPath(FStringView SlotName)
 
 void FSEFileHelpers::FindAllFilesSync(TArray<FString>& FoundSlots)
 {
-	FSEFindSlotVisitor Visitor{FoundSlots};
-	FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(*FSEFileHelpers::GetSaveFolder(), Visitor);
+	TArray<FString> Out;
+	FSEFindSlotVisitor Visitor{Out};
+	const FString SaveFolder = GetSlotPath(TEXT("SharedGameSettings"));
+	FString PathString = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*SaveFolder);
+	PathString.RemoveFromEnd("/SharedGameSettings.sav");
+
+	FPlatformFileManager::Get().GetPlatformFile().IterateDirectory(*PathString, Visitor);
+
+	FoundSlots.SetNum(Out.Num());
+	for (int32 i = 0; i < Out.Num(); ++i)
+	{
+		FoundSlots[i] = Out[i];
+	}
 }
 
 UObject* FSEFileHelpers::DeserializeObject(

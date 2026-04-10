@@ -16,6 +16,26 @@ void USaveSlotData::Serialize(FArchive& Ar)
 	Ar << GameInstance;
 	RootLevel.Serialize(Ar);
 	Ar << SubLevels;
+
+	uint8 NumPlayers = Players.Num();
+	Ar << NumPlayers;
+	if (Ar.IsSaving())
+	{
+		for (int32 i = 0; i < NumPlayers; ++i)
+		{
+			Players[i].Serialize(Ar);
+		}
+	}
+	if (Ar.IsLoading())
+	{
+		Players.Empty(NumPlayers);
+		for (int32 i = 0; i < NumPlayers; ++i)
+		{
+			FPlayerRecord PlayerRecord;
+			PlayerRecord.Serialize(Ar);
+			Players.Add(PlayerRecord);
+		}
+	}
 }
 
 void USaveSlotData::CleanRecords(bool bKeepSublevels)
@@ -32,13 +52,14 @@ void USaveSlotData::CleanRecords(bool bKeepSublevels)
 
 FPlayerRecord& USaveSlotData::FindOrAddPlayerRecord(const FUniqueNetIdRepl& UniqueId)
 {
-	return Players[Players.AddUnique(FPlayerRecord(UniqueId))];
+	return Players[Players.AddUnique(FPlayerRecord(UniqueId.ToString()))];
 }
 
 FPlayerRecord* USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId)
 {
-	const int32 Index = Players.IndexOfByPredicate([&UniqueId](const FPlayerRecord& Record) {
-		return Record.UniqueId == UniqueId;
+	const FString UniqueIdStr = UniqueId.ToString();
+	const int32 Index = Players.IndexOfByPredicate([&UniqueIdStr](const FPlayerRecord& Record) {
+		return Record.UniqueId == UniqueIdStr;
 	});
 	if (Index != INDEX_NONE)
 	{
@@ -59,7 +80,8 @@ bool USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, FPlayerRe
 
 bool USaveSlotData::RemovePlayerRecord(const FUniqueNetIdRepl& UniqueId)
 {
-	return Players.RemoveAll([&UniqueId](const FPlayerRecord& Record) {
-		return Record.UniqueId == UniqueId;
+	const FString UniqueIdStr = UniqueId.ToString();
+	return Players.RemoveAll([&UniqueIdStr](const FPlayerRecord& Record) {
+		return Record.UniqueId == UniqueIdStr;
 	}) > 0;
 }

@@ -82,6 +82,12 @@ private:
 	UPROPERTY()
 	TObjectPtr<USaveSlot> ActiveSlot;
 
+	UPROPERTY()
+	TObjectPtr<USaveSlot> AutoLoadSlot;
+
+	UPROPERTY()
+	TObjectPtr<USaveSlot> PreloadedSlot;
+
 	/** The game instance to which this save manager is owned. */
 	TWeakObjectPtr<UGameInstance> OwningGameInstance;
 
@@ -92,6 +98,10 @@ private:
 	TArray<TScriptInterface<ISaveExtensionInterface>> SubscribedInterfaces;
 
 	TArray<TUniquePtr<FSEDataTask>> Tasks;
+
+	// Used to store tasks that are finished. They'll be cleared on next tick
+	TArray<TUniquePtr<FSEDataTask>> FinishedTasks;
+
 
 
 	/************************************************************************/
@@ -278,6 +288,24 @@ public:
 		return ActiveSlot != nullptr;
 	}
 
+	UFUNCTION(BlueprintCallable)
+	void ResetSelectedSave();
+
+	UFUNCTION(BlueprintCallable)
+	void ContinueGame();
+
+	UFUNCTION(BlueprintCallable)
+	bool CanContinueGame(const APlayerState* PlayerState) const;
+
+	UFUNCTION(BlueprintPure)
+	bool HasActiveSaveForPlayer(const APlayerState* PlayerState) const;
+
+	UFUNCTION()
+	void HandlePlayerAdded(APlayerState* PlayerState);
+
+	UFUNCTION()
+	void HandlePawnAdded(APawn* OldPawn, APawn* NewPawn);
+
 	// Assigns a new active slot. If this slot is preloaded, empty data is assigned to it.
 	// This does not load the game!
 	void SetActiveSlot(USaveSlot* NewSlot);
@@ -353,6 +381,8 @@ public:
 	/** Unsubscribe to no longer receive save and load events on an Interface */
 	UFUNCTION(Category = SaveExtension, BlueprintCallable)
 	void UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface);
+
+	bool IsSubscribedToEvents(const UObject* InterfaceObject) const;
 
 	void OnSaveBegan();
 	void OnSaveFinished(const bool bError);

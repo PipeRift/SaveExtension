@@ -11,7 +11,8 @@
 #include "Serialization/SEArchive.h"
 
 #include <Components/PrimitiveComponent.h>
-#include <GameFramework/Character.h>
+#include <GameFramework/GameStateBase.h>
+#include <GameFramework/PlayerState.h>
 #include <Kismet/GameplayStatics.h>
 #include <Serialization/MemoryReader.h>
 #include <UObject/UObjectGlobals.h>
@@ -39,10 +40,10 @@ void FSEDataTask_Load::OnStart()
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::OnStart);
 
 	Slot = Manager->PreloadSlot(SlotName);
-	SELog(Slot, "Loading from Slot " + SlotName.ToString());
-	if (!Slot)
+	SELog(Slot.Get(), "Loading from Slot " + SlotName.ToString());
+	if (!Slot.IsValid())
 	{
-		SELog(Slot, "Slot Info not found! Can't load.", FColor::White, true, 1);
+		SELog(Slot.Get(), "Slot Info not found! Can't load.", FColor::White, true, 1);
 		Finish(false);
 		return;
 	}
@@ -71,7 +72,7 @@ void FSEDataTask_Load::OnStart()
 
 		UGameplayStatics::OpenLevel(Manager, FName{MapToOpen});
 
-		SELog(Slot,
+		SELog(Slot.Get(),
 			"Slot '" + SlotName.ToString() + "' is recorded on another Map. Loading before charging slot.",
 			FColor::White, false, 1);
 		return;
@@ -111,11 +112,11 @@ void FSEDataTask_Load::OnFinish(bool bSuccess)
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::OnFinish);
 	if (bSuccess)
 	{
-		SELog(Slot, "Finished Loading", FColor::Green);
+		SELog(Slot.Get(), "Finished Loading", FColor::Green);
 	}
 
 	// Execute delegates
-	Delegate.ExecuteIfBound((bSuccess) ? Slot : nullptr);
+	Delegate.ExecuteIfBound((bSuccess) ? Slot.Get() : nullptr);
 
 	Manager->OnLoadFinished(!bSuccess);
 }
@@ -150,11 +151,11 @@ void FSEDataTask_Load::OnMapLoaded()
 void FSEDataTask_Load::StartDeserialization()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::StartDeserialization);
-	check(Slot);
+	check(Slot.IsValid());
 
 	LoadState = ELoadDataTaskState::Deserializing;
 
-	if (!SlotData)
+	if (!SlotData.IsValid())
 	{
 		// Failed to load data
 		Finish(false);
@@ -164,7 +165,7 @@ void FSEDataTask_Load::StartDeserialization()
 	Slot->Stats.LoadDate = FDateTime::Now();
 
 	// Apply current Info if succeeded
-	Manager->SetActiveSlot(Slot);
+	Manager->SetActiveSlot(Slot.Get());
 
 	Manager->OnLoadBegan();
 
@@ -178,7 +179,7 @@ void FSEDataTask_Load::StartDeserialization()
 
 void FSEDataTask_Load::StartLoadingFile()
 {
-	LoadFileTask = FSEFileHelpers::LoadFile(SlotName.ToString(), Slot, true, Manager);
+	LoadFileTask = FSEFileHelpers::LoadFile(SlotName.ToString(), Slot.Get(), true, Manager);
 	if (!Slot->ShouldLoadFileAsync())
 	{
 		LoadFileTask.Wait();
@@ -255,13 +256,22 @@ void FSEDataTask_Load::DeserializeSync()
 	const UWorld* World = GetWorld();
 	check(World);
 
-	SELog(Slot, "World '" + World->GetName() + "'", FColor::Green, false, 1);
+	SELog(Slot.Get(), "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
 	PrepareAllLevels();
 
 	// Deserialize world
 	{
 		DeserializeLevelSync(World->GetCurrentLevel());
+
+		const FLevelRecord& LevelRecord = *FindLevelRecord(*SlotData, nullptr);
+		for (APlayerState* PlayerState : GetWorld()->GetGameState()->PlayerArray)
+		{
+			if (const FPlayerRecord* PlayerRecord = SlotData->FindPlayerRecord(PlayerState->GetUniqueId()))
+			{
+				SERecords::DeserializePlayer(PlayerState, *PlayerRecord, LevelRecord.Filter.ComponentFilter);
+			}
+		}
 
 		const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 		for (const ULevelStreaming* Level : Levels)
@@ -287,7 +297,7 @@ void FSEDataTask_Load::DeserializeLevelSync(const ULevel* Level, const ULevelStr
 
 	const FName LevelName =
 		StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Slot.Get(), "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	const FLevelRecord& LevelRecord = *FindLevelRecord(*SlotData, StreamingLevel);
 	for (const auto& RecordToActor : LevelRecord.RecordsToActors)
@@ -303,7 +313,7 @@ void FSEDataTask_Load::DeserializeASync()
 {
 	// Deserialize world
 	{
-		SELog(Slot, "World '" + GetWorld()->GetName() + "'", FColor::Green, false, 1);
+		SELog(Slot.Get(), "World '" + GetWorld()->GetName() + "'", FColor::Green, false, 1);
 
 		PrepareAllLevels();
 		DeserializeLevelASync(GetWorld()->GetCurrentLevel());
@@ -316,7 +326,7 @@ void FSEDataTask_Load::DeserializeLevelASync(ULevel* Level, ULevelStreaming* Str
 
 	const FName LevelName =
 		StreamingLevel ? StreamingLevel->GetWorldAssetPackageFName() : FPersistentLevelRecord::PersistentName;
-	SELog(Slot, "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
+	SELog(Slot.Get(), "Level '" + LevelName.ToString() + "'", FColor::Green, false, 1);
 
 	FLevelRecord* LevelRecord = FindLevelRecord(*SlotData, StreamingLevel);
 	if (!LevelRecord)
@@ -423,6 +433,16 @@ void FSEDataTask_Load::PrepareLevel(const ULevel* Level, FLevelRecord& LevelReco
 			}
 			else if (LevelRecord.Filter.Stores(Actor))
 			{
+				// Skips the actors loaded from the package that are supposed to be saved as part of another
+				// actor at this point, no actor that isn't loaded from the package exists on the level.
+				// Responsibility for destroying those actors that no longer exists falls to their outer actor
+				// as part of its load. It's easier to store traps that belong to a camp as part of the camp,
+				// then to restore all pointers post load
+				if (const auto* Interface = Cast<ISaveExtensionInterface>(Actor);
+					Interface && !Interface->ShouldSave(LevelRecord.Filter))
+				{
+					continue;
+				}
 				ActorsToDestroy.Add(Actor);
 			}
 			// TODO: Consider unmatching class actors to be respawned
@@ -432,6 +452,17 @@ void FSEDataTask_Load::PrepareLevel(const ULevel* Level, FLevelRecord& LevelReco
 	// The serializable actors that were not found will be destroyed
 	for (AActor* Actor : ActorsToDestroy)
 	{
+		if (Actor->IsA<APlayerController>() || Actor->IsA<APlayerState>())
+		{
+			continue;
+		}
+		else if (const APawn* Pawn = Cast<APawn>(Actor))
+		{
+			if (Pawn->IsPlayerControlled())
+			{
+				continue;
+			}
+		}
 		Actor->Destroy();
 	}
 
@@ -444,7 +475,7 @@ void FSEDataTask_Load::FinishedDeserializing()
 {
 	// Clean serialization data
 	SlotData->CleanRecords(true);
-	Slot->AssignData(SlotData);
+	Slot->AssignData(SlotData.Get());
 	Finish(true);
 }
 
@@ -487,6 +518,11 @@ void FSEDataTask_Load::RespawnActors(
 	// Respawn all procedural actors
 	for (auto* Record : Records)
 	{
+		if (!Record->Class)	   // Ensure class is valid or actor will be null
+		{
+			continue;
+		}
+
 		SpawnInfo.Name = Record->Name;
 		auto* NewActor = World->SpawnActor(Record->Class, &Record->Transform, SpawnInfo);
 

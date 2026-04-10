@@ -10,7 +10,7 @@
 
 void FSEDataTask_LoadLevel::OnStart()
 {
-	if (!SlotData || !StreamingLevel || !StreamingLevel->IsLevelLoaded())
+	if (!SlotData.IsValid() || !StreamingLevel || !StreamingLevel->IsLevelLoaded())
 	{
 		Finish(false);
 		return;

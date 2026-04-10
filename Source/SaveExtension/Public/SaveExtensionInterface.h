@@ -53,4 +53,6 @@ public:
 
 	// Event called when Load process ends
 	virtual void OnLoadFinished(const FSELevelFilter& Filter, bool bError) {}
+
+	virtual bool ShouldSave(const FSELevelFilter& Filter) const { return true; }
 };

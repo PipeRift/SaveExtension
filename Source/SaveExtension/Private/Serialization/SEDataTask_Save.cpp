@@ -12,6 +12,8 @@
 
 #include <Async/ParallelFor.h>
 #include <GameFramework/GameModeBase.h>
+#include <GameFramework/GameStateBase.h>
+#include <GameFramework/PlayerState.h>
 #include <Serialization/MemoryWriter.h>
 #include <Tasks/Task.h>
 
@@ -178,7 +180,7 @@ void FSEDataTask_Save::SerializeWorld()
 		if (GameInstance && Slot->bStoreGameInstance)
 		{
 			TRACE_CPUPROFILER_EVENT_SCOPE(SerializeGameInstance);
-			FObjectRecord Record{GameInstance};
+			FObjectRecord Record{*GameInstance};
 			FMemoryWriter MemoryWriter(Record.Data, true);
 			FSEArchive Archive(MemoryWriter, false);
 			GameInstance->Serialize(Archive);
@@ -190,7 +192,7 @@ void FSEDataTask_Save::SerializeWorld()
 			{
 				if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
 				{
-					auto& SubsystemRecord = SlotData->GameInstanceSubsystems.Add_GetRef({Subsystem});
+					auto& SubsystemRecord = SlotData->GameInstanceSubsystems.Add_GetRef({*Subsystem});
 					FMemoryWriter SubsystemMemoryWriter(SubsystemRecord.Data, true);
 					FSEArchive Ar(SubsystemMemoryWriter, false);
 					Subsystem->Serialize(Ar);
@@ -203,7 +205,7 @@ void FSEDataTask_Save::SerializeWorld()
 		{
 			if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
 			{
-				auto& SubsystemRecord = SlotData->WorldSubsystems.Add_GetRef({Subsystem});
+				auto& SubsystemRecord = SlotData->WorldSubsystems.Add_GetRef({*Subsystem});
 				FMemoryWriter SubsystemMemoryWriter(SubsystemRecord.Data, true);
 				FSEArchive Ar(SubsystemMemoryWriter, false);
 				Subsystem->Serialize(Ar);
@@ -258,16 +260,47 @@ void FSEDataTask_Save::SerializeLevel(const ULevel* Level, const ULevelStreaming
 
 	LevelRecord.CleanRecords();	   // Empty level record before serializing it
 
+	TArray<APlayerState*> PlayersToSerialize = Level->GetWorld()->GetGameState()->PlayerArray;
+	SlotData->Players.SetNum(PlayersToSerialize.Num());
+	if (Level && Level->IsPersistentLevel())
+	{
+		for (int32 i = 0; i < PlayersToSerialize.Num(); i++)
+		{
+			FSEClassFilter ComponentFilter = Filter.ComponentFilter;
+			ComponentFilter.BakeAllowedClasses();
+			FPlayerRecord OutRecord;
+			SERecords::SerializePlayer(PlayersToSerialize[i], SlotData->Players[i], ComponentFilter);
+		}
+	}
+
 	TArray<const AActor*> ActorsToSerialize;
 	for (AActor* Actor : Level->Actors)
 	{
+		// TODO: Bake this into filters
+		// Already serialized Players, Pawns and Controllers
+		if (Actor && (Actor->IsA<APlayerState>() || Actor->IsA<APlayerController>()))
+		{
+			continue;
+		}
+		else if (const APawn* Pawn = Cast<APawn>(Actor))
+		{
+			if (Pawn->IsPlayerControlled())
+			{
+				continue;
+			}
+		}
+		else if (const auto* Interface = Cast<ISaveExtensionInterface>(Actor);
+				 Interface && !Interface->ShouldSave(Filter))
+		{
+			continue;
+		}
+
 		if (Actor && Filter.Stores(Actor))
 		{
 			ActorsToSerialize.Add(Actor);
 		}
 	}
 	LevelRecord.Actors.SetNum(ActorsToSerialize.Num());
-
 	ParallelFor(
 		ActorsToSerialize.Num(),
 		[&LevelRecord, &ActorsToSerialize, &Filter](int32 i) {

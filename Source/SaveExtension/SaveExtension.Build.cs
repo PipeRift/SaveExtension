@@ -22,7 +22,10 @@ namespace UnrealBuildTool.Rules
 				"DeveloperSettings"
 			});
 
-			PrivateDependencyModuleNames.AddRange(new string[] { });
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"CoreOnline"
+			});
 
 			if (Target.Type == TargetType.Editor)
 			{

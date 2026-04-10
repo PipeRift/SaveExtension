@@ -17,6 +17,7 @@
 #include <EngineUtils.h>
 #include <GameDelegates.h>
 #include <GameFramework/GameModeBase.h>
+#include <GameFramework/PlayerState.h>
 #include <HighResScreenshot.h>
 #include <Kismet/GameplayStatics.h>
 #include <LatentActions.h>
@@ -188,6 +189,64 @@ public:
 
 // END Async Actions
 
+void USaveManager::ResetSelectedSave()
+{
+	AutoLoadSlot = nullptr;
+}
+
+void USaveManager::ContinueGame()
+{
+	AutoLoadSlot = ActiveSlot;
+	LoadSlot(AutoLoadSlot->Name);
+}
+
+bool USaveManager::CanContinueGame(const APlayerState* PlayerState) const
+{
+	return ActiveSlot != nullptr && ActiveSlot->GetData() != nullptr &&
+		   ActiveSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()) !=
+			   nullptr;	   // && level matches the play level
+}
+
+bool USaveManager::HasActiveSaveForPlayer(const APlayerState* PlayerState) const
+{
+	if (AutoLoadSlot)
+	{
+		return AutoLoadSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()) != nullptr;
+	}
+	return false;
+}
+
+void USaveManager::HandlePlayerAdded(APlayerState* PlayerState)
+{
+	if (PlayerState && AutoLoadSlot)
+	{
+		AutoLoadSlot->ComponentFilter.BakeAllowedClasses();
+		if (const FPlayerRecord* PlayerRecord =
+				AutoLoadSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()))
+		{
+			SERecords::DeserializePlayer(PlayerState, *PlayerRecord, AutoLoadSlot->ComponentFilter);
+		}
+	}
+	if (!PlayerState->GetPawn() && AutoLoadSlot)
+	{
+		APlayerController* PC = Cast<APlayerController>(PlayerState->GetOwner());
+		PC->OnPossessedPawnChanged.AddUniqueDynamic(this, &USaveManager::HandlePawnAdded);
+	}
+}
+
+void USaveManager::HandlePawnAdded(APawn* OldPawn, APawn* NewPawn)
+{
+	if (NewPawn && AutoLoadSlot)
+	{
+		if (const FPlayerRecord* PlayerRecord =
+				AutoLoadSlot->GetData()->FindPlayerRecord(NewPawn->GetPlayerState()->GetUniqueId()))
+		{
+			SERecords::DeserializeActor(NewPawn, PlayerRecord->Pawn, AutoLoadSlot->ComponentFilter);
+			APlayerController* PC = Cast<APlayerController>(NewPawn->GetController());
+			PC->OnPossessedPawnChanged.RemoveAll(this);
+		}
+	}
+}
 
 USaveManager::USaveManager() : Super() {}
 
@@ -200,6 +259,8 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &USaveManager::OnMapLoadStarted);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &USaveManager::OnMapLoadFinished);
 
+	// TODO: Allow loading on start the most recent slot
+	// PreloadAllSlotsSync(LoadedSlots, true);
 	AssureActiveSlot();
 	if (ActiveSlot && ActiveSlot->bLoadOnStart)
 	{
@@ -447,10 +508,10 @@ void USaveManager::BPDeleteAllSlots(ESEContinue& Result, struct FLatentActionInf
 
 USaveSlot* USaveManager::PreloadSlot(FName SlotName)
 {
-	USaveSlot* Slot = nullptr;
+	PreloadedSlot = nullptr;
 	const FString NameStr = SlotName.ToString();
-	Slot = FSEFileHelpers::LoadFileSync(NameStr, nullptr, true, this);
-	return Slot;
+	PreloadedSlot = FSEFileHelpers::LoadFileSync(NameStr, nullptr, true, this);
+	return PreloadedSlot;
 }
 
 bool USaveManager::IsSlotSaved(FName SlotName) const
@@ -530,9 +591,15 @@ void USaveManager::DeserializeStreamingLevel(ULevelStreaming* LevelStreaming)
 
 void USaveManager::FinishTask(FSEDataTask* Task)
 {
-	Tasks.RemoveAll([Task](auto& TaskPtr) {
-		return TaskPtr.Get() == Task;
-	});
+	for (int32 TaskIndex = 0; TaskIndex < Tasks.Num(); ++TaskIndex)
+	{
+		if (Tasks[TaskIndex].Get() == Task)
+		{
+			FinishedTasks.Add(TUniquePtr<FSEDataTask>(Tasks[TaskIndex].Release()));
+			Tasks.RemoveAt(TaskIndex);
+			break;
+		}
+	}
 
 	// Start next task
 	if (Tasks.Num() > 0)
@@ -548,6 +615,7 @@ bool USaveManager::IsLoading() const
 
 void USaveManager::Tick(float DeltaTime)
 {
+	FinishedTasks.Reset();
 	if (Tasks.Num())
 	{
 		FSEDataTask* Task = Tasks[0].Get();
@@ -567,6 +635,14 @@ void USaveManager::SubscribeForEvents(const TScriptInterface<ISaveExtensionInter
 void USaveManager::UnsubscribeFromEvents(const TScriptInterface<ISaveExtensionInterface>& Interface)
 {
 	SubscribedInterfaces.Remove(Interface);
+}
+
+bool USaveManager::IsSubscribedToEvents(const UObject* InterfaceObject) const
+{
+	return SubscribedInterfaces.ContainsByPredicate(
+		[InterfaceObject](const TScriptInterface<ISaveExtensionInterface>& TestedObject) {
+			return InterfaceObject && TestedObject.GetObject() == InterfaceObject;
+		});
 }
 
 void USaveManager::OnSaveBegan()
@@ -613,7 +689,7 @@ void USaveManager::OnSaveFinished(const bool bError)
 void USaveManager::OnLoadBegan()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(USaveManager::OnLoadBegan);
-	
+
 	FSELevelFilter Filter;
 	IterateSubscribedInterfaces([&Filter](auto* Object) {
 		check(Object->template Implements<USaveExtensionInterface>());
@@ -675,7 +751,7 @@ UWorld* USaveManager::GetWorld() const
 	return GetGameInstance()->GetWorld();
 }
 
-inline void USaveManager::BPSaveSlot(const USaveSlot* Slot, bool bScreenshot, const FScreenshotSize Size,
+void USaveManager::BPSaveSlot(const USaveSlot* Slot, bool bScreenshot, const FScreenshotSize Size,
 	ESEContinueOrFail& Result, struct FLatentActionInfo LatentInfo, bool bOverrideIfNeeded)
 {
 	if (!Slot)
@@ -698,9 +774,9 @@ void USaveManager::BPLoadSlot(const USaveSlot* Slot, ESEContinueOrFail& Result, 
 
 void USaveManager::IterateSubscribedInterfaces(TFunction<void(UObject*)>&& Callback)
 {
-	for (const TScriptInterface<ISaveExtensionInterface>& Interface : SubscribedInterfaces)
+	for (int32 i = 0; i < SubscribedInterfaces.Num(); ++i)
 	{
-		if (UObject* const Object = Interface.GetObject())
+		if (UObject* const Object = SubscribedInterfaces[i].GetObject())
 		{
 			Callback(Object);
 		}

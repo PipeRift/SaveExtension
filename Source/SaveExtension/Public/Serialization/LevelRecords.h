@@ -20,9 +20,11 @@ struct FLevelRecord : public FBaseRecord
 	GENERATED_BODY()
 
 	/** Record of the Level Script Actor */
+	UPROPERTY()
 	FActorRecord LevelScript;
 
 	/** Records of the World Actors */
+	UPROPERTY()
 	TArray<FActorRecord> Actors;
 
 	/** Not-serialized. Assigned before loading and saving by the SaveSlot */

@@ -37,14 +37,22 @@ public:
 	 * All serialized information to be saved or loaded
 	 * Serialized manually for performance
 	 */
+	UPROPERTY()
 	FObjectRecord GameInstance;
+
+	UPROPERTY()
 	TArray<FSubsystemRecord> GameInstanceSubsystems;
 
+	UPROPERTY()
 	TArray<FSubsystemRecord> WorldSubsystems;
 
+	UPROPERTY()
 	FPersistentLevelRecord RootLevel;
+
+	UPROPERTY()
 	TArray<FStreamingLevelRecord> SubLevels;
 
+	UPROPERTY()
 	TArray<FPlayerRecord> Players;
 
 
