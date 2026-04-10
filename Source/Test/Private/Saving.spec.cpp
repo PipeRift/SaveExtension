@@ -1,18 +1,19 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "SavingSpec.h"
+#include "Saving.spec.h"
 
 #include "Automatron.h"
-#include "SaveManager.h"
+
+#include <SaveManager.h>
 
 
 class FSaveSpec_Preset : public Automatron::FTestSpec
 {
 	GENERATE_SPEC(FSaveSpec_Preset, "SaveExtension",
-		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
+		EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
 	USaveManager* SaveManager = nullptr;
-	ATestActor* TestActor = nullptr;
+	ASETestActor* TestActor = nullptr;
 
 	// Helper for some test delegates
 	bool bFinishTick = false;
@@ -27,7 +28,7 @@ class FSaveSpec_Preset : public Automatron::FTestSpec
 
 	void TickUntilSaveTasksFinish()
 	{
-		TickWorldUntil(GetMainWorld(), true, [this](float) {
+		TickWorldUntil(GetWorld(), true, [this](float) {
 			return SaveManager->HasTasks();
 		});
 	}
@@ -36,7 +37,7 @@ class FSaveSpec_Preset : public Automatron::FTestSpec
 void FSaveSpec_Preset::Define()
 {
 	BeforeEach([this]() {
-		SaveManager = USaveManager::Get(GetMainWorld());
+		SaveManager = USaveManager::Get(GetWorld());
 		TestNotNull(TEXT("SaveManager"), SaveManager);
 
 		SaveManager->bTickWithGameWorld = true;
@@ -57,9 +58,9 @@ void FSaveSpec_Preset::Define()
 
 	Describe("Serialization", [this]() {
 		BeforeEach([this]() {
-			SaveManager->AssureActiveSlot(UTestSaveSlot_SyncSaving::StaticClass(), true);
+			SaveManager->AssureActiveSlot(USETestSaveSlot_SyncSaving::StaticClass(), true);
 
-			TestActor = GetMainWorld()->SpawnActor<ATestActor>();
+			TestActor = GetWorld()->SpawnActor<ASETestActor>();
 		});
 
 		It("Can save an actor synchronously", [this]() {
@@ -182,7 +183,7 @@ void FSaveSpec_Preset::Define()
 				bFinishTick = true;
 			});
 
-			TickWorldUntil(GetMainWorld(), true, [this](float) {
+			TickWorldUntil(GetWorld(), true, [this](float) {
 				return !bFinishTick;
 			});
 		}

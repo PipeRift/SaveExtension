@@ -1,24 +1,26 @@
 
-// Copyright 2015-2024 Piperift. All Rights Reserved.
+// Copyright 2015-2026 Piperift. All Rights Reserved.
 
 #pragma once
 
 #include <CoreMinimal.h>
 #include <GameFramework/Actor.h>
 
-#include "TestActor.generated.h"
-
+#include "SETestActor.generated.h"
 
 
 USTRUCT()
-struct FTestSaveStruct
+struct FSETestSaveStruct
 {
 	GENERATED_BODY()
+
+	UPROPERTY(SaveGame)
+	bool bMyBool = false;
 };
 
 
 UCLASS()
-class ATestActor : public AActor
+class ASETestActor : public AActor
 {
 	GENERATED_BODY()
 
@@ -56,7 +58,6 @@ public:
 	UPROPERTY(SaveGame)
 	int64 MyI64 = 0;
 
-
 	UPROPERTY(SaveGame)
-	FTestSaveStruct MyStruct;
+	FSETestSaveStruct MyStruct;
 };

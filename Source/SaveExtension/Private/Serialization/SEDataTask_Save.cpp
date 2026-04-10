@@ -186,7 +186,7 @@ void FSEDataTask_Save::SerializeWorld()
 
 			SlotData->GameInstanceSubsystems.Reset();
 			for (UGameInstanceSubsystem* Subsystem :
-				GameInstance->GetSubsystemArray<UGameInstanceSubsystem>())
+				GameInstance->GetSubsystemArrayCopy<UGameInstanceSubsystem>())
 			{
 				if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
 				{
@@ -199,7 +199,7 @@ void FSEDataTask_Save::SerializeWorld()
 		}
 
 		SlotData->WorldSubsystems.Reset();
-		for (UWorldSubsystem* Subsystem : World->GetSubsystemArray<UWorldSubsystem>())
+		for (UWorldSubsystem* Subsystem : World->GetSubsystemArrayCopy<UWorldSubsystem>())
 		{
 			if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
 			{

@@ -1,5 +1,5 @@
 
-// Copyright 2015-2024 Piperift. All Rights Reserved.
+// Copyright 2015-2026 Piperift. All Rights Reserved.
 
 #pragma once
 

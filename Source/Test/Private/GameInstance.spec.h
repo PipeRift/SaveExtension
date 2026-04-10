@@ -5,15 +5,15 @@
 
 #include <SaveSlot.h>
 
-#include "GameInstanceSpec.generated.h"
+#include "GameInstance.spec.generated.h"
 
 
 UCLASS()
-class UTestSaveSlot : public USaveSlot
+class USETestSaveSlot : public USaveSlot
 {
 	GENERATED_BODY()
 
-	UTestSaveSlot() : Super()
+	USETestSaveSlot() : Super()
 	{
 		bStoreGameInstance = true;
 

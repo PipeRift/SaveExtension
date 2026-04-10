@@ -140,8 +140,7 @@ void FSaveFile::Read(FScopedFileReader& Reader, bool bSkipData)
 		if (SaveGameFileVersion >= FSaveGameFileVersion::AddedCustomVersions)
 		{
 			Ar << CustomVersionFormat;
-			CustomVersions.Serialize(
-				Ar, static_cast<ECustomVersionSerializationFormat::Type>(CustomVersionFormat));
+			CustomVersions.Serialize(Ar, static_cast<ECustomVersionSerializationFormat>(CustomVersionFormat));
 			Ar.SetCustomVersions(CustomVersions);
 		}
 	}
@@ -192,8 +191,7 @@ void FSaveFile::Write(FScopedFileWriter& Writer, bool bCompressData)
 		Ar << PackageFileUEVersion;
 		Ar << SavedEngineVersion;
 		Ar << CustomVersionFormat;
-		CustomVersions.Serialize(
-			Ar, static_cast<ECustomVersionSerializationFormat::Type>(CustomVersionFormat));
+		CustomVersions.Serialize(Ar, static_cast<ECustomVersionSerializationFormat>(CustomVersionFormat));
 	}
 
 	Ar << ClassName;

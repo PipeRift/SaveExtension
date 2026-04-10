@@ -1,6 +1,6 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 
-#include "GameInstanceSpec.h"
+#include "GameInstance.spec.h"
 
 #include "Automatron.h"
 #include "SaveManager.h"
@@ -8,10 +8,10 @@
 
 class FSaveSpec_GameInstance : public Automatron::FTestSpec
 {
-	GENERATE_SPEC(FSaveSpec_GameInstance, "SaveExtension",
-		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
+	GENERATE_SPEC(FSaveSpec_GameInstance, "SaveExtension.GameInstance",
+		EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
-	USaveManager* SaveManager = nullptr;
+	TObjectPtr<USaveManager> SaveManager;
 
 	// Helper for some test delegates
 	bool bFinishTick = false;
@@ -29,16 +29,16 @@ class FSaveSpec_GameInstance : public Automatron::FTestSpec
 void FSaveSpec_GameInstance::Define()
 {
 	BeforeEach([this]() {
-		SaveManager = USaveManager::Get(GetMainWorld());
-		TestNotNull(TEXT("SaveManager"), SaveManager);
+		SaveManager = USaveManager::Get(GetWorld());
+		TestNotNull(TEXT("SaveManager"), SaveManager.Get());
 
 		SaveManager->bTickWithGameWorld = true;
 
-		SaveManager->AssureActiveSlot(UTestSaveSlot::StaticClass(), true);
+		SaveManager->AssureActiveSlot(USETestSaveSlot::StaticClass(), true);
 	});
 
 	It("GameInstance can be saved", [this]() {
-		auto* GI = GetMainWorld()->GetGameInstance<USETestGameInstance>();
+		auto* GI = GetWorld()->GetGameInstance<USETestGameInstance>();
 		GI->bMyBool = true;
 
 		SaveManager->SaveSlot(0);
@@ -59,7 +59,7 @@ void FSaveSpec_GameInstance::Define()
 				bFinishTick = true;
 			});
 
-			TickWorldUntil(GetMainWorld(), true, [this](float) {
+			TickWorldUntil(GetWorld(), true, [this](float) {
 				return !bFinishTick;
 			});
 		}

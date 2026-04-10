@@ -626,7 +626,7 @@ namespace Automatron
 		FString PrettyName;
 		FString FileName;
 		int32 LineNumber = -1;
-		uint32 Flags = 0;
+		EAutomationTestFlags Flags = EAutomationTestFlags::None;
 
 		bool bInitializedWorld = false;
 #if WITH_EDITOR
@@ -647,7 +647,7 @@ namespace Automatron
 		{
 			return LineNumber;
 		}
-		virtual uint32 GetTestFlags() const override
+		virtual EAutomationTestFlags GetTestFlags() const override
 		{
 			return Flags;
 		}
@@ -667,7 +667,7 @@ namespace Automatron
 			return PrettyName;
 		}
 
-		template <uint32 TFlags>
+		template <EAutomationTestFlags TFlags>
 		void Setup(FString&& InName, FString&& InPrettyName, FString&& InFileName, int32 InLineNumber);
 
 		// Used to indicate a test is pending to be implemented.
@@ -694,7 +694,7 @@ namespace Automatron
 
 		bool DestroyWorld(UWorld* World);
 
-		UWorld* GetMainWorld() const
+		UWorld* GetWorld() const
 		{
 			return MainWorld.Get();
 		}
@@ -1438,22 +1438,20 @@ namespace Automatron
 		return GameMode != nullptr;
 	}
 
-	template <uint32 TFlags>
+	template <EAutomationTestFlags TFlags>
 	inline void FTestSpec::Setup(
 		FString&& InName, FString&& InPrettyName, FString&& InFileName, int32 InLineNumber)
 	{
-		static_assert(TFlags & EAutomationTestFlags::ApplicationContextMask,
-			"AutomationTest has no application flag. It shouldn't run. See "
-			"AutomationTest.h.");
+		static_assert(!!((TFlags) &EAutomationTestFlags_ApplicationContextMask),
+			"AutomationTest has no application flag.  It shouldn't run.  See AutomationTest.h.");
 		static_assert(
-			((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::SmokeFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::EngineFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::ProductFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::PerfFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::StressFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::NegativeFilter),
-			"All AutomationTests must have exactly 1 filter type "
-			"specified.  See AutomationTest.h.");
+			!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::SmokeFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::EngineFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::ProductFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::PerfFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::StressFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::NegativeFilter),
+			"All AutomationTests must have exactly 1 filter type specified.  See AutomationTest.h.");
 
 		ClassName = InName;
 		PrettyName = MoveTemp(InPrettyName);

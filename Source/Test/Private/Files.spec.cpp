@@ -1,7 +1,6 @@
-// Copyright 2015-2024 Piperift. All Rights Reserved.
+// Copyright 2015-2026 Piperift. All Rights Reserved.
 
 #include "Automatron.h"
-#include "Helpers/TestActor.h"
 
 #include <SEFileHelpers.h>
 #include <SaveManager.h>
@@ -10,10 +9,9 @@
 class FSaveSpec_Files : public Automatron::FTestSpec
 {
 	GENERATE_SPEC(FSaveSpec_Files, "SaveExtension.Files",
-		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
+		EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
-	USaveManager* SaveManager = nullptr;
-	ATestActor* TestActor = nullptr;
+	TObjectPtr<USaveManager> SaveManager;
 
 	// Helper for some test delegates
 	bool bFinishTick = false;
@@ -29,8 +27,8 @@ class FSaveSpec_Files : public Automatron::FTestSpec
 void FSaveSpec_Files::Define()
 {
 	BeforeEach([this]() {
-		SaveManager = USaveManager::Get(GetMainWorld());
-		TestNotNull(TEXT("SaveManager"), SaveManager);
+		SaveManager = USaveManager::Get(GetWorld());
+		TestNotNull(TEXT("SaveManager"), SaveManager.Get());
 
 		SaveManager->bTickWithGameWorld = true;
 
@@ -60,7 +58,7 @@ void FSaveSpec_Files::Define()
 		// Files shouldn't exist yet
 		TestFalse("Info File exists in disk", FSEFileHelpers::FileExists(TEXT("0")));
 
-		TickWorldUntil(GetMainWorld(), true, [this](float) {
+		TickWorldUntil(GetWorld(), true, [this](float) {
 			return !bFinishTick;
 		});
 	});
@@ -82,7 +80,7 @@ void FSaveSpec_Files::Define()
 			SaveManager->DeleteAllSlots([this](int32 Count) {
 				bFinishTick = true;
 			});
-			TickWorldUntil(GetMainWorld(), true, [this](float) {
+			TickWorldUntil(GetWorld(), true, [this](float) {
 				return !bFinishTick;
 			});
 		}
