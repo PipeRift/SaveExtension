@@ -5,9 +5,12 @@
 #include "SaveManager.h"
 #include "SaveSlotData.h"
 
+#include <Engine/World.h>
+#include <UObject/Package.h>
+
 
 /////////////////////////////////////////////////////
-// USaveDataTask
+// USEDataTask
 
 FSEDataTask& FSEDataTask::Start()
 {

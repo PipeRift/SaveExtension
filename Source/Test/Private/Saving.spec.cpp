@@ -58,7 +58,7 @@ void FSaveSpec_Preset::Define()
 
 	Describe("Serialization", [this]() {
 		BeforeEach([this]() {
-			SaveManager->AssureActiveSlot(USETestSaveSlot_SyncSaving::StaticClass(), true);
+			SaveManager->EnsureActiveSlot(USETestSaveSlot_SyncSaving::StaticClass(), true);
 
 			TestActor = GetWorld()->SpawnActor<ASETestActor>();
 		});

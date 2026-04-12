@@ -11,6 +11,7 @@
 #include "Serialization/SEArchive.h"
 
 #include <Components/PrimitiveComponent.h>
+#include <Engine/GameInstance.h>
 #include <GameFramework/GameStateBase.h>
 #include <GameFramework/PlayerState.h>
 #include <Kismet/GameplayStatics.h>
@@ -429,7 +430,7 @@ void FSEDataTask_Load::PrepareLevel(const ULevel* Level, FLevelRecord& LevelReco
 					FActorRecord* Record = ActorRecordsToSpawn[Index];
 					LevelRecord.RecordsToActors.Add({Record, Actor});
 				}
-				ActorRecordsToSpawn.RemoveAtSwap(Index, 1, false);
+				ActorRecordsToSpawn.RemoveAtSwap(Index, 1, EAllowShrinking::No);
 			}
 			else if (LevelRecord.Filter.Stores(Actor))
 			{

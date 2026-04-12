@@ -88,9 +88,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<USaveSlot> PreloadedSlot;
 
-	/** The game instance to which this save manager is owned. */
-	TWeakObjectPtr<UGameInstance> OwningGameInstance;
-
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;
 
@@ -101,7 +98,6 @@ private:
 
 	// Used to store tasks that are finished. They'll be cleared on next tick
 	TArray<TUniquePtr<FSEDataTask>> FinishedTasks;
-
 
 
 	/************************************************************************/
@@ -116,11 +112,6 @@ public:
 
 	virtual void Deinitialize() override;
 	/** End USubsystem */
-
-	void SetGameInstance(UGameInstance* GameInstance)
-	{
-		OwningGameInstance = GameInstance;
-	}
 
 	/** C++ ONLY API */
 
@@ -265,7 +256,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SaveExtension")
 	FORCEINLINE USaveSlot* GetActiveSlot()
 	{
-		AssureActiveSlot();
+		EnsureActiveSlot();
 		return ActiveSlot;
 	}
 
@@ -285,20 +276,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
 	FORCEINLINE bool HasActiveSlot() const
 	{
-		return ActiveSlot != nullptr;
+		return IsValid(ActiveSlot);
 	}
 
-	UFUNCTION(BlueprintCallable)
-	void ResetSelectedSave();
-
-	UFUNCTION(BlueprintCallable)
-	void ContinueGame();
-
-	UFUNCTION(BlueprintCallable)
-	bool CanContinueGame(const APlayerState* PlayerState) const;
-
-	UFUNCTION(BlueprintPure)
-	bool HasActiveSaveForPlayer(const APlayerState* PlayerState) const;
+	UFUNCTION(BlueprintPure, Category = "SaveExtension|Slots")
+	bool HasActiveSlotWithPlayer(const APlayerState* PlayerState) const;
 
 	UFUNCTION()
 	void HandlePlayerAdded(APlayerState* PlayerState);
@@ -310,7 +292,10 @@ public:
 	// This does not load the game!
 	void SetActiveSlot(USaveSlot* NewSlot);
 
-	void AssureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass = {}, bool bForced = false);
+	void EnsureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass = {}, bool bForced = false);
+
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
+	void ResetActiveSlot();
 
 protected:
 	bool CanLoadOrSave();

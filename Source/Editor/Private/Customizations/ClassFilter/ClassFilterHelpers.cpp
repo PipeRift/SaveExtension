@@ -8,7 +8,7 @@
 #include <Editor.h>
 #include <Misc/HotReloadInterface.h>
 #include <UObject/CoreRedirects.h>
-
+#include <UObject/UObjectIterator.h>
 
 
 namespace ClassFilter
@@ -21,7 +21,7 @@ namespace ClassFilter
 	FClassHierarchy::FClassHierarchy()
 	{
 		// Register with the Asset Registry to be informed when it is done loading up files.
-		FAssetRegistryModule& AssetRegistryModule =
+		auto& AssetRegistryModule =
 			FModuleManager::GetModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 		OnFilesLoadedRequestPopulateClassHierarchyDelegateHandle =
 			AssetRegistryModule.Get().OnFilesLoaded().AddStatic(

@@ -9,7 +9,9 @@
 
 struct FSEClassFilter;
 class USaveSlotData;
+class AActor;
 class APlayerState;
+class UActorComponent;
 class USubsystem;
 
 
@@ -22,15 +24,16 @@ struct SAVEEXTENSION_API FBaseRecord
 	FName Name;
 
 
-	FBaseRecord() : Name() {}
+	FBaseRecord() = default;
 
 	virtual bool Serialize(FArchive& Ar);
+	virtual ~FBaseRecord() {}
+
 	friend FArchive& operator<<(FArchive& Ar, FBaseRecord& Record)
 	{
 		Record.Serialize(Ar);
 		return Ar;
 	}
-	virtual ~FBaseRecord() {}
 };
 
 template <>
@@ -64,10 +67,10 @@ struct SAVEEXTENSION_API FObjectRecord : public FBaseRecord
 	TArray<FName> Tags;
 
 
-	FObjectRecord() : Super() {}
+	FObjectRecord() = default;
 	FObjectRecord(const UObject& Object);
 
-	virtual bool Serialize(FArchive& Ar) override;
+	bool Serialize(FArchive& Ar) override;
 
 	bool IsValid() const
 	{
@@ -91,9 +94,9 @@ struct SAVEEXTENSION_API FComponentRecord : public FObjectRecord
 	FTransform Transform;
 
 
-	FComponentRecord() : Super() {}
-	FComponentRecord(const UActorComponent& Component) : Super(Component) {}
-	virtual bool Serialize(FArchive& Ar) override;
+	FComponentRecord() = default;
+	FComponentRecord(const UActorComponent& Component);
+	bool Serialize(FArchive& Ar) override;
 };
 
 
@@ -104,10 +107,10 @@ struct SAVEEXTENSION_API FActorRecord : public FObjectRecord
 	GENERATED_BODY()
 
 	UPROPERTY()
-	bool bHiddenInGame;
+	bool bHiddenInGame = false;
 	/** Whether or not this actor was spawned in runtime */
 	UPROPERTY()
-	bool bIsProcedural;
+	bool bIsProcedural = false;
 
 	UPROPERTY()
 	FTransform Transform;
@@ -122,9 +125,9 @@ struct SAVEEXTENSION_API FActorRecord : public FObjectRecord
 	TArray<FComponentRecord> ComponentRecords;
 
 
-	FActorRecord() : bHiddenInGame(false), bIsProcedural(false) {}
+	FActorRecord() = default;
 	FActorRecord(const AActor& Actor);
-	virtual bool Serialize(FArchive& Ar) override;
+	bool Serialize(FArchive& Ar) override;
 };
 
 
@@ -134,19 +137,27 @@ struct SAVEEXTENSION_API FSubsystemRecord : public FObjectRecord
 {
 	GENERATED_BODY()
 
-	FSubsystemRecord() : Super() {}
-	FSubsystemRecord(const USubsystem& Subsystem) : Super(Subsystem) {}
+	FSubsystemRecord() = default;
+	FSubsystemRecord(const USubsystem& Subsystem);
 };
 
+
+/** Represents a serialized Player */
 USTRUCT(BlueprintType)
 struct SAVEEXTENSION_API FPlayerRecord
 {
 	GENERATED_BODY()
 
+	UPROPERTY()
 	FString UniqueId;
 
+	UPROPERTY()
 	FActorRecord PlayerState;
+
+	UPROPERTY()
 	FActorRecord Controller;
+
+	UPROPERTY()
 	FActorRecord Pawn;
 
 

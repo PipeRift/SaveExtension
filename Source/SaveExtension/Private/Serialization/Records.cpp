@@ -13,6 +13,8 @@
 #include <GameFramework/Pawn.h>
 #include <GameFramework/PlayerController.h>
 #include <GameFramework/PlayerState.h>
+#include <Serialization/MemoryReader.h>
+#include <Serialization/MemoryWriter.h>
 
 
 /////////////////////////////////////////////////////
@@ -58,6 +60,9 @@ bool FObjectRecord::Serialize(FArchive& Ar)
 	return true;
 }
 
+
+FComponentRecord::FComponentRecord(const UActorComponent& Component) : Super(Component) {}
+
 bool FComponentRecord::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);
@@ -98,6 +103,9 @@ bool FActorRecord::Serialize(FArchive& Ar)
 	Ar << ComponentRecords;
 	return true;
 }
+
+
+FSubsystemRecord::FSubsystemRecord(const USubsystem& Subsystem) : Super(Subsystem) {}
 
 
 bool FPlayerRecord::Serialize(FArchive& Ar)
@@ -212,7 +220,7 @@ bool SERecords::DeserializeActor(
 		UE_LOG(LogSaveExtension, Log, TEXT("Actor '{}' exists but class doesn't match"), Record.Name);
 		return false;
 	}
-	
+
 	Actor->Tags = Record.Tags;
 
 	if (StoresTransform(Actor))

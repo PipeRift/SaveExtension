@@ -5,7 +5,6 @@
 #include <UObject/NoExportTypes.h>
 
 
-
 /////////////////////////////////////////////////////
 // FSEArchive
 
@@ -27,7 +26,7 @@ FArchive& FSEArchive::operator<<(UObject*& Obj)
 		// #FIX: Deserialize and assign outers
 
 		// Look up the object by fully qualified pathname
-		Obj = FindObject<UObject>(nullptr, *ObjectPath, false);
+		Obj = FindObject<UObject>(nullptr, *ObjectPath, EFindObjectFlags::None);
 		// If we couldn't find it, and we want to load it, do that
 		if (!Obj && bLoadIfFindFails)
 		{

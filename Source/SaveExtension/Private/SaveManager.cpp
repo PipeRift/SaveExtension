@@ -189,45 +189,27 @@ public:
 
 // END Async Actions
 
-void USaveManager::ResetSelectedSave()
+bool USaveManager::HasActiveSlotWithPlayer(const APlayerState* PlayerState) const
 {
-	AutoLoadSlot = nullptr;
-}
-
-void USaveManager::ContinueGame()
-{
-	AutoLoadSlot = ActiveSlot;
-	LoadSlot(AutoLoadSlot->Name);
-}
-
-bool USaveManager::CanContinueGame(const APlayerState* PlayerState) const
-{
-	return ActiveSlot != nullptr && ActiveSlot->GetData() != nullptr &&
-		   ActiveSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()) !=
-			   nullptr;	   // && level matches the play level
-}
-
-bool USaveManager::HasActiveSaveForPlayer(const APlayerState* PlayerState) const
-{
-	if (AutoLoadSlot)
+	if (ActiveSlot && ActiveSlot->GetData() && PlayerState)
 	{
-		return AutoLoadSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()) != nullptr;
+		return ActiveSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()) != nullptr;
 	}
 	return false;
 }
 
 void USaveManager::HandlePlayerAdded(APlayerState* PlayerState)
 {
-	if (PlayerState && AutoLoadSlot)
+	if (PlayerState && ActiveSlot)
 	{
-		AutoLoadSlot->ComponentFilter.BakeAllowedClasses();
+		ActiveSlot->ComponentFilter.BakeAllowedClasses();
 		if (const FPlayerRecord* PlayerRecord =
-				AutoLoadSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()))
+				ActiveSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()))
 		{
-			SERecords::DeserializePlayer(PlayerState, *PlayerRecord, AutoLoadSlot->ComponentFilter);
+			SERecords::DeserializePlayer(PlayerState, *PlayerRecord, ActiveSlot->ComponentFilter);
 		}
 	}
-	if (!PlayerState->GetPawn() && AutoLoadSlot)
+	if (!PlayerState->GetPawn() && ActiveSlot)
 	{
 		APlayerController* PC = Cast<APlayerController>(PlayerState->GetOwner());
 		PC->OnPossessedPawnChanged.AddUniqueDynamic(this, &USaveManager::HandlePawnAdded);
@@ -236,12 +218,12 @@ void USaveManager::HandlePlayerAdded(APlayerState* PlayerState)
 
 void USaveManager::HandlePawnAdded(APawn* OldPawn, APawn* NewPawn)
 {
-	if (NewPawn && AutoLoadSlot)
+	if (NewPawn && ActiveSlot)
 	{
 		if (const FPlayerRecord* PlayerRecord =
-				AutoLoadSlot->GetData()->FindPlayerRecord(NewPawn->GetPlayerState()->GetUniqueId()))
+				ActiveSlot->GetData()->FindPlayerRecord(NewPawn->GetPlayerState()->GetUniqueId()))
 		{
-			SERecords::DeserializeActor(NewPawn, PlayerRecord->Pawn, AutoLoadSlot->ComponentFilter);
+			SERecords::DeserializeActor(NewPawn, PlayerRecord->Pawn, ActiveSlot->ComponentFilter);
 			APlayerController* PC = Cast<APlayerController>(NewPawn->GetController());
 			PC->OnPossessedPawnChanged.RemoveAll(this);
 		}
@@ -261,7 +243,7 @@ void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 
 	// TODO: Allow loading on start the most recent slot
 	// PreloadAllSlotsSync(LoadedSlots, true);
-	AssureActiveSlot();
+	EnsureActiveSlot();
 	if (ActiveSlot && ActiveSlot->bLoadOnStart)
 	{
 		ReloadActiveSlot();
@@ -333,7 +315,7 @@ bool USaveManager::LoadSlot(FName SlotName, FOnGameLoaded OnLoaded)
 		return false;
 	}
 
-	AssureActiveSlot();
+	EnsureActiveSlot();
 
 	auto& Task = CreateTask<FSEDataTask_Load>().Setup(SlotName).Bind(OnLoaded).Start();
 	return Task.IsSucceeded() || Task.IsScheduled();
@@ -536,7 +518,7 @@ void USaveManager::SetActiveSlot(USaveSlot* NewSlot)
 	// TODO: Ensure data is not null here
 }
 
-void USaveManager::AssureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass, bool bForced)
+void USaveManager::EnsureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass, bool bForced)
 {
 	if (HasActiveSlot() && !bForced)
 		return;
@@ -550,6 +532,11 @@ void USaveManager::AssureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass, bool
 		}
 	}
 	SetActiveSlot(NewObject<USaveSlot>(this, ActiveSlotClass));
+}
+
+void USaveManager::ResetActiveSlot()
+{
+	EnsureActiveSlot({}, true);	   // Force a new active slot
 }
 
 void USaveManager::UpdateLevelStreamings()

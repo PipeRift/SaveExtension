@@ -11,6 +11,7 @@
 #include "Serialization/SEArchive.h"
 
 #include <Async/ParallelFor.h>
+#include <Engine/GameInstance.h>
 #include <GameFramework/GameModeBase.h>
 #include <GameFramework/GameStateBase.h>
 #include <GameFramework/PlayerState.h>
@@ -38,7 +39,7 @@ FSEDataTask_Save::~FSEDataTask_Save()
 void FSEDataTask_Save::OnStart()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Save::OnStart);
-	Manager->AssureActiveSlot();
+	Manager->EnsureActiveSlot();
 
 	bool bSave = true;
 	const FString SlotNameStr = SlotName.ToString();

@@ -7,7 +7,7 @@
 
 
 #if WITH_EDITORONLY_DATA
-#include <Kismet2/KismetEditorUtilities.h>
+#	include <Kismet2/KismetEditorUtilities.h>
 #endif
 
 FSEClassFilter::FSEClassFilter(UClass* BaseClass) : BaseClass{BaseClass}, IgnoredClasses{} {}
@@ -55,9 +55,11 @@ void FSEClassFilter::BakeAllowedClasses() const
 		}
 
 #if WITH_EDITORONLY_DATA
-		ChildrenOfAllowedClasses.RemoveAllSwap([](UClass* Class){
-			return FKismetEditorUtilities::IsClassABlueprintSkeleton(Class);
-		}, false);
+		ChildrenOfAllowedClasses.RemoveAllSwap(
+			[](UClass* Class) {
+				return FKismetEditorUtilities::IsClassABlueprintSkeleton(Class);
+			},
+			EAllowShrinking::No);
 #endif
 	}
 	{

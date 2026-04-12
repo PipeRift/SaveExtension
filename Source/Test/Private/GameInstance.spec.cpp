@@ -34,7 +34,7 @@ void FSaveSpec_GameInstance::Define()
 
 		SaveManager->bTickWithGameWorld = true;
 
-		SaveManager->AssureActiveSlot(USETestSaveSlot::StaticClass(), true);
+		SaveManager->EnsureActiveSlot(USETestSaveSlot::StaticClass(), true);
 	});
 
 	It("GameInstance can be saved", [this]() {
