@@ -1,6 +1,7 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "Serialization/SEArchive.h"
+
 #include <UObject/NoExportTypes.h>
 
 
@@ -25,7 +26,7 @@ FArchive& FSEArchive::operator<<(UObject*& Obj)
 		// #FIX: Deserialize and assign outers
 
 		// Look up the object by fully qualified pathname
-		Obj = FindObject<UObject>(nullptr, *ObjectPath, false);
+		Obj = FindObject<UObject>(nullptr, *ObjectPath, EFindObjectFlags::None);
 		// If we couldn't find it, and we want to load it, do that
 		if (!Obj && bLoadIfFindFails)
 		{
@@ -45,7 +46,7 @@ FArchive& FSEArchive::operator<<(UObject*& Obj)
 		if (Obj)
 		{
 			// Serialize the fully qualified object name
-			FString SavedString{ Obj->GetPathName() };
+			FString SavedString{Obj->GetPathName()};
 			InnerArchive << SavedString;
 
 			/*bool bIsLocallyOwned = IsObjectOwned(Obj);
@@ -57,7 +58,7 @@ FArchive& FSEArchive::operator<<(UObject*& Obj)
 		}
 		else
 		{
-			FString SavedString{ "" };
+			FString SavedString{""};
 			InnerArchive << SavedString;
 
 			/*bool bIsLocallyOwned = false;

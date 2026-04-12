@@ -1,10 +1,11 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 #pragma once
 
-#include <CoreMinimal.h>
 #include <ClassViewerModule.h>
-#include <UObject/WeakObjectPtr.h>
+#include <CoreMinimal.h>
 #include <Templates/SharedPointer.h>
+#include <UObject/WeakObjectPtr.h>
+
 
 class IPropertyHandle;
 class IUnloadedBlueprintData;
@@ -22,7 +23,6 @@ enum class EClassFilterState : uint8
 class FSEClassFilterNode : public TSharedFromThis<FSEClassFilterNode>
 {
 public:
-
 	using FPtr = TSharedPtr<FSEClassFilterNode>;
 
 	/**
@@ -32,9 +32,9 @@ public:
 	 * @param	InClassDisplayName				The display name of the class this node represents
 	 * @param	bInIsPlaceable					true if the class is a placeable class.
 	 */
-	FSEClassFilterNode( const FString& InClassName, const FString& InClassDisplayName );
+	FSEClassFilterNode(const FString& InClassName, const FString& InClassDisplayName);
 
-	FSEClassFilterNode( const FSEClassFilterNode& InCopyObject);
+	FSEClassFilterNode(const FSEClassFilterNode& InCopyObject);
 
 	/**
 	 * Adds the specified child to the node.
@@ -45,7 +45,8 @@ public:
 	void AddUniqueChild(FPtr& Child);
 
 	/**
-	 * Retrieves the class name this node is associated with. This is not the literal UClass name as it is missing the _C for blueprints
+	 * Retrieves the class name this node is associated with. This is not the literal UClass name as it is
+	 * missing the _C for blueprints
 	 * @param	bUseDisplayName	Whether to use the display name or class name
 	 */
 	const FString& GetClassName(bool bUseDisplayName = false) const
@@ -54,7 +55,8 @@ public:
 	}
 
 	/**
-	 * Retrieves the class name this node is associated with. This is not the literal UClass name as it is missing the _C for blueprints
+	 * Retrieves the class name this node is associated with. This is not the literal UClass name as it is
+	 * missing the _C for blueprints
 	 * @param	NameType	Whether to use the display name or class name
 	 */
 	FString GetClassName(EClassViewerNameTypeToDisplay NameType) const;
@@ -74,12 +76,15 @@ public:
 	/** Filter states */
 	void SetOwnFilterState(EClassFilterState State);
 	void SetStateFromFilter(const struct FSEClassFilter& Filter);
-	EClassFilterState GetOwnFilterState() const { return FilterState; }
+	EClassFilterState GetOwnFilterState() const
+	{
+		return FilterState;
+	}
 	EClassFilterState GetParentFilterState() const;
 
 private:
-
-	/** The non-translated internal name for this class. This is not necessarily the UClass's name, as that may have _C for blueprints */
+	/** The non-translated internal name for this class. This is not necessarily the UClass's name, as that
+	 * may have _C for blueprints */
 	FString ClassName;
 
 	/** The translated display name for this class */
@@ -91,7 +96,6 @@ private:
 	EClassFilterState FilterState = EClassFilterState::None;
 
 public:
-
 	TWeakPtr<FSEClassFilterNode> ParentNode;
 
 	/** The class this node is associated with. */
@@ -112,7 +116,8 @@ public:
 	/** true if the class passed the filter. */
 	bool bPassesFilter;
 
-	/** true if the class is a "normal type", this is used to identify unloaded blueprints as blueprint bases. */
+	/** true if the class is a "normal type", this is used to identify unloaded blueprints as blueprint bases.
+	 */
 	bool bIsBPNormalType;
 
 	/** Data for unloaded blueprints, only valid if the class is unloaded. */

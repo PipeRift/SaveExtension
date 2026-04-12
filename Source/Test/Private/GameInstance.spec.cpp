@@ -1,17 +1,17 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
+
+#include "GameInstance.spec.h"
 
 #include "Automatron.h"
-#include "Helpers/TestGameInstance.h"
 #include "SaveManager.h"
 
 
 class FSaveSpec_GameInstance : public Automatron::FTestSpec
 {
-	GENERATE_SPEC(FSaveSpec_GameInstance, "SaveExtension",
-		EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter);
+	GENERATE_SPEC(FSaveSpec_GameInstance, "SaveExtension.GameInstance",
+		EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
-	USaveManager* SaveManager = nullptr;
-	USavePreset* TestPreset = nullptr;
+	TObjectPtr<USaveManager> SaveManager;
 
 	// Helper for some test delegates
 	bool bFinishTick = false;
@@ -22,28 +22,23 @@ class FSaveSpec_GameInstance : public Automatron::FTestSpec
 		bCanUsePIEWorld = false;
 
 		DefaultWorldSettings.bShouldTick = true;
-		DefaultWorldSettings.GameInstance = UTestGameInstance::StaticClass();
+		DefaultWorldSettings.GameInstance = USETestGameInstance::StaticClass();
 	}
 };
 
 void FSaveSpec_GameInstance::Define()
 {
 	BeforeEach([this]() {
-		SaveManager = USaveManager::Get(GetMainWorld());
-		TestNotNull(TEXT("SaveManager"), SaveManager);
+		SaveManager = USaveManager::Get(GetWorld());
+		TestNotNull(TEXT("SaveManager"), SaveManager.Get());
 
 		SaveManager->bTickWithGameWorld = true;
 
-		TestPreset = SaveManager->SetActivePreset(USavePreset::StaticClass());
-		TestPreset->bStoreGameInstance = true;
-
-		TestPreset->MultithreadedFiles = ESaveASyncMode::OnlySync;
-		TestPreset->MultithreadedSerialization = ESaveASyncMode::OnlySync;
+		SaveManager->EnsureActiveSlot(USETestSaveSlot::StaticClass(), true);
 	});
 
-	It("GameInstance can be saved", [this]()
-	{
-		auto* GI = GetMainWorld()->GetGameInstance<UTestGameInstance>();
+	It("GameInstance can be saved", [this]() {
+		auto* GI = GetWorld()->GetGameInstance<USETestGameInstance>();
 		GI->bMyBool = true;
 
 		SaveManager->SaveSlot(0);
@@ -56,17 +51,15 @@ void FSaveSpec_GameInstance::Define()
 		TestTrue("Saved variable loaded", GI->bMyBool);
 	});
 
-	AfterEach([this]()
-	{
+	AfterEach([this]() {
 		if (SaveManager)
 		{
 			bFinishTick = false;
-			SaveManager->DeleteAllSlots(FOnSlotsDeleted::CreateLambda([this]()
-			{
+			SaveManager->DeleteAllSlots([this](int32 Count) {
 				bFinishTick = true;
-			}));
+			});
 
-			TickWorldUntil(GetMainWorld(), true, [this](float) {
+			TickWorldUntil(GetWorld(), true, [this](float) {
 				return !bFinishTick;
 			});
 		}

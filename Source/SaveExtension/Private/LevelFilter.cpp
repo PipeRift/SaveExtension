@@ -1,12 +1,27 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "LevelFilter.h"
+
+#include "SaveSlot.h"
 
 
 /////////////////////////////////////////////////////
 // USaveDataTask
 
-const FName FSELevelFilter::TagNoTransform { "!SaveTransform"  };
-const FName FSELevelFilter::TagNoPhysics   { "!SavePhysics"    };
-const FName FSELevelFilter::TagNoTags      { "!SaveTags"       };
-const FName FSELevelFilter::TagTransform   { "SaveTransform"   };
+
+void FSELevelFilter::BakeAllowedClasses() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSELevelFilter::BakeAllowedClasses);
+	ActorFilter.BakeAllowedClasses();
+	ComponentFilter.BakeAllowedClasses();
+}
+
+bool FSELevelFilter::Stores(const AActor* Actor) const
+{
+	return ActorFilter.IsAllowed(Actor->GetClass());
+}
+
+bool FSELevelFilter::Stores(const UActorComponent* Component) const
+{
+	return ComponentFilter.IsAllowed(Component->GetClass());
+}

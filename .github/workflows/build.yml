@@ -1,0 +1,39 @@
+name: Build
+
+# Controls when the action will run. 
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_call:
+
+jobs:
+  publish:
+    name: "${{ matrix.os }} ${{ matrix.config }} - UE ${{ matrix.version }}"
+    runs-on: [self-hosted, "UE-${{ matrix.version }}", "${{ matrix.os }}"]
+    env:
+      CI_PLUGIN: SaveExtension
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Release]
+        os: [Windows, Linux]
+        version: [ "5.3" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Download Piperift Scripts
+        run: git clone https://github.com/PipeRift/CICDScripts Scripts
+
+      - name: Cache Build
+        uses: actions/cache@v3
+        with:
+          path: Build
+          key: ${{ matrix.os }}-${{ matrix.config }}-${{ matrix.version }}
+
+      - name: Build Plugin
+        run: python Scripts/build.py plugin -n ${{ env.CI_PLUGIN }} -p .
+

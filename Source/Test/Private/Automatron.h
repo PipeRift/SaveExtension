@@ -38,8 +38,8 @@
 #pragma once
 
 #include <CoreMinimal.h>
-#include <Engine/GameInstance.h>
 #include <Engine/Engine.h>
+#include <Engine/GameInstance.h>
 #include <EngineUtils.h>
 #include <GameFramework/GameModeBase.h>
 #include <GameMapsSettings.h>
@@ -88,7 +88,6 @@ namespace Automatron
 		class TRegister : public FRegister
 		{
 		public:
-
 			// Just by existing, this instance will define the class and register the spec
 			static TRegister<T> Instance;
 
@@ -99,7 +98,6 @@ namespace Automatron
 			}
 
 		private:
-
 			static void Setup()
 			{
 				static T Spec{};
@@ -628,12 +626,13 @@ namespace Automatron
 		FString PrettyName;
 		FString FileName;
 		int32 LineNumber = -1;
-		uint32 Flags = 0;
+		EAutomationTestFlags Flags = EAutomationTestFlags::None;
 
 		bool bInitializedWorld = false;
-#	if WITH_EDITOR
+#if WITH_EDITOR
 		bool bInitializedPIE = false;
-#	endif
+		FDelegateHandle PIEStartedHandle;
+#endif
 
 		TWeakObjectPtr<UWorld> MainWorld;
 
@@ -648,7 +647,7 @@ namespace Automatron
 		{
 			return LineNumber;
 		}
-		virtual uint32 GetTestFlags() const override
+		virtual EAutomationTestFlags GetTestFlags() const override
 		{
 			return Flags;
 		}
@@ -668,7 +667,7 @@ namespace Automatron
 			return PrettyName;
 		}
 
-		template <uint32 TFlags>
+		template <EAutomationTestFlags TFlags>
 		void Setup(FString&& InName, FString&& InPrettyName, FString&& InFileName, int32 InLineNumber);
 
 		// Used to indicate a test is pending to be implemented.
@@ -695,7 +694,7 @@ namespace Automatron
 
 		bool DestroyWorld(UWorld* World);
 
-		UWorld* GetMainWorld() const
+		UWorld* GetWorld() const
 		{
 			return MainWorld.Get();
 		}
@@ -731,28 +730,28 @@ namespace Automatron
 // GENERATION MACROS
 
 #define GENERATE_SPEC(TClass, PrettyName, TFlags) \
-		GENERATE_SPEC_PRIVATE(TClass, PrettyName, TFlags, __FILE__, __LINE__)
+	GENERATE_SPEC_PRIVATE(TClass, PrettyName, TFlags, __FILE__, __LINE__)
 
 #define GENERATE_SPEC_PRIVATE(TClass, PrettyName, TFlags, FileName, LineNumber)          \
-	private:                                                                                 \
-		void Setup()                                                                         \
-		{                                                                                    \
-			FTestSpec::Setup<TFlags>(TEXT(#TClass), TEXT(PrettyName), FileName, LineNumber); \
-		}                                                                                    \
-		static Automatron::Spec::TRegister<TClass>& __meta_register()                        \
-		{                                                                                    \
-			return Automatron::Spec::TRegister<TClass>::Instance;                            \
-		}                                                                                    \
-		friend Automatron::Spec::TRegister<TClass>;                                          \
-                                                                                             \
-		virtual void Define() override
+private:                                                                                 \
+	void Setup()                                                                         \
+	{                                                                                    \
+		FTestSpec::Setup<TFlags>(TEXT(#TClass), TEXT(PrettyName), FileName, LineNumber); \
+	}                                                                                    \
+	static Automatron::Spec::TRegister<TClass>& __meta_register()                        \
+	{                                                                                    \
+		return Automatron::Spec::TRegister<TClass>::Instance;                            \
+	}                                                                                    \
+	friend Automatron::Spec::TRegister<TClass>;                                          \
+                                                                                         \
+	virtual void Define() override
 
 #define SPEC(TClass, TParent, PrettyName, TFlags)  \
-		class TClass : public TParent                  \
-		{                                              \
-			GENERATE_SPEC(TClass, PrettyName, TFlags); \
-		};                                             \
-		void TClass::Define()
+	class TClass : public TParent                  \
+	{                                              \
+		GENERATE_SPEC(TClass, PrettyName, TFlags); \
+	};                                             \
+	void TClass::Define()
 
 
 ////////////////////////////////////////////////////////////////
@@ -1215,14 +1214,12 @@ namespace Automatron
 
 		UWorld* SelectedWorld = FindGameWorld();
 
-#	if WITH_EDITOR
+#if WITH_EDITOR
 		// If there was no PIE world, start it and try again
 		if (bCanUsePIEWorld && !SelectedWorld && GIsEditor)
 		{
-			FDelegateHandle PIEStartedHandle = FEditorDelegates::PostPIEStarted.AddLambda(
-				[this, OnWorldReady, PIEStartedHandle](const bool bIsSimulating) {
-					FEditorDelegates::PostPIEStarted.Remove(PIEStartedHandle);
-
+			PIEStartedHandle =
+				FEditorDelegates::PostPIEStarted.AddLambda([this, OnWorldReady](const bool bIsSimulating) {
 					UWorld* SelectedWorld = FindGameWorld();
 					bInitializedPIE = SelectedWorld != nullptr;
 					bInitializedWorld = bInitializedPIE;
@@ -1232,7 +1229,7 @@ namespace Automatron
 			FEditorPromotionTestUtilities::StartPIE(false);
 			return;
 		}
-#	endif
+#endif
 
 		if (!SelectedWorld)
 		{
@@ -1253,7 +1250,8 @@ namespace Automatron
 			return;
 		}
 
-#	if WITH_EDITOR
+#if WITH_EDITOR
+		FEditorDelegates::PostPIEStarted.Remove(PIEStartedHandle);
 		if (bInitializedPIE)
 		{
 			FEditorPromotionTestUtilities::EndPIE();
@@ -1261,7 +1259,7 @@ namespace Automatron
 			bInitializedWorld = false;
 			return;
 		}
-#	endif
+#endif
 
 		if (!bInitializedWorld)
 		{
@@ -1352,7 +1350,7 @@ namespace Automatron
 	inline UGameInstance* FTestSpec::CreateGameInstance(const FTestWorldSettings& Settings, UObject* Context)
 	{
 		UClass* GameInstanceClass = Settings.GameInstance.Get();
-		if(!GameInstanceClass)
+		if (!GameInstanceClass)
 		{
 			FSoftClassPath GameInstanceClassName = GetDefault<UGameMapsSettings>()->GameInstanceClass;
 			GameInstanceClass = GameInstanceClassName.TryLoadClass<UGameInstance>();
@@ -1420,7 +1418,8 @@ namespace Automatron
 
 	inline bool FTestSpec::SetGameMode(UWorld* World, FTestWorldSettings& Settings)
 	{
-		if ((!World->IsNetMode(NM_DedicatedServer) && !World->IsNetMode(NM_ListenServer)) || World->GetAuthGameMode())
+		if ((!World->IsNetMode(NM_DedicatedServer) && !World->IsNetMode(NM_ListenServer)) ||
+			World->GetAuthGameMode())
 		{
 			return false;
 		}
@@ -1439,22 +1438,20 @@ namespace Automatron
 		return GameMode != nullptr;
 	}
 
-	template <uint32 TFlags>
+	template <EAutomationTestFlags TFlags>
 	inline void FTestSpec::Setup(
 		FString&& InName, FString&& InPrettyName, FString&& InFileName, int32 InLineNumber)
 	{
-		static_assert(TFlags & EAutomationTestFlags::ApplicationContextMask,
-			"AutomationTest has no application flag. It shouldn't run. See "
-			"AutomationTest.h.");
+		static_assert(!!((TFlags) &EAutomationTestFlags_ApplicationContextMask),
+			"AutomationTest has no application flag.  It shouldn't run.  See AutomationTest.h.");
 		static_assert(
-			((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::SmokeFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::EngineFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::ProductFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::PerfFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::StressFilter) ||
-				((TFlags & EAutomationTestFlags::FilterMask) == EAutomationTestFlags::NegativeFilter),
-			"All AutomationTests must have exactly 1 filter type "
-			"specified.  See AutomationTest.h.");
+			!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::SmokeFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::EngineFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::ProductFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::PerfFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::StressFilter) ||
+				!!(((TFlags) &EAutomationTestFlags_FilterMask) == EAutomationTestFlags::NegativeFilter),
+			"All AutomationTests must have exactly 1 filter type specified.  See AutomationTest.h.");
 
 		ClassName = InName;
 		PrettyName = MoveTemp(InPrettyName);

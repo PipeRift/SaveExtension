@@ -1,21 +1,22 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 #pragma once
 
+#include "ClassFilterNode.h"
 #include "CoreMinimal.h"
-#include <Engine/EngineTypes.h>
+#include "Input/Reply.h"
+#include "Layout/Visibility.h"
+#include "ClassFilter.h"
 #include "SlateFwd.h"
 #include "UObject/Object.h"
-#include "Layout/Visibility.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
-#include "Input/Reply.h"
-#include "Widgets/SWidget.h"
 #include "Widgets/SCompoundWidget.h"
-#include "Widgets/Views/STableViewBase.h"
+#include "Widgets/SWidget.h"
 #include "Widgets/Views/STableRow.h"
+#include "Widgets/Views/STableViewBase.h"
 #include "Widgets/Views/STreeView.h"
 
-#include "Misc/ClassFilter.h"
-#include "ClassFilterNode.h"
+#include <Engine/EngineTypes.h>
+
 
 class IPropertyHandle;
 
@@ -23,7 +24,6 @@ class IPropertyHandle;
 class SClassFilter : public SCompoundWidget
 {
 public:
-
 	/** Called when the filter is changed */
 	DECLARE_DELEGATE(FOnFilterChanged)
 
@@ -33,15 +33,15 @@ public:
 		, _PropertyHandle(nullptr)
 		, _MaxHeight(260.0f)
 	{}
-	SLATE_ARGUMENT(bool, ReadOnly) // Flag to set if the list is read only
-		SLATE_ARGUMENT(bool, MultiSelect) // If we can select multiple entries
-		SLATE_ARGUMENT(TSharedPtr<IPropertyHandle>, PropertyHandle)
-		SLATE_EVENT(FOnFilterChanged, OnFilterChanged) // Called when a tag status changes
-		SLATE_ARGUMENT(float, MaxHeight)	// caps the height of the gameplay tag tree
-		SLATE_END_ARGS()
+	SLATE_ARGUMENT(bool, ReadOnly)		 // Flag to set if the list is read only
+	SLATE_ARGUMENT(bool, MultiSelect)	 // If we can select multiple entries
+	SLATE_ARGUMENT(TSharedPtr<IPropertyHandle>, PropertyHandle)
+	SLATE_EVENT(FOnFilterChanged, OnFilterChanged)	  // Called when a tag status changes
+	SLATE_ARGUMENT(float, MaxHeight)				  // caps the height of the gameplay tag tree
+	SLATE_END_ARGS()
 
-		/** Simple struct holding a tag container and its owner for generic re-use of the widget */
-		struct FEditableClassFilterDatum
+	/** Simple struct holding a tag container and its owner for generic re-use of the widget */
+	struct FEditableClassFilterDatum
 	{
 		/** Constructor */
 		FEditableClassFilterDatum(class UObject* InOwner, struct FSEClassFilter* InFilter)
@@ -59,7 +59,8 @@ public:
 	/** Construct the actual widget */
 	void Construct(const FArguments& InArgs, const TArray<FEditableClassFilterDatum>& EditableFilters);
 
-	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
+	virtual void Tick(
+		const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 
 	/** Ensures that this widget will always account for the MaxHeight if it's specified */
 	virtual FVector2D ComputeDesiredSize(float LayoutScaleMultiplier) const override;
@@ -75,7 +76,6 @@ public:
 
 
 private:
-
 	FString SearchString;
 
 	bool bReadOnly;
@@ -86,7 +86,8 @@ private:
 	/** The maximum height of the gameplay tag tree. If 0, the height is unbound. */
 	float MaxHeight;
 
-	/** True if the Class Filter needs to be repopulated at the next appropriate opportunity, occurs whenever classes are added, removed, renamed, etc. */
+	/** True if the Class Filter needs to be repopulated at the next appropriate opportunity, occurs whenever
+	 * classes are added, removed, renamed, etc. */
 	bool bNeedsRefresh;
 
 	/* Array of tags to be displayed in the TreeView */
@@ -121,7 +122,8 @@ private:
 	 *
 	 * @return Generated row widget for the item node
 	 */
-	TSharedRef<ITableRow> OnGenerateRow(FSEClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable);
+	TSharedRef<ITableRow> OnGenerateRow(
+		FSEClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable);
 
 	/**
 	 * Get children nodes of the specified node

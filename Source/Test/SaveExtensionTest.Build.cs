@@ -1,29 +1,33 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2026 Piperift. All Rights Reserved.
 
 using UnrealBuildTool;
 using System.IO;
 
 namespace UnrealBuildTool.Rules
 {
-	public class SaveExtensionTest : ModuleRules {
+	public class SaveExtensionTest : ModuleRules
+	{
 		public SaveExtensionTest(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-			bEnforceIWYU = true;
 
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
-				"Core",
-				"Engine",
-				"CoreUObject",
-				"SaveExtension",
-				"EngineSettings"
+				"Core"
 			});
 
-            if (Target.bBuildEditor == true)
-            {
-                PrivateDependencyModuleNames.Add("UnrealEd");
-            }
-        }
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"CoreUObject",
+				"Engine",
+				"EngineSettings",
+				"SaveExtension"
+			});
+
+			if (Target.bBuildEditor == true)
+			{
+				PrivateDependencyModuleNames.Add("UnrealEd");
+			}
+		}
 	}
 }

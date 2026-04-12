@@ -1,18 +1,17 @@
-// Copyright 2015-2020 Piperift. All Rights Reserved.
+// Copyright 2015-2024 Piperift. All Rights Reserved.
 
 #include "LifetimeComponent.h"
-#include "Serialization/MTTask.h"
+
+#include "SaveExtension.h"
 
 
-ULifetimeComponent::ULifetimeComponent()
-	: Super()
-{}
+ULifetimeComponent::ULifetimeComponent() : Super() {}
 
 void ULifetimeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (USaveManager* Manager = GetManager())
+	if (USaveManager* Manager = USaveManager::Get(this))
 	{
 		Manager->SubscribeForEvents(this);
 
@@ -25,13 +24,14 @@ void ULifetimeComponent::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogSaveExtension, Error, TEXT("LifetimeComponent couldnt find a SaveManager. It will do nothing."))
+		UE_LOG(LogSaveExtension, Error,
+			TEXT("LifetimeComponent couldnt find a SaveManager. It will do nothing."))
 	}
 }
 
 void ULifetimeComponent::EndPlay(EEndPlayReason::Type Reason)
 {
-	if (USaveManager* Manager = GetManager())
+	if (USaveManager* Manager = USaveManager::Get(this))
 	{
 		// If manager is loading, it has probably manually destroyed
 		// this actor and its not a natural destroy
@@ -48,7 +48,7 @@ void ULifetimeComponent::EndPlay(EEndPlayReason::Type Reason)
 
 void ULifetimeComponent::OnSaveBegan(const FSELevelFilter& Filter)
 {
-	if (Filter.ShouldSave(GetOwner()))
+	if (Filter.Stores(GetOwner()))
 	{
 		Saved.Broadcast();
 	}
@@ -56,7 +56,7 @@ void ULifetimeComponent::OnSaveBegan(const FSELevelFilter& Filter)
 
 void ULifetimeComponent::OnLoadFinished(const FSELevelFilter& Filter, bool bError)
 {
-	if (Filter.ShouldSave(GetOwner()))
+	if (Filter.Stores(GetOwner()))
 	{
 		Resume.Broadcast();
 	}
