@@ -13,8 +13,15 @@
 #include <GameFramework/Pawn.h>
 #include <GameFramework/PlayerController.h>
 #include <GameFramework/PlayerState.h>
+#include <Online/CoreOnline.h>
 #include <Serialization/MemoryReader.h>
 #include <Serialization/MemoryWriter.h>
+
+
+// From OnlineSubsystem.cpp
+#ifndef NULL_SUBSYSTEM
+const FName NULL_SUBSYSTEM(TEXT("NULL"));
+#endif
 
 
 /////////////////////////////////////////////////////
@@ -110,16 +117,46 @@ FSubsystemRecord::FSubsystemRecord(const USubsystem& Subsystem) : Super(Subsyste
 
 bool FPlayerRecord::Serialize(FArchive& Ar)
 {
-	Ar << UniqueId;
-	Ar << PlayerState;
-	Ar << Controller;
-	Ar << Pawn;
+	Super::Serialize(Ar);
+
+	if (!Name.IsNone())
+	{
+		Ar << UniqueId;
+		Ar << PlayerState;
+		Ar << Controller;
+		Ar << Pawn;
+	}
 	return true;
 }
 
 bool FPlayerRecord::operator==(const FPlayerRecord& Other) const
 {
-	return UniqueId == Other.UniqueId;
+	return UniqueId == Other.UniqueId || Name == Other.Name;
+}
+bool FPlayerRecord::operator==(const APlayerState& Other) const
+{
+	bool bCheckUniqueId = false;
+	const FUniqueNetIdRepl UniqueIdPtr = Other.GetUniqueId();
+	// Same as UniqueId.IsValid(), but checking that it is not generated (there is an online subsystem)
+	if (UniqueIdPtr.IsV1())
+	{
+		const FUniqueNetIdPtr& Ptr = UniqueIdPtr.GetV1Unsafe();
+		if (Ptr.IsValid() && Ptr->IsValid() && Ptr->GetType() != NULL_SUBSYSTEM)
+		{
+			bCheckUniqueId = true;
+		}
+	}
+	else
+	{
+		// NOTE: Type checking on V2 may not be needed
+		const UE::Online::FAccountId& AccountId = UniqueIdPtr.GetV2Unsafe();
+		if (AccountId.IsValid() && AccountId.GetOnlineServicesType() != UE::Online::EOnlineServices::Null)
+		{
+			bCheckUniqueId = true;
+		}
+	}
+	// Without a Online Subsystem we check name instead
+	return bCheckUniqueId ? UniqueId == Other.GetUniqueId().ToString() : Name == Other.GetFName();
 }
 
 
@@ -297,6 +334,7 @@ void SERecords::SerializePlayer(
 	APlayerController* PC = PlayerState->GetPlayerController();
 	APawn* Pawn = PlayerState->GetPawn();
 
+	Record.Name = PlayerState->GetFName();
 	Record.UniqueId = PlayerState->GetUniqueId().ToString();
 	SERecords::SerializeActor(PlayerState, Record.PlayerState, ComponentFilter);
 	if (Pawn)
@@ -313,7 +351,6 @@ void SERecords::DeserializePlayer(
 	APlayerState* PlayerState, const FPlayerRecord& Record, const FSEClassFilter& ComponentFilter)
 {
 	check(PlayerState);
-	check(PlayerState->GetUniqueId().ToString() == Record.UniqueId);
 
 	APlayerController* PC = PlayerState->GetPlayerController();
 	APawn* Pawn = PlayerState->GetPawn();

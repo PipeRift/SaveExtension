@@ -22,8 +22,6 @@ class UGameInstance;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSavedMC, USaveSlot*, Slot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoadedMC, USaveSlot*, Slot);
-using FSEOnAllSlotsPreloaded = TFunction<void(const TArray<class USaveSlot*>& Slots)>;
-using FSEOnAllSlotsDeleted = TFunction<void(int32 Count)>;
 
 
 UENUM()
@@ -82,12 +80,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<USaveSlot> ActiveSlot;
 
-	UPROPERTY()
-	TObjectPtr<USaveSlot> AutoLoadSlot;
-
-	UPROPERTY()
-	TObjectPtr<USaveSlot> PreloadedSlot;
-
 	UPROPERTY(Transient)
 	TArray<ULevelStreamingNotifier*> LevelStreamingNotifiers;
 
@@ -140,18 +132,34 @@ public:
 	}
 
 	/**
-	 * Find all saved slots and preload them, without loading their data
-	 * @param Slots preloaded from on disk
-	 * @param bSortByRecent Should slots be ordered by save date?
+	 * Find a slot matching SlotName and preload it asynchronously, without loading its data
+	 * @param SlotName
+	 * @return the preloaded slot from disk
 	 */
-	void PreloadAllSlots(FSEOnAllSlotsPreloaded Callback, bool bSortByRecent = false);
+	UE::Tasks::TTask<USaveSlot*> PreloadSlot(FName SlotName);
+
+	/**
+	 * Find a slot matching SlotName and preload it, without loading its data
+	 * @param SlotName
+	 * @return the preloaded slot from disk
+	 */
+	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
+	USaveSlot* PreloadSlotSync(FName SlotName);
+
 	/**
 	 * Find all saved slots and preload them asynchronously, without loading their data
-	 * Performance: Interacts with disk, can be slow
-	 * @param Slots preloaded from on disk
+	 * @param Slots preloaded from disk
 	 * @param bSortByRecent Should slots be ordered by save date?
 	 */
-	void PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRecent = false);
+	UE::Tasks::TTask<TArray<USaveSlot*>> PreloadAllSlots(bool bSortByRecent = false);
+
+	/**
+	 * Find all saved slots and preload them, without loading their data
+	 * Performance: Interacts with disk, can be slow
+	 * @param Slots preloaded from disk
+	 * @param bSortByRecent Should slots be ordered by save date?
+	 */
+	TArray<USaveSlot*> PreloadAllSlotsSync(bool bSortByRecent = false);
 
 	/** Delete a saved game on an specified slot name
 	 * Performance: Interacts with disk, can be slow
@@ -161,8 +169,8 @@ public:
 	 * Performance: Interacts with disk, can be slow
 	 */
 	int32 DeleteAllSlotsSync();
-	/** Deletes all saved slots in disk. Does not affect slots in memory. */
-	void DeleteAllSlots(FSEOnAllSlotsDeleted Delegate);
+	/** Deletes all saved slots in disk asynchronously. Does not affect slots in memory. */
+	UE::Tasks::TTask<int32> DeleteAllSlots();
 
 
 	/** BLUEPRINT ONLY API */
@@ -259,9 +267,6 @@ public:
 		EnsureActiveSlot();
 		return ActiveSlot;
 	}
-
-	UFUNCTION(BlueprintCallable, Category = "SaveExtension|Slots")
-	USaveSlot* PreloadSlot(FName SlotName);
 
 	/** Check if an slot exists on disk
 	 * @return true if the slot exists

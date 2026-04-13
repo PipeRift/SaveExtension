@@ -40,7 +40,7 @@ void FSEDataTask_Load::OnStart()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEDataTask_Load::OnStart);
 
-	Slot = Manager->PreloadSlot(SlotName);
+	Slot = Manager->PreloadSlotSync(SlotName);
 	SELog(Slot.Get(), "Loading from Slot " + SlotName.ToString());
 	if (!Slot.IsValid())
 	{
@@ -266,11 +266,15 @@ void FSEDataTask_Load::DeserializeSync()
 		DeserializeLevelSync(World->GetCurrentLevel());
 
 		const FLevelRecord& LevelRecord = *FindLevelRecord(*SlotData, nullptr);
-		for (APlayerState* PlayerState : GetWorld()->GetGameState()->PlayerArray)
+		if (auto* GameState = GetWorld()->GetGameState())
 		{
-			if (const FPlayerRecord* PlayerRecord = SlotData->FindPlayerRecord(PlayerState->GetUniqueId()))
+			for (APlayerState* PlayerState : GameState->PlayerArray)
 			{
-				SERecords::DeserializePlayer(PlayerState, *PlayerRecord, LevelRecord.Filter.ComponentFilter);
+				if (const FPlayerRecord* PlayerRecord = SlotData->FindPlayerRecord(PlayerState))
+				{
+					SERecords::DeserializePlayer(
+						PlayerState, *PlayerRecord, LevelRecord.Filter.ComponentFilter);
+				}
 			}
 		}
 

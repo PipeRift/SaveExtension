@@ -64,8 +64,8 @@ void FSaveSpec_Preset::Define()
 		});
 
 		It("Can save an actor synchronously", [this]() {
-			TestTrue("Saved", SaveManager->SaveSlot(0));
-			TestTrue("Loaded", SaveManager->LoadSlot(0));
+			TestTrue("Saved", SaveManager->SaveSlot("0"));
+			TestTrue("Loaded", SaveManager->LoadSlot("0"));
 		});
 
 		xIt("Can save an actor asynchronously", [this]() {
@@ -75,11 +75,11 @@ void FSaveSpec_Preset::Define()
 		Describe("Properties", [this]() {
 			It("bool", [this]() {
 				TestActor->bMyBool = true;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestTrue("bool didn't change after save", TestActor->bMyBool);
 
 				TestActor->bMyBool = false;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 
 				TickUntilSaveTasksFinish();
 				TestTrue("bool was saved", TestActor->bMyBool);
@@ -87,81 +87,81 @@ void FSaveSpec_Preset::Define()
 
 			It("uint8", [this]() {
 				TestActor->MyU8 = 34;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestEqual("uint8 didn't change after save", TestActor->MyU8, 34);
 
 				TestActor->MyU8 = 212;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 				TestEqual("uint8 was saved", TestActor->MyU8, 34);
 			});
 
 			It("uint16", [this]() {
 				TestActor->MyU16 = 34;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestEqual("uint16 didn't change after save", TestActor->MyU16, 34);
 
 				TestActor->MyU16 = 212;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 				TestEqual("uint16 was saved", TestActor->MyU16, 34);
 			});
 
 			It("uint32", [this]() {
 				TestActor->MyU32 = 34;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestEqual("uint32 didn't change after save", TestActor->MyU32, 34);
 
 				TestActor->MyU32 = 212;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 				TestEqual("uint32 was saved", TestActor->MyU32, 34);
 			});
 
 			It("uint64", [this]() {
 				TestActor->MyU64 = 34;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestEqual("uint16 didn't change after save", TestActor->MyU64, 34);
 
 				TestActor->MyU64 = 212;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 				TestEqual("uint16 was saved", TestActor->MyU64, 34);
 			});
 
 			It("int8", [this]() {
 				TestActor->MyI8 = 34;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestEqual("int8 didn't change after save", TestActor->MyI8, 34);
 
 				TestActor->MyI8 = 100;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 				TestEqual("int8 was saved", TestActor->MyI8, 34);
 			});
 
 			It("int16", [this]() {
 				TestActor->MyI16 = 34;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestEqual("int16 didn't change after save", TestActor->MyI16, 34);
 
 				TestActor->MyI16 = 212;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 				TestEqual("int16 was saved", TestActor->MyI16, 34);
 			});
 
 			It("int32", [this]() {
 				TestActor->MyI32 = 34;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestEqual("int32 didn't change after save", TestActor->MyI32, 34);
 
 				TestActor->MyI32 = 212;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 				TestEqual("int32 was saved", TestActor->MyI32, 34);
 			});
 
 			It("int64", [this]() {
 				TestActor->MyI64 = 34;
-				SaveManager->SaveSlot(0);
+				SaveManager->SaveSlot("0");
 				TestEqual("int64 didn't change after save", TestActor->MyI64, 34);
 
 				TestActor->MyI64 = 212;
-				SaveManager->LoadSlot(0);
+				SaveManager->LoadSlot("0");
 				TestEqual("int64 was saved", TestActor->MyI64, 34);
 			});
 		});
@@ -178,14 +178,7 @@ void FSaveSpec_Preset::Define()
 	AfterEach([this]() {
 		if (SaveManager)
 		{
-			bFinishTick = false;
-			SaveManager->DeleteAllSlots([this](int32 Count) {
-				bFinishTick = true;
-			});
-
-			TickWorldUntil(GetWorld(), true, [this](float) {
-				return !bFinishTick;
-			});
+			SaveManager->DeleteAllSlotsSync();
 		}
 		SaveManager = nullptr;
 	});

@@ -15,6 +15,7 @@
 
 
 struct FUniqueNetIdRepl;
+class APlayerState;
 
 
 /**
@@ -22,8 +23,9 @@ struct FUniqueNetIdRepl;
  * Works like a common SaveGame object
  * E.g: Items, Quests, Enemies, World Actors, AI, Physics
  */
-UCLASS(Blueprintable, BlueprintType, ClassGroup = SaveExtension, hideCategories = ("Activation", "Actor Tick", "Actor", "Input",
-									   "Rendering", "Replication", "Socket", "Thumbnail"))
+UCLASS(Blueprintable, BlueprintType, ClassGroup = SaveExtension,
+	hideCategories = ("Activation", "Actor Tick", "Actor", "Input", "Rendering", "Replication", "Socket",
+		"Thumbnail"))
 class SAVEEXTENSION_API USaveSlotData : public UObject
 {
 	GENERATED_BODY()
@@ -61,11 +63,9 @@ public:
 	/** Using manual serialization. It's way faster than reflection serialization */
 	virtual void Serialize(FArchive& Ar) override;
 
+	FPlayerRecord* FindPlayerRecord(const APlayerState* Player);
 	UFUNCTION(BlueprintPure, Category = SaveSlotData)
-	FPlayerRecord& FindOrAddPlayerRecord(const FUniqueNetIdRepl& UniqueId);
-	FPlayerRecord* FindPlayerRecord(const FUniqueNetIdRepl& UniqueId);
+	bool FindPlayerRecord(const APlayerState* Player, FPlayerRecord& Record);
 	UFUNCTION(BlueprintPure, Category = SaveSlotData)
-	bool FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, UPARAM(Ref) FPlayerRecord& Record);
-	UFUNCTION(BlueprintPure, Category = SaveSlotData)
-	bool RemovePlayerRecord(const FUniqueNetIdRepl& UniqueId);
+	bool RemovePlayerRecord(const APlayerState* Player);
 };

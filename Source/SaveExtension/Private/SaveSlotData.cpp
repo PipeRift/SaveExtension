@@ -50,16 +50,15 @@ void USaveSlotData::CleanRecords(bool bKeepSublevels)
 	}
 }
 
-FPlayerRecord& USaveSlotData::FindOrAddPlayerRecord(const FUniqueNetIdRepl& UniqueId)
+FPlayerRecord* USaveSlotData::FindPlayerRecord(const APlayerState* Player)
 {
-	return Players[Players.AddUnique(FPlayerRecord(UniqueId.ToString()))];
-}
+	if (!Player)
+	{
+		return nullptr;
+	}
 
-FPlayerRecord* USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId)
-{
-	const FString UniqueIdStr = UniqueId.ToString();
-	const int32 Index = Players.IndexOfByPredicate([&UniqueIdStr](const FPlayerRecord& Record) {
-		return Record.UniqueId == UniqueIdStr;
+	const int32 Index = Players.IndexOfByPredicate([Player](const FPlayerRecord& Record) {
+		return Record == *Player;
 	});
 	if (Index != INDEX_NONE)
 	{
@@ -68,9 +67,9 @@ FPlayerRecord* USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId)
 	return nullptr;
 }
 
-bool USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, FPlayerRecord& Record)
+bool USaveSlotData::FindPlayerRecord(const APlayerState* Player, FPlayerRecord& Record)
 {
-	if (FPlayerRecord* FoundRecord = FindPlayerRecord(UniqueId))
+	if (FPlayerRecord* FoundRecord = FindPlayerRecord(Player))
 	{
 		Record = *FoundRecord;
 		return true;
@@ -78,10 +77,13 @@ bool USaveSlotData::FindPlayerRecord(const FUniqueNetIdRepl& UniqueId, FPlayerRe
 	return false;
 }
 
-bool USaveSlotData::RemovePlayerRecord(const FUniqueNetIdRepl& UniqueId)
+bool USaveSlotData::RemovePlayerRecord(const APlayerState* Player)
 {
-	const FString UniqueIdStr = UniqueId.ToString();
-	return Players.RemoveAll([&UniqueIdStr](const FPlayerRecord& Record) {
-		return Record.UniqueId == UniqueIdStr;
+	if (!Player)
+	{
+		return false;
+	}
+	return Players.RemoveAll([Player](const FPlayerRecord& Record) {
+		return Record == *Player;
 	}) > 0;
 }

@@ -40,7 +40,6 @@ struct FSEDataTask_Save : public FSEDataTask
 protected:
 	TObjectPtr<USaveSlot> Slot;
 	TObjectPtr<USaveSlotData> SlotData;
-	FSEClassFilter SubsystemFilter;
 
 
 	UE::Tasks::TTask<bool> SaveFileTask;
