@@ -41,12 +41,12 @@ void FSaveSpec_GameInstance::Define()
 		auto* GI = GetWorld()->GetGameInstance<USETestGameInstance>();
 		GI->bMyBool = true;
 
-		SaveManager->SaveSlot(0);
+		SaveManager->SaveSlot("0");
 
 		TestTrue("Saved variable didn't change with save", GI->bMyBool);
 		GI->bMyBool = false;
 
-		SaveManager->LoadSlot(0);
+		SaveManager->LoadSlot("0");
 
 		TestTrue("Saved variable loaded", GI->bMyBool);
 	});
@@ -54,14 +54,7 @@ void FSaveSpec_GameInstance::Define()
 	AfterEach([this]() {
 		if (SaveManager)
 		{
-			bFinishTick = false;
-			SaveManager->DeleteAllSlots([this](int32 Count) {
-				bFinishTick = true;
-			});
-
-			TickWorldUntil(GetWorld(), true, [this](float) {
-				return !bFinishTick;
-			});
+			SaveManager->DeleteAllSlotsSync();
 		}
 		SaveManager = nullptr;
 	});

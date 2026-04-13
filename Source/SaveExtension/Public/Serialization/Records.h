@@ -144,7 +144,7 @@ struct SAVEEXTENSION_API FSubsystemRecord : public FObjectRecord
 
 /** Represents a serialized Player */
 USTRUCT(BlueprintType)
-struct SAVEEXTENSION_API FPlayerRecord
+struct SAVEEXTENSION_API FPlayerRecord : public FBaseRecord
 {
 	GENERATED_BODY()
 
@@ -167,6 +167,7 @@ struct SAVEEXTENSION_API FPlayerRecord
 	bool Serialize(FArchive& Ar);
 
 	bool operator==(const FPlayerRecord& Other) const;
+	bool operator==(const APlayerState& Other) const;
 };
 
 namespace SERecords

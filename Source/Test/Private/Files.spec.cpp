@@ -11,10 +11,8 @@ class FSaveSpec_Files : public Automatron::FTestSpec
 	GENERATE_SPEC(FSaveSpec_Files, "SaveExtension.Files",
 		EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter);
 
-	TObjectPtr<USaveManager> SaveManager;
-
-	// Helper for some test delegates
 	bool bFinishTick = false;
+	TObjectPtr<USaveManager> SaveManager;
 
 	FSaveSpec_Files() : Automatron::FTestSpec()
 	{
@@ -38,7 +36,7 @@ void FSaveSpec_Files::Define()
 	It("Can save files synchronously", [this]() {
 		SaveManager->GetActiveSlot()->MultithreadedFiles = ESEAsyncMode::SaveAndLoadSync;
 
-		TestTrue("Saved", SaveManager->SaveSlot(0));
+		TestTrue("Saved", SaveManager->SaveSlot("0"));
 
 		TestTrue("Info File exists in disk", FSEFileHelpers::FileExists(TEXT("0")));
 	});
@@ -48,7 +46,7 @@ void FSaveSpec_Files::Define()
 		bFinishTick = false;
 
 		bool bSaving =
-			SaveManager->SaveSlot(0, true, false, {}, FOnGameSaved::CreateLambda([this](auto* Info) {
+			SaveManager->SaveSlot("0", true, false, {}, FOnGameSaved::CreateLambda([this](auto* Info) {
 				// Notified that files have been saved asynchronously
 				TestTrue("Info File exists in disk", FSEFileHelpers::FileExists(TEXT("0")));
 				bFinishTick = true;
@@ -66,23 +64,20 @@ void FSaveSpec_Files::Define()
 	It("Can load files synchronously", [this]() {
 		SaveManager->GetActiveSlot()->MultithreadedFiles = ESEAsyncMode::SaveAndLoadSync;
 
-		TestTrue("Saved", SaveManager->SaveSlot(0));
+		TestTrue("Saved", SaveManager->SaveSlot("0"));
+		TestTrue("Slot exists in disk", FSEFileHelpers::FileExists(TEXT("0")));
 
-		USaveSlot* Slot = FSEFileHelpers::LoadFileSync(TEXT("0"), nullptr, true, SaveManager);
+		TestTrue("Loaded", SaveManager->LoadSlot("0"));
+		auto* Slot = SaveManager->GetActiveSlot();
 		TestNotNull("Slot is valid", Slot);
+		TestEqual("Slot name matches", Slot->Name, FName("0"));
 		TestNotNull("Data is valid", Slot->GetData());
 	});
 
 	AfterEach([this]() {
 		if (SaveManager)
 		{
-			bFinishTick = false;
-			SaveManager->DeleteAllSlots([this](int32 Count) {
-				bFinishTick = true;
-			});
-			TickWorldUntil(GetWorld(), true, [this](float) {
-				return !bFinishTick;
-			});
+			SaveManager->DeleteAllSlotsSync();
 		}
 		SaveManager = nullptr;
 	});

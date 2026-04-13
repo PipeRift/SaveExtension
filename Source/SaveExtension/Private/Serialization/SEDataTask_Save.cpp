@@ -163,15 +163,15 @@ void FSEDataTask_Save::SerializeWorld()
 
 	// Must have Authority
 	const UWorld* World = GetWorld();
-	if (!World->GetAuthGameMode())
+	if (World->GetNetMode() == ENetMode::NM_Client)	   // Clients cant save
 	{
 		return;
 	}
 
 	SELog(Slot, "World '" + World->GetName() + "'", FColor::Green, false, 1);
 
-	SubsystemFilter = Slot->SubsystemFilter;
-	SubsystemFilter.BakeAllowedClasses();
+	Slot->SubsystemFilter.BakeAllowedClasses();
+	Slot->ComponentFilter.BakeAllowedClasses();
 
 	const TArray<ULevelStreaming*>& Levels = World->GetStreamingLevels();
 	PrepareAllLevels(Levels);
@@ -191,7 +191,7 @@ void FSEDataTask_Save::SerializeWorld()
 			for (UGameInstanceSubsystem* Subsystem :
 				GameInstance->GetSubsystemArrayCopy<UGameInstanceSubsystem>())
 			{
-				if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
+				if (Slot->SubsystemFilter.IsAllowed(Subsystem->GetClass()))
 				{
 					auto& SubsystemRecord = SlotData->GameInstanceSubsystems.Add_GetRef({*Subsystem});
 					FMemoryWriter SubsystemMemoryWriter(SubsystemRecord.Data, true);
@@ -204,12 +204,22 @@ void FSEDataTask_Save::SerializeWorld()
 		SlotData->WorldSubsystems.Reset();
 		for (UWorldSubsystem* Subsystem : World->GetSubsystemArrayCopy<UWorldSubsystem>())
 		{
-			if (SubsystemFilter.IsAllowed(Subsystem->GetClass()))
+			if (Slot->SubsystemFilter.IsAllowed(Subsystem->GetClass()))
 			{
 				auto& SubsystemRecord = SlotData->WorldSubsystems.Add_GetRef({*Subsystem});
 				FMemoryWriter SubsystemMemoryWriter(SubsystemRecord.Data, true);
 				FSEArchive Ar(SubsystemMemoryWriter, false);
 				Subsystem->Serialize(Ar);
+			}
+		}
+
+		if (GetWorld()->GetGameState())	   // No game state? Dont save players
+		{
+			const auto& Players = GetWorld()->GetGameState()->PlayerArray;
+			SlotData->Players.SetNum(Players.Num());
+			for (int32 i = 0; i < Players.Num(); ++i)
+			{
+				SERecords::SerializePlayer(Players[i], SlotData->Players[i], Slot->ComponentFilter);
 			}
 		}
 
@@ -260,19 +270,6 @@ void FSEDataTask_Save::SerializeLevel(const ULevel* Level, const ULevelStreaming
 	const FSELevelFilter& Filter = LevelRecord.Filter;
 
 	LevelRecord.CleanRecords();	   // Empty level record before serializing it
-
-	TArray<APlayerState*> PlayersToSerialize = Level->GetWorld()->GetGameState()->PlayerArray;
-	SlotData->Players.SetNum(PlayersToSerialize.Num());
-	if (Level && Level->IsPersistentLevel())
-	{
-		for (int32 i = 0; i < PlayersToSerialize.Num(); i++)
-		{
-			FSEClassFilter ComponentFilter = Filter.ComponentFilter;
-			ComponentFilter.BakeAllowedClasses();
-			FPlayerRecord OutRecord;
-			SERecords::SerializePlayer(PlayersToSerialize[i], SlotData->Players[i], ComponentFilter);
-		}
-	}
 
 	TArray<const AActor*> ActorsToSerialize;
 	for (AActor* Actor : Level->Actors)

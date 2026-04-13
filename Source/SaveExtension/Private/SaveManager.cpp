@@ -85,6 +85,7 @@ public:
 	FName ExecutionFunction;
 	int32 OutputLink;
 	FWeakObjectPtr CallbackTarget;
+	UE::Tasks::TTask<int32> Task;
 
 	FDeleteAllSlotsAction(USaveManager* Manager, ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
 		: Result(OutResult)
@@ -93,12 +94,14 @@ public:
 		, CallbackTarget(LatentInfo.CallbackTarget)
 	{
 		Result = ESEContinue::InProgress;
-		Manager->DeleteAllSlots([this](int32 Count) {
-			Result = ESEContinue::Continue;
-		});
+		Task = Manager->DeleteAllSlots();
 	}
 	void UpdateOperation(FLatentResponse& Response) override
 	{
+		if (Task.IsCompleted())
+		{
+			Result = ESEContinue::Continue;
+		}
 		Response.FinishAndTriggerIf(
 			Result != ESEContinue::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
 	}
@@ -118,6 +121,7 @@ public:
 	FName ExecutionFunction;
 	int32 OutputLink;
 	FWeakObjectPtr CallbackTarget;
+	UE::Tasks::TTask<TArray<USaveSlot*>> Task;
 
 	FSEPreloadSlotsAction(USaveManager* Manager, const bool bSortByRecent, TArray<USaveSlot*>& OutSlots,
 		ESEContinue& OutResult, const FLatentActionInfo& LatentInfo)
@@ -128,22 +132,23 @@ public:
 		, CallbackTarget(LatentInfo.CallbackTarget)
 	{
 		Result = ESEContinue::InProgress;
-		Manager->PreloadAllSlots(
-			[this](const TArray<USaveSlot*>& InSlots) {
-				Slots = InSlots;
-				Result = ESEContinue::Continue;
-			},
-			bSortByRecent);
+		Task = Manager->PreloadAllSlots(bSortByRecent);
 	}
-	virtual void UpdateOperation(FLatentResponse& Response) override
+
+	void UpdateOperation(FLatentResponse& Response) override
 	{
+		if (Task.IsCompleted())
+		{
+			Slots = MoveTemp(Task.GetResult());
+			Result = ESEContinue::Continue;
+		}
 		Response.FinishAndTriggerIf(
 			Result != ESEContinue::InProgress, ExecutionFunction, OutputLink, CallbackTarget);
 	}
 #if WITH_EDITOR
-	virtual FString GetDescription() const override
+	FString GetDescription() const override
 	{
-		return TEXT("Loading all slots...");
+		return TEXT("Preloading all slots...");
 	}
 #endif
 };
@@ -193,7 +198,7 @@ bool USaveManager::HasActiveSlotWithPlayer(const APlayerState* PlayerState) cons
 {
 	if (ActiveSlot && ActiveSlot->GetData() && PlayerState)
 	{
-		return ActiveSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()) != nullptr;
+		return ActiveSlot->GetData()->FindPlayerRecord(PlayerState) != nullptr;
 	}
 	return false;
 }
@@ -203,8 +208,7 @@ void USaveManager::HandlePlayerAdded(APlayerState* PlayerState)
 	if (PlayerState && ActiveSlot)
 	{
 		ActiveSlot->ComponentFilter.BakeAllowedClasses();
-		if (const FPlayerRecord* PlayerRecord =
-				ActiveSlot->GetData()->FindPlayerRecord(PlayerState->GetUniqueId()))
+		if (const auto* PlayerRecord = ActiveSlot->GetData()->FindPlayerRecord(PlayerState))
 		{
 			SERecords::DeserializePlayer(PlayerState, *PlayerRecord, ActiveSlot->ComponentFilter);
 		}
@@ -218,10 +222,9 @@ void USaveManager::HandlePlayerAdded(APlayerState* PlayerState)
 
 void USaveManager::HandlePawnAdded(APawn* OldPawn, APawn* NewPawn)
 {
-	if (NewPawn && ActiveSlot)
+	if (NewPawn && ActiveSlot && ActiveSlot->GetData())
 	{
-		if (const FPlayerRecord* PlayerRecord =
-				ActiveSlot->GetData()->FindPlayerRecord(NewPawn->GetPlayerState()->GetUniqueId()))
+		if (const auto* PlayerRecord = ActiveSlot->GetData()->FindPlayerRecord(NewPawn->GetPlayerState()))
 		{
 			SERecords::DeserializeActor(NewPawn, PlayerRecord->Pawn, ActiveSlot->ComponentFilter);
 			APlayerController* PC = Cast<APlayerController>(NewPawn->GetController());
@@ -330,27 +333,36 @@ bool USaveManager::LoadSlot(const USaveSlot* Slot, FOnGameLoaded OnLoaded)
 	return LoadSlot(Slot->Name, OnLoaded);
 }
 
-void USaveManager::PreloadAllSlots(FSEOnAllSlotsPreloaded Callback, bool bSortByRecent)
+UE::Tasks::TTask<USaveSlot*> USaveManager::PreloadSlot(FName SlotName)
 {
-	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, Callback, bSortByRecent]() {
-		TArray<USaveSlot*> Slots;
-		PreloadAllSlotsSync(Slots, bSortByRecent);
-
-		if (Callback)
-		{
-			OnAsyncComplete([Slots = MoveTemp(Slots), Callback]() {
-				for (auto* Slot : Slots)
-				{
-					Slot->ClearInternalFlags(EInternalObjectFlags::Async);
-				}
-				Callback(Slots);
-			});
-		}
+	return FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, SlotName]() {
+		auto* Slot = PreloadSlotSync(SlotName);
+		Slot->ClearInternalFlags(EInternalObjectFlags::Async);
+		return Slot;
 	});
 }
 
-void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRecent)
+USaveSlot* USaveManager::PreloadSlotSync(FName SlotName)
 {
+	const FString NameStr = SlotName.ToString();
+	return FSEFileHelpers::LoadFileSync(NameStr, nullptr, true, this);
+}
+
+UE::Tasks::TTask<TArray<USaveSlot*>> USaveManager::PreloadAllSlots(bool bSortByRecent)
+{
+	return FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, bSortByRecent]() {
+		TArray<USaveSlot*> Slots = PreloadAllSlotsSync(bSortByRecent);
+		for (auto* Slot : Slots)
+		{
+			Slot->ClearInternalFlags(EInternalObjectFlags::Async);
+		}
+		return MoveTemp(Slots);
+	});
+}
+
+TArray<USaveSlot*> USaveManager::PreloadAllSlotsSync(bool bSortByRecent)
+{
+	TArray<USaveSlot*> Slots;
 	TArray<FString> FileNames;
 	FSEFileHelpers::FindAllFilesSync(FileNames);
 
@@ -366,7 +378,7 @@ void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRe
 		}
 	}
 
-	Slots.Reserve(Slots.Num() + LoadedFiles.Num());
+	Slots.Reserve(LoadedFiles.Num());
 	for (const auto& File : LoadedFiles)
 	{
 		auto* Slot =
@@ -383,6 +395,7 @@ void USaveManager::PreloadAllSlotsSync(TArray<USaveSlot*>& Slots, bool bSortByRe
 			return A.Stats.SaveDate > B.Stats.SaveDate;
 		});
 	}
+	return MoveTemp(Slots);
 }
 
 bool USaveManager::DeleteSlotByNameSync(FName SlotName)
@@ -411,16 +424,10 @@ int32 USaveManager::DeleteAllSlotsSync()
 	return Count;
 }
 
-void USaveManager::DeleteAllSlots(FSEOnAllSlotsDeleted Callback)
+UE::Tasks::TTask<int32> USaveManager::DeleteAllSlots()
 {
-	FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this, Callback]() {
-		const int32 Count = DeleteAllSlotsSync();
-		if (Callback)
-		{
-			OnAsyncComplete([Count, Callback]() {
-				Callback(Count);
-			});
-		}
+	return FSEFileHelpers::GetPipe().Launch(UE_SOURCE_LOCATION, [this]() {
+		return DeleteAllSlotsSync();
 	});
 }
 
@@ -459,8 +466,8 @@ void USaveManager::BPLoadSlotByName(
 	Result = ESEContinueOrFail::Failed;
 }
 
-void USaveManager::BPPreloadAllSlots(const bool bSortByRecent, TArray<USaveSlot*>& SaveInfos,
-	ESEContinue& Result, struct FLatentActionInfo LatentInfo)
+void USaveManager::BPPreloadAllSlots(const bool bSortByRecent, TArray<USaveSlot*>& Slots, ESEContinue& Result,
+	struct FLatentActionInfo LatentInfo)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -469,7 +476,7 @@ void USaveManager::BPPreloadAllSlots(const bool bSortByRecent, TArray<USaveSlot*
 				LatentInfo.CallbackTarget, LatentInfo.UUID) == nullptr)
 		{
 			LatentActionManager.AddNewAction(LatentInfo.CallbackTarget, LatentInfo.UUID,
-				new FSEPreloadSlotsAction(this, bSortByRecent, SaveInfos, Result, LatentInfo));
+				new FSEPreloadSlotsAction(this, bSortByRecent, Slots, Result, LatentInfo));
 		}
 	}
 }
@@ -486,14 +493,6 @@ void USaveManager::BPDeleteAllSlots(ESEContinue& Result, struct FLatentActionInf
 				new FDeleteAllSlotsAction(this, Result, LatentInfo));
 		}
 	}
-}
-
-USaveSlot* USaveManager::PreloadSlot(FName SlotName)
-{
-	PreloadedSlot = nullptr;
-	const FString NameStr = SlotName.ToString();
-	PreloadedSlot = FSEFileHelpers::LoadFileSync(NameStr, nullptr, true, this);
-	return PreloadedSlot;
 }
 
 bool USaveManager::IsSlotSaved(FName SlotName) const

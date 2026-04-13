@@ -270,7 +270,7 @@ bool FSEFileHelpers::SaveFileSync(USaveSlot* Slot, FStringView OverrideSlotName,
 UE::Tasks::TTask<bool> FSEFileHelpers::SaveFile(
 	USaveSlot* Slot, FString OverrideSlotName, const bool bUseCompression)
 {
-	return BackendPipe.Launch(TEXT("SaveFile"), [Slot, OverrideSlotName, bUseCompression]() {
+	return BackendPipe.Launch(UE_SOURCE_LOCATION, [Slot, OverrideSlotName, bUseCompression]() {
 		return SaveFileSync(Slot, OverrideSlotName, bUseCompression);
 	});
 }
@@ -309,7 +309,7 @@ USaveSlot* FSEFileHelpers::LoadFileSync(
 UE::Tasks::TTask<USaveSlot*> FSEFileHelpers::LoadFile(
 	FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
 {
-	return BackendPipe.Launch(TEXT("LoadFile"), [SlotName, SlotHint, bLoadData, Manager]() {
+	return BackendPipe.Launch(UE_SOURCE_LOCATION, [SlotName, SlotHint, bLoadData, Manager]() {
 		USaveSlot* Slot = LoadFileSync(SlotName, SlotHint, bLoadData, Manager);
 		// In case we create the slot from async loading thread
 		if (Slot)

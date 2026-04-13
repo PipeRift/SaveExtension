@@ -1,9 +1,9 @@
 {
     "FileVersion": 3,
-    "Version": 9,
-    "VersionName": "1.4",
+    "Version": 10,
+    "VersionName": "1.5a",
     "FriendlyName": "Save Extension",
-    "Description": "Provides UE4 with a save-game system with support for savegame tags, level streaming and more",
+    "Description": "Provides Unreal Engine with a simple and performant save-game system ",
     "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/91084f43b68047ac8da6fc88a7467936",
     "Category": "Piperift",
     "CreatedBy": "Piperift",
