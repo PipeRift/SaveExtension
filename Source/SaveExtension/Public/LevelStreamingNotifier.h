@@ -8,7 +8,6 @@
 #include "LevelStreamingNotifier.generated.h"
 
 
-
 DECLARE_DELEGATE_OneParam(FLevelNotifierLoaded, ULevelStreaming*);
 DECLARE_DELEGATE_OneParam(FLevelNotifierUnloaded, ULevelStreaming*);
 DECLARE_DELEGATE_OneParam(FLevelNotifierShown, ULevelStreaming*);

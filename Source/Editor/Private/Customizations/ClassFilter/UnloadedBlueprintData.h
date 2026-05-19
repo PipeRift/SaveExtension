@@ -1,10 +1,10 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Editor/ClassViewer/Private/ClassViewerNode.h"
-#include "ClassFilterNode.h"
+#include <ClassFilterNode.h>
 #include <ClassViewerFilter.h>
+#include <CoreMinimal.h>
+#include <Editor/ClassViewer/Private/ClassViewerNode.h>
 
 
 // Slightly modified version of Engine's FUnloadedBlueprintData. It is private.

@@ -14,7 +14,6 @@
 #include <WorkflowOrientedApp/WorkflowTabManager.h>
 
 
-
 /** Shared class type that ensures safe binding to RegisterBlueprintEditorTab through an SP binding without
  * interfering with module ownership semantics */
 class FSaveActorEditorTabBinding : public TSharedFromThis<FSaveActorEditorTabBinding>

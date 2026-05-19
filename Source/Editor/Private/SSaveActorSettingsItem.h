@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Widgets/SCompoundWidget.h>
 #include <Widgets/Input/SCheckBox.h>
+#include <Widgets/SCompoundWidget.h>
 
 struct FTagInfo
 {
@@ -17,20 +17,20 @@ struct FTagInfo
 		: DisplayName(DisplayName)
 		, Tag(Tag)
 		, bNegated(bNegated)
-		, Tooltip(MoveTemp(Tooltip)) {}
+		, Tooltip(MoveTemp(Tooltip))
+	{}
 };
 
 
 DECLARE_DELEGATE_TwoParams(FOnValueChanged, const FTagInfo&, bool)
 
-class SSaveActorSettingsItem : public SCompoundWidget
+	class SSaveActorSettingsItem : public SCompoundWidget
 {
 public:
-
 	SLATE_BEGIN_ARGS(SSaveActorSettingsItem) : _TagInfo() {}
 
-		SLATE_ARGUMENT(FTagInfo, TagInfo)
-		SLATE_EVENT(FOnValueChanged, OnValueChanged)
+	SLATE_ARGUMENT(FTagInfo, TagInfo)
+	SLATE_EVENT(FOnValueChanged, OnValueChanged)
 
 	SLATE_END_ARGS();
 
@@ -39,7 +39,6 @@ public:
 	void SetValue(bool bActive);
 
 private:
-
 	void OnStateChanged(ECheckBoxState State);
 	FReply OnClick();
 
@@ -47,11 +46,9 @@ private:
 
 
 public:
-
 	FTagInfo TagInfo;
 
 private:
-
 	FOnValueChanged OnValueChanged;
 
 	TSharedPtr<SCheckBox> CheckBox;

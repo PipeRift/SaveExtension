@@ -20,14 +20,13 @@ TSharedRef<SWidget> SClassFilterGraphPin::GetDefaultValueWidget()
 
 	// Create widget
 	return SNew(SHorizontalBox) +
-		   SHorizontalBox::Slot().AutoWidth().VAlign(
-			   VAlign_Fill)[SAssignNew(ComboButton, SComboButton)
-								.OnGetMenuContent(this, &SClassFilterGraphPin::GetListContent)
-								.ButtonStyle(FAppStyle::Get(), "FlatButton")
-								.ForegroundColor(FSlateColor::UseForeground())
-								.ContentPadding(FMargin(0.0f, 2.0f))
-								.MenuPlacement(MenuPlacement_BelowAnchor)
-								.Visibility(this, &SGraphPin::GetDefaultValueVisibility)] +
+		   SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Fill)[SAssignNew(ComboButton, SComboButton)
+				   .OnGetMenuContent(this, &SClassFilterGraphPin::GetListContent)
+				   .ButtonStyle(FAppStyle::Get(), "FlatButton")
+				   .ForegroundColor(FSlateColor::UseForeground())
+				   .ContentPadding(FMargin(0.0f, 2.0f))
+				   .MenuPlacement(MenuPlacement_BelowAnchor)
+				   .Visibility(this, &SGraphPin::GetDefaultValueVisibility)] +
 		   SHorizontalBox::Slot().AutoWidth()[SelectedTags()];
 }
 
@@ -41,10 +40,10 @@ TSharedRef<SWidget> SClassFilterGraphPin::GetListContent()
 	EditableFilters.Empty();
 	EditableFilters.Add(SClassFilter::FEditableClassFilterDatum(GraphPinObj->GetOwningNode(), &Filter));
 
-	return SNew(SVerticalBox) + SVerticalBox::Slot().AutoHeight().MaxHeight(
-									400)[SNew(SClassFilter, EditableFilters)
-											 .OnFilterChanged(this, &SClassFilterGraphPin::RefreshPreviewList)
-											 .Visibility(this, &SGraphPin::GetDefaultValueVisibility)];
+	return SNew(SVerticalBox) +
+		   SVerticalBox::Slot().AutoHeight().MaxHeight(400)[SNew(SClassFilter, EditableFilters)
+				   .OnFilterChanged(this, &SClassFilterGraphPin::RefreshPreviewList)
+				   .Visibility(this, &SGraphPin::GetDefaultValueVisibility)];
 }
 
 TSharedRef<SWidget> SClassFilterGraphPin::SelectedTags()
@@ -81,9 +80,9 @@ TSharedRef<ITableRow> SClassFilterGraphPin::OnGeneratePreviewRow(
 						.AutoWidth()
 						.VAlign(VAlign_Center)
 						.Padding(0, 0, 2, 0)[SNew(STextBlock)
-												 .ColorAndOpacity(StateColor)
-												 .Font(FAppStyle::Get().GetFontStyle("FontAwesome.8"))
-												 .Text(StateText)] +
+								.ColorAndOpacity(StateColor)
+								.Font(FAppStyle::Get().GetFontStyle("FontAwesome.8"))
+								.Text(StateText)] +
 					SHorizontalBox::Slot().AutoWidth().VAlign(
 						VAlign_Center)[SNew(STextBlock).Text(FText::FromString(Class->ClassName))]];
 }

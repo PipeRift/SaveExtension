@@ -288,7 +288,7 @@ void FSEDataTask_Save::SerializeLevel(const ULevel* Level, const ULevelStreaming
 			}
 		}
 		else if (const auto* Interface = Cast<ISaveExtensionInterface>(Actor);
-				 Interface && !Interface->ShouldSave(Filter))
+			Interface && !Interface->ShouldSave(Filter))
 		{
 			continue;
 		}

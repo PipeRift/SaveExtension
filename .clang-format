@@ -1,4 +1,5 @@
 ---
+StatementMacros: ['UPROPERTY', 'UFUNCTION', 'UCLASS', 'USTRUCT', 'UENUM', 'UINTERFACE', 'GENERATED_BODY']
 Language:        Cpp
 AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
@@ -8,7 +9,7 @@ AlignEscapedNewlines: Left
 AlignOperands:   true
 AlignTrailingComments: true
 AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortBlocksOnASingleLine: true
+AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: Never
@@ -40,7 +41,7 @@ BraceWrapping:
   AfterControlStatement: Always
   BeforeElse: true
   BeforeCatch: true
-#  BeforeLambdaBody: false  - Waiting for Clang12
+  BeforeLambdaBody: false
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
@@ -74,6 +75,7 @@ IndentCaseLabels: true
 IndentPPDirectives: AfterHash
 IndentWidth:     4
 IndentWrappedFunctionNames: false
+InsertBraces: true
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: false

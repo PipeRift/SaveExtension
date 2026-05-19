@@ -28,9 +28,12 @@ void FSaveSlotDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 	TArray<TWeakObjectPtr<UObject>> Objects;
 	DetailBuilder.GetObjectsBeingCustomized(Objects);
 
-	TSharedRef<IPropertyHandle> MultithreadedSerialization = DetailBuilder.GetProperty(FName("MultithreadedSerialization"), USaveSlot::StaticClass());
-	TSharedRef<IPropertyHandle> FrameSplittedSerialization = DetailBuilder.GetProperty(FName("FrameSplittedSerialization"), USaveSlot::StaticClass());
-	TSharedRef<IPropertyHandle> MaxFrameMs = DetailBuilder.GetProperty(FName("MaxFrameMs"), USaveSlot::StaticClass());
+	TSharedRef<IPropertyHandle> MultithreadedSerialization =
+		DetailBuilder.GetProperty(FName("MultithreadedSerialization"), USaveSlot::StaticClass());
+	TSharedRef<IPropertyHandle> FrameSplittedSerialization =
+		DetailBuilder.GetProperty(FName("FrameSplittedSerialization"), USaveSlot::StaticClass());
+	TSharedRef<IPropertyHandle> MaxFrameMs =
+		DetailBuilder.GetProperty(FName("MaxFrameMs"), USaveSlot::StaticClass());
 
 	if (Objects.Num() && Objects[0] != nullptr)
 	{
@@ -45,24 +48,26 @@ void FSaveSlotDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 
 		DetailBuilder.AddPropertyToCategory(MultithreadedSerialization);
 		DetailBuilder.AddPropertyToCategory(FrameSplittedSerialization);
+		// clang-format off
 		DetailBuilder.AddCustomRowToCategory(FrameSplittedSerialization, LOCTEXT("AsyncWarning", "Asynchronous Warning"))
-			.Visibility({this, &FSaveSlotDetails::GetWarningVisibility})
-			.ValueContent()
-			.MinDesiredWidth(300.f)
-			.MaxDesiredWidth(400.f)
+		.Visibility({this, &FSaveSlotDetails::GetWarningVisibility})
+		.ValueContent()
+		.MinDesiredWidth(300.f)
+		.MaxDesiredWidth(400.f)
+		[
+			SNew(SBorder)
+			.Padding(2.f)
+			.BorderImage(FAppStyle::GetBrush("ErrorReporting.EmptyBox"))
+			.BorderBackgroundColor(this, &FSaveSlotDetails::GetWarningColor)
 			[
-				SNew(SBorder)
-				.Padding(2.f)
-				.BorderImage(FAppStyle::GetBrush("ErrorReporting.EmptyBox"))
-				.BorderBackgroundColor(this, &FSaveSlotDetails::GetWarningColor)
-				[
-					SNew(STextBlock)
-					.Text(LOCTEXT("AsyncWarningText",
-						"WARNING: Frame-splitted loading or saving is not recommended "
-						"while using Level Streaming or World Composition"))
-					.AutoWrapText(true)
-				]
-			];
+				SNew(STextBlock)
+				.Text(LOCTEXT("AsyncWarningText",
+					"WARNING: Frame-splitted loading or saving is not recommended "
+					"while using Level Streaming or World Composition"))
+				.AutoWrapText(true)
+			]
+		];
+		// clang-format on
 		DetailBuilder.AddPropertyToCategory(MaxFrameMs);
 	}
 }
@@ -77,7 +82,7 @@ EVisibility FSaveSlotDetails::GetWarningVisibility() const
 	if (Slot.IsValid())
 	{
 		return Slot->GetFrameSplitSerialization() == ESEAsyncMode::SaveAndLoadSync ? EVisibility::Collapsed
-																			  : EVisibility::Visible;
+																				   : EVisibility::Visible;
 	}
 	return EVisibility::Collapsed;
 }

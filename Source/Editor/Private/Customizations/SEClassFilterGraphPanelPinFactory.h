@@ -1,15 +1,14 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 #pragma once
 
+#include "ClassFilter.h"
 #include "CoreMinimal.h"
 #include "EdGraphSchema_K2.h"
 #include "EdGraphUtilities.h"
 #include "GameplayTagContainer.h"
-#include "ClassFilter.h"
 #include "SClassFilterGraphPin.h"
 #include "SGraphPin.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
-
 
 
 class FSEClassFilterGraphPanelPinFactory : public FGraphPanelPinFactory

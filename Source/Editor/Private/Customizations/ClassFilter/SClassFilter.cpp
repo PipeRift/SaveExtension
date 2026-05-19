@@ -76,54 +76,45 @@ void SClassFilter::Construct(
 		}
 	}
 
-	ChildSlot
-		[SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
-				[SNew(SVerticalBox)
+	ChildSlot[SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+			[SNew(SVerticalBox)
 
-					// Gameplay Tag Tree controls
-					+
-					SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Top)
-						[SNew(SHorizontalBox)
+				// Gameplay Tag Tree controls
+				+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Top)
+					  [SNew(SHorizontalBox)
 
-							// Search
-							+ SHorizontalBox::Slot()
-								  .VAlign(VAlign_Center)
-								  .FillWidth(1.f)
-								  .Padding(5, 1, 5,
-									  1)[SAssignNew(SearchBox, SSearchBox)
-											 .HintText(LOCTEXT("ClassFilter_SearchBoxHint", "Search Classes"))
-											 .OnTextChanged(this, &SClassFilter::OnSearchTextChanged)]
+						  // Search
+						  + SHorizontalBox::Slot()
+								.VAlign(VAlign_Center)
+								.FillWidth(1.f)
+								.Padding(5, 1, 5, 1)[SAssignNew(SearchBox, SSearchBox)
+										.HintText(LOCTEXT("ClassFilter_SearchBoxHint", "Search Classes"))
+										.OnTextChanged(this, &SClassFilter::OnSearchTextChanged)]
 
-							// Expand All nodes
-							+ SHorizontalBox::Slot()
-								  .AutoWidth()[SNew(SButton)
-												   .OnClicked(this, &SClassFilter::OnClickedExpandAll)
-												   .Text(LOCTEXT("ClassFilter_ExpandAll", "Expand All"))]
+						  // Expand All nodes
+						  + SHorizontalBox::Slot().AutoWidth()[SNew(SButton)
+									.OnClicked(this, &SClassFilter::OnClickedExpandAll)
+									.Text(LOCTEXT("ClassFilter_ExpandAll", "Expand All"))]
 
-							// Collapse All nodes
-							+ SHorizontalBox::Slot()
-								  .AutoWidth()[SNew(SButton)
-												   .OnClicked(this, &SClassFilter::OnClickedCollapseAll)
-												   .Text(LOCTEXT("ClassFilter_CollapseAll", "Collapse All"))]
+						  // Collapse All nodes
+						  + SHorizontalBox::Slot().AutoWidth()[SNew(SButton)
+									.OnClicked(this, &SClassFilter::OnClickedCollapseAll)
+									.Text(LOCTEXT("ClassFilter_CollapseAll", "Collapse All"))]
 
-							// Clear selections
-							+ SHorizontalBox::Slot()
-								  .AutoWidth()[SNew(SButton)
-												   .OnClicked(this, &SClassFilter::OnClickedClearAll)
-												   .Text(LOCTEXT("ClassFilter_ClearAll", "Clear All"))
-												   .Visibility(this,
-													   &SClassFilter::DetermineClearSelectionVisibility)]]
+						  // Clear selections
+						  + SHorizontalBox::Slot().AutoWidth()[SNew(SButton)
+									.OnClicked(this, &SClassFilter::OnClickedClearAll)
+									.Text(LOCTEXT("ClassFilter_ClearAll", "Clear All"))
+									.Visibility(this, &SClassFilter::DetermineClearSelectionVisibility)]]
 
-					// Classes tree
-					+ SVerticalBox::Slot().MaxHeight(MaxHeight)
-						  [SAssignNew(TreeContainerWidget, SBorder)
-								  .Padding(FMargin(
-									  4.f))[SAssignNew(TreeWidget, STreeView<FSEClassFilterNodePtr>)
-												.TreeItemsSource(&RootClasses)
-												.OnGenerateRow(this, &SClassFilter::OnGenerateRow)
-												.OnGetChildren(this, &SClassFilter::OnGetChildren)
-												.OnExpansionChanged(this, &SClassFilter::OnExpansionChanged)
-												.SelectionMode(ESelectionMode::Multi)]]]];
+				// Classes tree
+				+ SVerticalBox::Slot().MaxHeight(MaxHeight)[SAssignNew(TreeContainerWidget, SBorder)
+						  .Padding(FMargin(4.f))[SAssignNew(TreeWidget, STreeView<FSEClassFilterNodePtr>)
+								  .TreeItemsSource(&RootClasses)
+								  .OnGenerateRow(this, &SClassFilter::OnGenerateRow)
+								  .OnGetChildren(this, &SClassFilter::OnGetChildren)
+								  .OnExpansionChanged(this, &SClassFilter::OnExpansionChanged)
+								  .SelectionMode(ESelectionMode::Multi)]]]];
 
 	// Construct the class hierarchy.
 	ClassFilter::Helpers::ConstructClassHierarchy();
@@ -214,28 +205,24 @@ TSharedRef<ITableRow> SClassFilter::OnGenerateRow(
 	FSEClassFilterNodePtr Class, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	return SNew(STableRow<FSEClassFilterNodePtr>, OwnerTable)
-		.Style(FAppStyle::Get(), "GameplayTagTreeView")
-			[SNew(SBorder)
-					.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
-					.BorderBackgroundColor(this, &SClassFilter::GetClassBackgroundColor, Class)
-					.Padding(0)
-					.Content()[SNew(SHorizontalBox) +
-							   SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
-								   [SNew(SButton)
-										   .ButtonStyle(FAppStyle::Get(), "FlatButton")
-										   .OnClicked(this, &SClassFilter::OnClassClicked, Class)
-										   .ForegroundColor(this, &SClassFilter::GetClassIconColor, Class)
-										   .ContentPadding(0)
-										   .IsEnabled(this, &SClassFilter::CanSelectClasses)
-											   [SNew(STextBlock)
-													   .Font(FAppStyle::Get().GetFontStyle("FontAwesome.8"))
-													   .Text(this, &SClassFilter::GetClassIconText, Class)]]
-							   // Tag Selection (selection mode only)
-							   + SHorizontalBox::Slot().FillWidth(1.0f).HAlign(
-									 HAlign_Left)[SNew(STextBlock)
-													  .Text(FText::FromString(Class->GetClassName(true)))
-													  .ToolTipText(Class->GetClassTooltip())
-													  .IsEnabled(this, &SClassFilter::CanSelectClasses)]]];
+		.Style(FAppStyle::Get(), "GameplayTagTreeView")[SNew(SBorder)
+				.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+				.BorderBackgroundColor(this, &SClassFilter::GetClassBackgroundColor, Class)
+				.Padding(0)
+				.Content()[SNew(SHorizontalBox) +
+						   SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)[SNew(SButton)
+								   .ButtonStyle(FAppStyle::Get(), "FlatButton")
+								   .OnClicked(this, &SClassFilter::OnClassClicked, Class)
+								   .ForegroundColor(this, &SClassFilter::GetClassIconColor, Class)
+								   .ContentPadding(0)
+								   .IsEnabled(this, &SClassFilter::CanSelectClasses)[SNew(STextBlock)
+										   .Font(FAppStyle::Get().GetFontStyle("FontAwesome.8"))
+										   .Text(this, &SClassFilter::GetClassIconText, Class)]]
+						   // Tag Selection (selection mode only)
+						   + SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Left)[SNew(STextBlock)
+									 .Text(FText::FromString(Class->GetClassName(true)))
+									 .ToolTipText(Class->GetClassTooltip())
+									 .IsEnabled(this, &SClassFilter::CanSelectClasses)]]];
 }
 
 void SClassFilter::OnGetChildren(FSEClassFilterNodePtr Class, TArray<FSEClassFilterNodePtr>& OutChildren)
@@ -312,14 +299,18 @@ void SClassFilter::MarkClass(FSEClassFilterNodePtr Class, EClassFilterState Stat
 				Class->SetOwnFilterState(State);
 
 				if (PropertyHandle)
+				{
 					PropertyHandle->NotifyPreChange();
+				}
 				for (const auto& Filter : Filters)
 				{
 					Filter.Filter->AllowedClasses.Add(ClassAsset);
 					Filter.Filter->IgnoredClasses.Remove(ClassAsset);
 				}
 				if (PropertyHandle)
+				{
 					PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
+				}
 			}
 			break;
 		}
@@ -330,14 +321,18 @@ void SClassFilter::MarkClass(FSEClassFilterNodePtr Class, EClassFilterState Stat
 				Class->SetOwnFilterState(State);
 
 				if (PropertyHandle)
+				{
 					PropertyHandle->NotifyPreChange();
+				}
 				for (const auto& Filter : Filters)
 				{
 					Filter.Filter->IgnoredClasses.Add(ClassAsset);
 					Filter.Filter->AllowedClasses.Remove(ClassAsset);
 				}
 				if (PropertyHandle)
+				{
 					PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
+				}
 			}
 			break;
 		}
@@ -348,14 +343,18 @@ void SClassFilter::MarkClass(FSEClassFilterNodePtr Class, EClassFilterState Stat
 				Class->SetOwnFilterState(State);
 
 				if (PropertyHandle)
+				{
 					PropertyHandle->NotifyPreChange();
+				}
 				for (const auto& Filter : Filters)
 				{
 					Filter.Filter->IgnoredClasses.Remove(ClassAsset);
 					Filter.Filter->AllowedClasses.Remove(ClassAsset);
 				}
 				if (PropertyHandle)
+				{
 					PropertyHandle->NotifyPostChange(EPropertyChangeType::Unspecified);
+				}
 			}
 			break;
 		}
@@ -521,7 +520,9 @@ void SClassFilter::Tick(
 int32 SClassFilter::CountTreeItems(FSEClassFilterNode* Node)
 {
 	if (!Node)
+	{
 		return 0;
+	}
 
 	int32 Count = 1;
 	for (const auto& Child : Node->GetChildrenList())

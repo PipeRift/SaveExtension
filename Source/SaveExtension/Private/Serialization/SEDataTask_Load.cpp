@@ -173,9 +173,13 @@ void FSEDataTask_Load::StartDeserialization()
 	BeforeDeserialize();
 
 	if (Slot->IsFrameSplitLoad())
+	{
 		DeserializeASync();
+	}
 	else
+	{
 		DeserializeSync();
+	}
 }
 
 void FSEDataTask_Load::StartLoadingFile()

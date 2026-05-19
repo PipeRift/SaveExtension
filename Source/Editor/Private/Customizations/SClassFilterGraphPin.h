@@ -12,7 +12,6 @@
 #include <Widgets/Views/STableViewBase.h>
 
 
-
 class SComboButton;
 
 class SClassFilterGraphPin : public SGraphPin

@@ -262,7 +262,9 @@ void USaveManager::Deinitialize()
 	FSEFileHelpers::GetPipe().WaitUntilEmpty();
 
 	if (GetActiveSlot()->bSaveOnClose)
+	{
 		SaveActiveSlot();
+	}
 
 	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
@@ -273,7 +275,9 @@ bool USaveManager::SaveSlot(FName SlotName, bool bOverrideIfNeeded, bool bScreen
 	const FScreenshotSize Size, FOnGameSaved OnSaved)
 {
 	if (!CanLoadOrSave())
+	{
 		return false;
+	}
 
 	if (SlotName.IsNone())
 	{
@@ -520,7 +524,9 @@ void USaveManager::SetActiveSlot(USaveSlot* NewSlot)
 void USaveManager::EnsureActiveSlot(TSubclassOf<USaveSlot> ActiveSlotClass, bool bForced)
 {
 	if (HasActiveSlot() && !bForced)
+	{
 		return;
+	}
 
 	if (!ActiveSlotClass)
 	{
@@ -732,7 +738,9 @@ UWorld* USaveManager::GetWorld() const
 
 	// If we are a CDO, we must return nullptr instead to fool UObject::ImplementsGetWorld.
 	if (HasAllFlags(RF_ClassDefaultObject))
+	{
 		return nullptr;
+	}
 
 	return GetGameInstance()->GetWorld();
 }

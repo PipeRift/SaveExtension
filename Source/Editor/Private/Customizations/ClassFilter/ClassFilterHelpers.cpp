@@ -337,7 +337,7 @@ namespace ClassFilter
 				// Make sure that the node does not already exist. There is a bit of double adding going on at
 				// times and this prevents it.
 				if (!FindNodeByGeneratedClassPath(ObjectClassRoot, FTopLevelAssetPath{ClassObjectPath})
-						 .IsValid())
+						.IsValid())
 				{
 					FSEClassFilterNodePtr NewNode;
 					LoadUnloadedTagData(NewNode, InAddedAssetData);

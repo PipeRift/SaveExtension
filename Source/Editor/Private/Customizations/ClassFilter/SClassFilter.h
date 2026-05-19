@@ -1,11 +1,11 @@
 // Copyright 2015-2024 Piperift. All Rights Reserved.
 #pragma once
 
+#include "ClassFilter.h"
 #include "ClassFilterNode.h"
 #include "CoreMinimal.h"
 #include "Input/Reply.h"
 #include "Layout/Visibility.h"
-#include "ClassFilter.h"
 #include "SlateFwd.h"
 #include "UObject/Object.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"

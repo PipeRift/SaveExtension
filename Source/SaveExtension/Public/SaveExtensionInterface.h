@@ -9,7 +9,6 @@
 #include "SaveExtensionInterface.generated.h"
 
 
-
 UINTERFACE(Category = SaveExtension, BlueprintType)
 class SAVEEXTENSION_API USaveExtensionInterface : public UInterface
 {
@@ -54,5 +53,8 @@ public:
 	// Event called when Load process ends
 	virtual void OnLoadFinished(const FSELevelFilter& Filter, bool bError) {}
 
-	virtual bool ShouldSave(const FSELevelFilter& Filter) const { return true; }
+	virtual bool ShouldSave(const FSELevelFilter& Filter) const
+	{
+		return true;
+	}
 };

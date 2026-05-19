@@ -2,15 +2,14 @@
 
 #pragma once
 
-#include "WorkflowOrientedApp/WorkflowUObjectDocuments.h"
-
 #include "SSaveActorSettingsItem.h"
+
+#include <WorkflowOrientedApp/WorkflowUObjectDocuments.h>
 
 
 class FBlueprintEditor;
 
-class SSaveActorEditorWidget
-	: public SCompoundWidget
+class SSaveActorEditorWidget : public SCompoundWidget
 {
 	static const TArray<FTagInfo> TagList;
 
@@ -23,8 +22,7 @@ class SSaveActorEditorWidget
 
 
 public:
-
-	SLATE_BEGIN_ARGS(SSaveActorEditorWidget){}
+	SLATE_BEGIN_ARGS(SSaveActorEditorWidget) {}
 	SLATE_END_ARGS();
 
 	void Construct(const FArguments&, TWeakPtr<FBlueprintEditor> InBlueprintEditor);
@@ -37,7 +35,6 @@ public:
 	void OnBlueprintPreCompile(UBlueprint* InBlueprint);
 
 private:
-
 	void OnBlueprintChanged(UBlueprint* Bueprint);
 	void OnSettingChanged(const FTagInfo& TagInfo, bool bValue);
 
@@ -52,7 +49,8 @@ private:
 		return GetDefaultActor() ? EVisibility::Visible : EVisibility::Collapsed;
 	}
 
-	bool IsTransformEnabled() const {
+	bool IsTransformEnabled() const
+	{
 		if (AActor* actor = GetDefaultActor())
 		{
 			return !actor->ActorHasTag("!SaveTransform");
@@ -62,8 +60,7 @@ private:
 };
 
 
-struct FSaveActorEditorSummoner
-	: public FWorkflowTabFactory
+struct FSaveActorEditorSummoner : public FWorkflowTabFactory
 {
 	static const FTabId TabName;
 
@@ -73,6 +70,5 @@ struct FSaveActorEditorSummoner
 	virtual TSharedRef<SWidget> CreateTabBody(const FWorkflowTabSpawnInfo& Info) const override;
 
 protected:
-
 	TWeakPtr<FBlueprintEditor> WeakBlueprintEditor;
 };

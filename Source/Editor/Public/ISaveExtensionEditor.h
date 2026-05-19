@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include "AssetTypeCategories.h"
-#include "Modules/ModuleManager.h"
-
+#include <AssetTypeCategories.h>
+#include <Modules/ModuleManager.h>
 
 
 class ISaveExtensionEditor : public IModuleInterface

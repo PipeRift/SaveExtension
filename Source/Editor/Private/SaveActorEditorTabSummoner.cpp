@@ -70,15 +70,21 @@ void SSaveActorEditorWidget::OnSettingChanged(const FTagInfo& TagInfo, bool bVal
 {
 	// Don't apply changes while refreshing
 	if (bRefreshingVisuals)
+	{
 		return;
+	}
 
 	AActor* Actor = GetDefaultActor();
 	if (Actor)
 	{
 		if (bValue ^ TagInfo.bNegated)
+		{
 			Actor->Tags.AddUnique(TagInfo.Tag);
+		}
 		else
+		{
 			Actor->Tags.Remove(TagInfo.Tag);
+		}
 
 		FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
 		RefreshVisuals();
@@ -109,14 +115,14 @@ TSharedPtr<SWidget> SSaveActorEditorWidget::GenerateSettingsWidget()
 {
 	// TODO: This can be moved into FTagInfo
 	SettingItems.Add(SNew(SSaveActorSettingsItem)
-						 .TagInfo(TagList[0])
-						 .OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
+			.TagInfo(TagList[0])
+			.OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
 	SettingItems.Add(SNew(SSaveActorSettingsItem)
-						 .TagInfo(TagList[1])
-						 .OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
+			.TagInfo(TagList[1])
+			.OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
 	SettingItems.Add(SNew(SSaveActorSettingsItem)
-						 .TagInfo(TagList[2])
-						 .OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
+			.TagInfo(TagList[2])
+			.OnValueChanged(this, &SSaveActorEditorWidget::OnSettingChanged));
 
 	AActor* Actor = GetDefaultActor();
 	if (Actor)
@@ -125,10 +131,9 @@ TSharedPtr<SWidget> SSaveActorEditorWidget::GenerateSettingsWidget()
 			.BorderImage(FAppStyle::GetBrush("DetailsView.CategoryMiddle"))
 			.Padding(0)[SNew(SVerticalBox) + SVerticalBox::Slot().AutoHeight()[SettingItems[0]] +
 						SVerticalBox::Slot().AutoHeight()[SettingItems[1]] +
-						SVerticalBox::Slot().AutoHeight().Padding(
-							6)[SNew(SBorder)
-								   .BorderImage(FAppStyle::GetBrush("DetailsView.CategoryMiddle"))
-								   .Padding(0)[SettingItems[2]]]];
+						SVerticalBox::Slot().AutoHeight().Padding(6)[SNew(SBorder)
+								.BorderImage(FAppStyle::GetBrush("DetailsView.CategoryMiddle"))
+								.Padding(0)[SettingItems[2]]]];
 	}
 	return SNullWidget::NullWidget;
 }
@@ -136,7 +141,9 @@ TSharedPtr<SWidget> SSaveActorEditorWidget::GenerateSettingsWidget()
 void SSaveActorEditorWidget::RefreshVisuals()
 {
 	if (!GetBlueprint())
+	{
 		return;
+	}
 
 	AActor* Actor = GetDefaultActor();
 	if (Actor)

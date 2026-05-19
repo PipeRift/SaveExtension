@@ -39,7 +39,6 @@ void FSEDataTask_LoadLevel::OnStart()
 
 void FSEDataTask_LoadLevel::DeserializeASyncLoop(float StartMS /*= 0.0f*/)
 {
-
 	if (StartMS <= 0)
 	{
 		StartMS = GetTimeMilliseconds();

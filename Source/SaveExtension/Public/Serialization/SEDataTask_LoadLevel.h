@@ -14,9 +14,7 @@ struct FSEDataTask_LoadLevel : public FSEDataTask_Load
 
 
 public:
-	FSEDataTask_LoadLevel(USaveManager* Manager, USaveSlot* Slot)
-		: FSEDataTask_Load(Manager, Slot)
-	{}
+	FSEDataTask_LoadLevel(USaveManager* Manager, USaveSlot* Slot) : FSEDataTask_Load(Manager, Slot) {}
 
 	auto& Setup(ULevelStreaming* InStreamingLevel)
 	{

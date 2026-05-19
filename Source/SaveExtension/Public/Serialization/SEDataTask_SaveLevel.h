@@ -14,9 +14,7 @@ struct FSEDataTask_SaveLevel : public FSEDataTask_Save
 
 
 public:
-	FSEDataTask_SaveLevel(USaveManager* Manager, USaveSlot* Slot)
-		: FSEDataTask_Save(Manager, Slot)
-	{}
+	FSEDataTask_SaveLevel(USaveManager* Manager, USaveSlot* Slot) : FSEDataTask_Save(Manager, Slot) {}
 
 	auto& Setup(ULevelStreaming* InStreamingLevel)
 	{

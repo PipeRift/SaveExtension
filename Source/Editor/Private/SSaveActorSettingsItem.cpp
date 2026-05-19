@@ -2,12 +2,12 @@
 
 #include "SSaveActorSettingsItem.h"
 
+#include <EditorStyleSet.h>
+#include <Widgets/Input/SButton.h>
+#include <Widgets/Layout/SBorder.h>
 #include <Widgets/SBoxPanel.h>
 #include <Widgets/SOverlay.h>
-#include <Widgets/Layout/SBorder.h>
-#include <Widgets/Input/SButton.h>
 #include <Widgets/Text/STextBlock.h>
-#include <EditorStyleSet.h>
 
 
 #define LOCTEXT_NAMESPACE "SSaveActorSettingsItem"
@@ -17,6 +17,7 @@ void SSaveActorSettingsItem::Construct(const FArguments& Args)
 	TagInfo = Args._TagInfo;
 	OnValueChanged = Args._OnValueChanged;
 
+	// clang-format off
 	ChildSlot
 	[
 		SNew(SOverlay)
@@ -55,12 +56,14 @@ void SSaveActorSettingsItem::Construct(const FArguments& Args)
 			]
 		]
 	];
+	// clang-format on
 }
 
 
 void SSaveActorSettingsItem::SetValue(bool bActive)
 {
-	if (CheckBox && CheckBox->GetCheckedState() != (bActive? ECheckBoxState::Checked : ECheckBoxState::Unchecked))
+	if (CheckBox &&
+		CheckBox->GetCheckedState() != (bActive ? ECheckBoxState::Checked : ECheckBoxState::Unchecked))
 	{
 		CheckBox->ToggleCheckedState();
 	}

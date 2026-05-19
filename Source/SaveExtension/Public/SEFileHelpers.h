@@ -6,8 +6,8 @@
 #include <Misc/EngineVersion.h>
 #include <PlatformFeatures.h>
 #include <Serialization/CustomVersion.h>
-#include <Templates/SubclassOf.h>
 #include <Tasks/Task.h>
+#include <Templates/SubclassOf.h>
 
 
 class USaveManager;
@@ -103,11 +103,15 @@ struct FSaveFile
 class SAVEEXTENSION_API FSEFileHelpers
 {
 public:
-	static bool SaveFileSync(USaveSlot* Slot, FStringView OverrideSlotName = {}, const bool bUseCompression = true);
-	static UE::Tasks::TTask<bool> SaveFile(USaveSlot* Slot, FString OverrideSlotName = {}, const bool bUseCompression = true);
+	static bool SaveFileSync(
+		USaveSlot* Slot, FStringView OverrideSlotName = {}, const bool bUseCompression = true);
+	static UE::Tasks::TTask<bool> SaveFile(
+		USaveSlot* Slot, FString OverrideSlotName = {}, const bool bUseCompression = true);
 
-	static USaveSlot* LoadFileSync(FStringView SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
-	static UE::Tasks::TTask<USaveSlot*> LoadFile(FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
+	static USaveSlot* LoadFileSync(
+		FStringView SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
+	static UE::Tasks::TTask<USaveSlot*> LoadFile(
+		FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
 
 	static bool DeleteFile(FStringView SlotName);
 	static bool FileExists(FStringView SlotName);

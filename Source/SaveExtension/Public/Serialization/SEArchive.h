@@ -9,8 +9,8 @@
 struct FSEArchive : public FObjectAndNameAsStringProxyArchive
 {
 public:
-	FSEArchive(FArchive &InInnerArchive, bool bInLoadIfFindFails)
-		: FObjectAndNameAsStringProxyArchive(InInnerArchive,bInLoadIfFindFails)
+	FSEArchive(FArchive& InInnerArchive, bool bInLoadIfFindFails)
+		: FObjectAndNameAsStringProxyArchive(InInnerArchive, bInLoadIfFindFails)
 	{
 		ArIsSaveGame = true;
 		ArNoDelta = true;

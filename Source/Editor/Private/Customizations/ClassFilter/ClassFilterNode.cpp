@@ -8,7 +8,6 @@
 #include <PropertyHandle.h>
 
 
-
 FSEClassFilterNode::FSEClassFilterNode(const FString& InClassName, const FString& InClassDisplayName)
 {
 	ClassName = InClassName;
@@ -68,7 +67,7 @@ void FSEClassFilterNode::AddUniqueChild(FSEClassFilterNodePtr& Child)
 				{
 					// make sure, that new child has all needed children
 					for (int OldChildIndex = 0; OldChildIndex < CurrentChild->ChildrenList.Num();
-						 ++OldChildIndex)
+						++OldChildIndex)
 					{
 						Child->AddUniqueChild(CurrentChild->ChildrenList[OldChildIndex]);
 					}
@@ -166,7 +165,9 @@ EClassFilterState FSEClassFilterNode::GetParentFilterState() const
 	{
 		// return first parent found filter
 		if (Parent->FilterState != EClassFilterState::None)
+		{
 			return Parent->FilterState;
+		}
 
 		Parent = Parent->ParentNode.Pin();
 	}
