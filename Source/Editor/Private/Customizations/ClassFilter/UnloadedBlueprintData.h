@@ -1,7 +1,8 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 #pragma once
 
-#include <ClassFilterNode.h>
+#include "ClassFilterNode.h"
+
 #include <ClassViewerFilter.h>
 #include <CoreMinimal.h>
 #include <Editor/ClassViewer/Private/ClassViewerNode.h>
