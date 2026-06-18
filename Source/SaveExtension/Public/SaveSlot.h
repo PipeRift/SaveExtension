@@ -38,15 +38,15 @@ struct FSaveSlotStats
 	GENERATED_BODY()
 
 	/** Played time since this saved game was started. Not related to slots, slots can change */
-	UPROPERTY(BlueprintReadOnly, Category = SaveSlot)
+	UPROPERTY(SaveGame, BlueprintReadOnly, Category = SaveSlot)
 	FTimespan PlayedTime = FTimespan::Zero();
 
 	/** Played time since this saved game was created */
-	UPROPERTY(BlueprintReadOnly, Category = SaveSlot)
+	UPROPERTY(SaveGame, BlueprintReadOnly, Category = SaveSlot)
 	FTimespan SlotPlayedTime = FTimespan::Zero();
 
 	/** Last date at which this slot was saved. */
-	UPROPERTY(BlueprintReadOnly, Category = SaveSlot)
+	UPROPERTY(SaveGame, BlueprintReadOnly, Category = SaveSlot)
 	FDateTime SaveDate = FDateTime::Now();
 
 	/** Date at which this slot was loaded. */
