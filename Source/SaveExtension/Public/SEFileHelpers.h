@@ -109,7 +109,7 @@ public:
 		USaveSlot* Slot, FString OverrideSlotName = {}, const bool bUseCompression = true);
 
 	static USaveSlot* LoadFileSync(
-		FStringView SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
+		FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
 	static UE::Tasks::TTask<USaveSlot*> LoadFile(
 		FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager);
 

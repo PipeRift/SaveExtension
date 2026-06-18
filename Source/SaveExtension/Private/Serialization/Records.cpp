@@ -254,7 +254,7 @@ bool SERecords::DeserializeActor(
 
 	if (Actor->GetClass() != Record.Class)
 	{
-		UE_LOG(LogSaveExtension, Log, TEXT("Actor '{}' exists but class doesn't match"), Record.Name);
+		UE_LOG(LogSaveExtension, Log, TEXT("Actor '%s' exists but class doesn't match"), *Record.Name.ToString());
 		return false;
 	}
 

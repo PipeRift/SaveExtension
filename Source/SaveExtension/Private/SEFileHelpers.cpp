@@ -277,7 +277,7 @@ UE::Tasks::TTask<bool> FSEFileHelpers::SaveFile(
 
 
 USaveSlot* FSEFileHelpers::LoadFileSync(
-	FStringView SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
+	FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FSEFileHelpers::LoadFileSync);
 	if (SlotName.IsEmpty() && SlotHint)
@@ -310,7 +310,7 @@ UE::Tasks::TTask<USaveSlot*> FSEFileHelpers::LoadFile(
 	FString SlotName, USaveSlot* SlotHint, bool bLoadData, const USaveManager* Manager)
 {
 	return BackendPipe.Launch(UE_SOURCE_LOCATION, [SlotName, SlotHint, bLoadData, Manager]() {
-		USaveSlot* Slot = LoadFileSync(SlotName, SlotHint, bLoadData, Manager);
+		USaveSlot* Slot = LoadFileSync(MoveTemp(SlotName), SlotHint, bLoadData, Manager);
 		// In case we create the slot from async loading thread
 		if (Slot)
 		{

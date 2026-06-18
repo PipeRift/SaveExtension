@@ -39,9 +39,6 @@ public:
 	}
 	virtual TSharedPtr<FString> GetClassName() const override;
 
-	UE_DEPRECATED(5.1, "Class names are now represented by path names. Please use GetClassPathName.")
-	virtual FName GetClassPath() const override;
-
 	virtual FTopLevelAssetPath GetClassPathName() const override;
 
 	virtual const UClass* GetClassWithin() const override;

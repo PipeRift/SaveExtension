@@ -125,16 +125,6 @@ TSharedPtr<FString> FUnloadedBlueprintData::GetClassName() const
 	return TSharedPtr<FString>();
 }
 
-FName FUnloadedBlueprintData::GetClassPath() const
-{
-	if (ClassViewerNode.IsValid())
-	{
-		return FName(*ClassViewerNode.Pin()->ClassPath.ToString());
-	}
-
-	return FName();
-}
-
 FTopLevelAssetPath FUnloadedBlueprintData::GetClassPathName() const
 {
 	if (ClassViewerNode.IsValid())
